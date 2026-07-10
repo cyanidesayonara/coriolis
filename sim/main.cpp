@@ -9,6 +9,7 @@
 #include "../core/display.h"
 #include "../core/scene.h"
 #include "../scenes/scene_clock.h"
+#include "../scenes/scene_pong.h"
 #include "../scenes/scene_plasma.h"
 #include "../scenes/scene_fire.h"
 #include "../scenes/scene_spiro.h"
@@ -31,6 +32,22 @@ class SystemTime : public TimeSource {
   }
 };
 
+// held keys for games — on hardware this becomes the gamepad
+class KeyboardInput : public InputState {
+ public:
+  bool isDown(Key k) const {
+    switch (k) {
+      case Key::Up: return IsKeyDown(KEY_UP);
+      case Key::Down: return IsKeyDown(KEY_DOWN);
+      case Key::Left: return IsKeyDown(KEY_LEFT);
+      case Key::Right: return IsKeyDown(KEY_RIGHT);
+      case Key::Select: return IsKeyDown(KEY_ENTER);
+      case Key::Back: return IsKeyDown(KEY_BACKSPACE);
+      default: return false;
+    }
+  }
+};
+
 int main() {
   // chunky pixels, the whole point — but keep the window on a 1080p screen
   int scale = 8;
@@ -40,6 +57,7 @@ int main() {
 
   FrameBuffer fb;
   SystemTime timeSource;
+  KeyboardInput heldKeys;
   int paletteIndex = 0;
   // display rotation in quarter turns; on the square display this is
   // lossless, so portrait content (Tetris) is a setting, not a rebuild.
@@ -48,14 +66,15 @@ int main() {
   int rotation = 0;
 
   ClockScene clock;
+  PongScene pong;
   PlasmaScene plasma;
   FireScene fire;
   SpiroScene spiro;
-  Scene* scenes[] = {&clock, &spiro, &fire, &plasma};
+  Scene* scenes[] = {&clock, &pong, &spiro, &fire, &plasma};
   const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
   int current = 0;
 
-  Context ctx = {fb, timeSource, &palettes::byIndex(paletteIndex), 0};
+  Context ctx = {fb, timeSource, heldKeys, &palettes::byIndex(paletteIndex), 0};
 
   scenes[current]->start(ctx);
 

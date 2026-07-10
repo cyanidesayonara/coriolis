@@ -48,10 +48,13 @@ cmake --build build-square
 | `SPACE` / `→` | next scene |
 | `←` | previous scene |
 | `↑` / `↓` | cycle palette |
+| `R` | rotate the display 90° (square build) |
 | `ESC` | quit |
 
-Arrow keys are offered to the active scene first (games will consume them),
-matching how a remote/gamepad will behave on the device.
+Arrow keys are offered to the active scene first, matching how a
+remote/gamepad will behave on the device. In Pong, `↑`/`↓` grab the left
+paddle (the match runs AI-vs-AI until you interfere) and `ENTER` restarts
+the match.
 
 ## Adding a scene
 

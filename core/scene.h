@@ -36,10 +36,19 @@ enum class Key {
   Back,
 };
 
+// continuous input for games — "is this key held right now?" Backends map
+// it to whatever they have (keyboard in the sim, gamepad on the device).
+class InputState {
+ public:
+  virtual ~InputState() {}
+  virtual bool isDown(Key) const = 0;
+};
+
 // everything a scene may touch, handed in each frame
 struct Context {
   FrameBuffer& fb;
   TimeSource& time;
+  InputState& held;
   const Palette* palette;
   uint32_t nowMs;  // monotonic milliseconds since start
 };

@@ -27,6 +27,24 @@ Planning started July 2026.
   3. Games with real input (IR remote lag killed games on Borealis)
   4. **Yoga routine player** (see below — high enthusiasm, girlfriend-approved)
 
+## Feature family: guided activities
+
+The yoga player generalizes into a family of "the display coaches you"
+scenes, all sharing machinery: a sequence of steps, a per-step visual, a
+progress indicator, a chime/voice on step change (DFPlayer), and
+configurable pace. An LED wall turns out to be ideal for this because the
+state is glanceable from across the room mid-exercise — no phone to look at.
+
+- **Yoga routine player** (the original, detailed below).
+- **Exercise/interval trainer**: "12 pushups" → rep counter or countdown,
+  rest timer between sets, Tabata/HIIT mode (20s work / 10s rest) where the
+  whole screen is color-coded — green means go, red means rest, readable
+  mid-burpee. Stick-figure demo of the exercise reuses the yoga skeleton
+  renderer.
+- **Breathing guide**: a circle that expands and contracts to breathe with
+  (box breathing, 4-7-8). Zero text, deeply suited to a light-based display.
+  Cheapest of the family to build — could come first.
+
 ## Feature: yoga routine player
 
 Animated yoga poses on the display, played as configurable routines.
@@ -60,6 +78,37 @@ one-button game, Simon (color memory), 2048, Asteroids.
 Ambient non-games that ride the same machinery: aquarium (fish tank),
 fireplace mode (fire scene + crackle audio from the DFPlayer), Matrix rain,
 starfield, bouncing-DVD-logo, pixel-art photo frames from SD.
+
+## Idea shortlist (fresh, unvetted — pick favorites later)
+
+- **Scoreboard**: big glanceable score for real-life games (table tennis,
+  darts, board games), bumped from the remote/gamepad. Trivial to build,
+  weirdly useful at parties.
+- **Sunrise alarm**: the display fades in warm light over ~20 minutes
+  before wake time. RTC-driven, fully offline.
+- **Seasonal auto-scenes**: RTC-driven ambient — snow in December, fireworks
+  on New Year's Eve, hearts on Feb 14 (the Spiro accident found its home).
+- **Habit tracker wall**: GitHub-contributions-style dot grid; press a
+  button when you did the thing. Offline, surprisingly motivating.
+- **Countdown calendar (offline)**: events/birthdays in a file on SD;
+  "12 days to X", fireworks animation on the day itself.
+- **Kitchen/multi-timer**: named countdowns, glanceable from the stove.
+- **Metronome**: visual beat + DFPlayer click, for music practice.
+
+## Calendar (needs a data source — approach)
+
+A real calendar (appointments) can't be fully offline. Layered approach that
+preserves the offline-first principle:
+
+1. **Offline tier (build first)**: recurring events file on SD — birthdays,
+   holidays, countdowns. Covers most of the wall-display value with zero
+   connectivity.
+2. **Connected tier (optional later)**: the same ESP32 UART co-processor
+   planned for weather also fetches an ICS/CalDAV feed (e.g. Google
+   Calendar) and pushes "next N events" as JSON over serial. The display
+   itself still never touches the internet; unplugging the feeder simply
+   drops the scene back to the offline tier. One €5 module ends up serving
+   both weather and calendar.
 
 **DOOM (the stretch trophy):** genuinely possible, not a joke — doomgeneric
 ports need ~5 callbacks and people have run DOOM on a Teensy 4.1 with the
