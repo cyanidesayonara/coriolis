@@ -84,6 +84,25 @@ class FrameBuffer {
     line(x0, y0 + 1, x1, y1 + 1, c);
   }
 
+  void fillTriangle(int x0, int y0, int x1, int y1, int x2, int y2,
+                    const RGB& c) {
+    int minX = x0 < x1 ? (x0 < x2 ? x0 : x2) : (x1 < x2 ? x1 : x2);
+    int maxX = x0 > x1 ? (x0 > x2 ? x0 : x2) : (x1 > x2 ? x1 : x2);
+    int minY = y0 < y1 ? (y0 < y2 ? y0 : y2) : (y1 < y2 ? y1 : y2);
+    int maxY = y0 > y1 ? (y0 > y2 ? y0 : y2) : (y1 > y2 ? y1 : y2);
+    for (int y = minY; y <= maxY; y++) {
+      for (int x = minX; x <= maxX; x++) {
+        // same-side test, winding-agnostic
+        int s0 = (x1 - x0) * (y - y0) - (y1 - y0) * (x - x0);
+        int s1 = (x2 - x1) * (y - y1) - (y2 - y1) * (x - x1);
+        int s2 = (x0 - x2) * (y - y2) - (y0 - y2) * (x - x2);
+        bool allNonNeg = s0 >= 0 && s1 >= 0 && s2 >= 0;
+        bool allNonPos = s0 <= 0 && s1 <= 0 && s2 <= 0;
+        if (allNonNeg || allNonPos) set(x, y, c);
+      }
+    }
+  }
+
   void fillCircle(int cx, int cy, int r, const RGB& c) {
     for (int dy = -r; dy <= r; dy++)
       for (int dx = -r; dx <= r; dx++)

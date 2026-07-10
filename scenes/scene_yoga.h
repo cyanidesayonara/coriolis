@@ -1,7 +1,11 @@
-// Yoga routine player. Poses are skeletons — 13 joints in a normalized
+// Yoga routine player. Poses are skeletons — 15 joints in a normalized
 // 0..1 space — so a pose is data, transitions tween smoothly between
-// keyframes, and the figure scales to any display size. No artwork needed;
-// adding a pose means writing 13 coordinate pairs.
+// keyframes, and the figure scales to any display size. Toes are part of
+// the pose: down dog holds the feet flexed (heels reaching, toes toward
+// the hands) while cobra points them (tops of the feet on the floor).
+//
+// Guide scenes keep their own fixed look (guide_ui.h) — only the top-bar
+// clock follows the theme palette.
 #ifndef CORIOLIS_SCENE_YOGA_H
 #define CORIOLIS_SCENE_YOGA_H
 
@@ -10,59 +14,61 @@
 #include "../core/scene.h"
 #include "../core/font.h"
 #include "../core/math8.h"
+#include "guide_ui.h"
 
 namespace coriolis {
 
 struct YogaPose {
   const char* name;
   // x,y pairs, 0..1: head, neck, lSho, rSho, lElb, lWri, rElb, rWri,
-  // pelvis, lKnee, lAnk, rKnee, rAnk
-  float j[13][2];
+  // pelvis, lKnee, lAnk, rKnee, rAnk, lToe, rToe
+  float j[15][2];
 };
 
 namespace yoga_poses {
 
-// front view, standing straight, arms at the sides
+// front view, standing straight, arms at the sides, feet grounded
 static const YogaPose MOUNTAIN = {"MOUNTAIN", {
     {0.50f, 0.14f}, {0.50f, 0.26f}, {0.42f, 0.29f}, {0.58f, 0.29f},
     {0.40f, 0.42f}, {0.39f, 0.54f}, {0.60f, 0.42f}, {0.61f, 0.54f},
     {0.50f, 0.53f}, {0.46f, 0.70f}, {0.45f, 0.90f}, {0.54f, 0.70f},
-    {0.55f, 0.90f}}};
+    {0.55f, 0.90f}, {0.41f, 0.92f}, {0.59f, 0.92f}}};
 
 // front view, legs wide, arms raised in a V
 static const YogaPose STAR = {"STAR", {
     {0.50f, 0.14f}, {0.50f, 0.27f}, {0.42f, 0.30f}, {0.58f, 0.30f},
     {0.30f, 0.21f}, {0.20f, 0.11f}, {0.70f, 0.21f}, {0.80f, 0.11f},
     {0.50f, 0.53f}, {0.38f, 0.70f}, {0.28f, 0.90f}, {0.62f, 0.70f},
-    {0.72f, 0.90f}}};
+    {0.72f, 0.90f}, {0.23f, 0.92f}, {0.77f, 0.92f}}};
 
 // front view, right foot against the standing leg, palms together overhead
 static const YogaPose TREE = {"TREE", {
     {0.50f, 0.12f}, {0.50f, 0.24f}, {0.43f, 0.27f}, {0.57f, 0.27f},
     {0.37f, 0.16f}, {0.48f, 0.05f}, {0.63f, 0.16f}, {0.52f, 0.05f},
     {0.50f, 0.52f}, {0.47f, 0.70f}, {0.46f, 0.90f}, {0.63f, 0.62f},
-    {0.51f, 0.68f}}};
+    {0.51f, 0.68f}, {0.42f, 0.92f}, {0.50f, 0.73f}}};
 
 // wide lunge, arms straight out over the legs
 static const YogaPose WARRIOR = {"WARRIOR 2", {
     {0.50f, 0.18f}, {0.50f, 0.30f}, {0.42f, 0.33f}, {0.58f, 0.33f},
     {0.28f, 0.33f}, {0.13f, 0.33f}, {0.72f, 0.33f}, {0.87f, 0.33f},
     {0.50f, 0.56f}, {0.31f, 0.70f}, {0.28f, 0.90f}, {0.66f, 0.73f},
-    {0.75f, 0.90f}}};
+    {0.75f, 0.90f}, {0.21f, 0.91f}, {0.82f, 0.91f}}};
 
-// side view, the inverted V: hands planted left, hips high, feet right
+// side view, the inverted V: hands planted, hips high, heels reaching —
+// feet flexed, toes toward the hands
 static const YogaPose DOWN_DOG = {"DOWN DOG", {
     {0.30f, 0.62f}, {0.36f, 0.52f}, {0.34f, 0.54f}, {0.36f, 0.55f},
-    {0.26f, 0.70f}, {0.19f, 0.88f}, {0.28f, 0.71f}, {0.21f, 0.89f},
-    {0.56f, 0.30f}, {0.66f, 0.57f}, {0.75f, 0.88f}, {0.68f, 0.58f},
-    {0.77f, 0.89f}}};
+    {0.26f, 0.70f}, {0.19f, 0.90f}, {0.28f, 0.71f}, {0.21f, 0.91f},
+    {0.56f, 0.30f}, {0.66f, 0.57f}, {0.74f, 0.86f}, {0.68f, 0.58f},
+    {0.75f, 0.87f}, {0.67f, 0.90f}, {0.69f, 0.91f}}};
 
-// side view, lying with the chest lifted on straight arms
+// side view, lying with the chest lifted — feet pointed, tops on the floor
 static const YogaPose COBRA = {"COBRA", {
-    {0.26f, 0.50f}, {0.31f, 0.60f}, {0.32f, 0.62f}, {0.34f, 0.63f},
-    {0.32f, 0.74f}, {0.29f, 0.88f}, {0.35f, 0.75f}, {0.32f, 0.89f},
-    {0.55f, 0.84f}, {0.71f, 0.86f}, {0.88f, 0.88f}, {0.72f, 0.87f},
-    {0.89f, 0.89f}}};
+    {0.26f, 0.54f}, {0.31f, 0.64f}, {0.32f, 0.66f}, {0.34f, 0.67f},
+    {0.32f, 0.78f}, {0.29f, 0.90f}, {0.35f, 0.79f}, {0.32f, 0.91f},
+    {0.55f, 0.87f}, {0.71f, 0.89f}, {0.87f, 0.89f}, {0.72f, 0.90f},
+    {0.88f, 0.90f}, {0.94f, 0.92f}, {0.95f, 0.93f}}};
 
 }
 
@@ -118,33 +124,29 @@ class YogaScene : public Scene {
     float t = elapsed >= TRANSITION_MS ? 1.0f : elapsed / float(TRANSITION_MS);
     t = t * t * (3.0f - 2.0f * t);  // smoothstep ease
 
-    float j[13][2];
-    for (int i = 0; i < 13; i++) {
+    float j[15][2];
+    for (int i = 0; i < 15; i++) {
       j[i][0] = prev.j[i][0] + (pose.j[i][0] - prev.j[i][0]) * t;
       j[i][1] = prev.j[i][1] + (pose.j[i][1] - prev.j[i][1]) * t;
     }
 
     drawFigure(ctx, j);
 
-    // pose name top center, step counter top right
-    RGB textColor = ctx.palette->lookup(48);
-    int nameW = font3x5::textWidth(pose.name, 1);
-    font3x5::drawText(ctx.fb, pose.name, (ctx.fb.width() - nameW) / 2, 2, 1,
-                      textColor);
+    guide::drawTopBar(ctx, pose.name);
 
     char counter[8];
     snprintf(counter, sizeof(counter), "%d.%d", step_ + 1, STEPS);
     font3x5::drawText(ctx.fb, counter, ctx.fb.width() - 16, 2, 1,
-                      RGB(90, 90, 90));
+                      guide::mutedColor());
 
-    if (paused_) {
-      font3x5::drawText(ctx.fb, "PAUSE", 2, 2, 1, RGB(200, 200, 200));
+    if (paused_) {  // pause icon left of the counter
+      ctx.fb.rect(ctx.fb.width() - 26, 2, 2, 5, guide::titleColor());
+      ctx.fb.rect(ctx.fb.width() - 22, 2, 2, 5, guide::titleColor());
     }
 
-    // hold-progress bar along the bottom, same idiom as the clock
+    // hold-progress bar along the bottom, teal like the mat
     int barW = int(float(ctx.fb.width()) * elapsed / holdMs_);
-    RGB barColor = ctx.palette->lookup(96, 90);
-    ctx.fb.hLine(0, barW, ctx.fb.height() - 1, barColor);
+    ctx.fb.hLine(0, barW, ctx.fb.height() - 1, guide::matColor());
 
     return 33;
   }
@@ -159,30 +161,33 @@ class YogaScene : public Scene {
   uint32_t stepStartMs_;
   uint32_t holdMs_ = 15000;
 
-  void drawFigure(Context& ctx, float j[13][2]) {
+  void drawFigure(Context& ctx, float j[15][2]) {
     // fit the unit space into the display with a margin, keeping it square
     // so poses don't stretch on non-square builds
     int size = ctx.fb.width() < ctx.fb.height() ? ctx.fb.width()
                                                 : ctx.fb.height();
     int span = size - 14;
     int ox = (ctx.fb.width() - span) / 2;
-    int oy = (ctx.fb.height() - span) / 2 + 3;  // leave room for the title
+    int oy = (ctx.fb.height() - span) / 2 + 3;  // leave room for the top bar
 
-    int px[13], py[13];
-    for (int i = 0; i < 13; i++) {
+    int px[15], py[15];
+    for (int i = 0; i < 15; i++) {
       px[i] = ox + int(j[i][0] * span);
       py[i] = oy + int(j[i][1] * span);
     }
 
-    RGB body = ctx.palette->lookupBright(0);
-    RGB limbs = ctx.palette->lookupBright(24);
+    RGB body = guide::bodyColor();
+    RGB limbs = guide::limbColor();
 
-    // torso: shoulder bar plus both flanks down to the pelvis — the filled
-    // triangle silhouette reads far more human than a single spine line
+    // the mat grounds every pose
+    int matY = oy + int(0.93f * span);
+    ctx.fb.rect(ox + span / 10, matY, span - span / 5, 2, guide::matColor());
+
+    // torso: filled between the shoulders and the pelvis, plus a pelvis
+    // knuckle so the hips read
+    ctx.fb.fillTriangle(px[2], py[2], px[3], py[3], px[8], py[8], body);
     ctx.fb.thickLine(px[2], py[2], px[3], py[3], body);
-    ctx.fb.thickLine(px[2], py[2], px[8], py[8], body);
-    ctx.fb.thickLine(px[3], py[3], px[8], py[8], body);
-    ctx.fb.thickLine(px[1], py[1], px[8], py[8], body);
+    ctx.fb.fillCircle(px[8], py[8], 2, body);
 
     // arms: shoulder -> elbow -> wrist, with hands
     ctx.fb.thickLine(px[2], py[2], px[4], py[4], limbs);
@@ -192,13 +197,14 @@ class YogaScene : public Scene {
     ctx.fb.fillCircle(px[5], py[5], 2, limbs);
     ctx.fb.fillCircle(px[7], py[7], 2, limbs);
 
-    // legs: pelvis -> knee -> ankle, with flat feet
+    // legs: pelvis -> knee -> ankle; feet run ankle -> toe, so flexed vs
+    // pointed is decided by the pose data
     ctx.fb.thickLine(px[8], py[8], px[9], py[9], limbs);
     ctx.fb.thickLine(px[9], py[9], px[10], py[10], limbs);
     ctx.fb.thickLine(px[8], py[8], px[11], py[11], limbs);
     ctx.fb.thickLine(px[11], py[11], px[12], py[12], limbs);
-    ctx.fb.thickLine(px[10] - 2, py[10], px[10] + 4, py[10], limbs);
-    ctx.fb.thickLine(px[12] - 2, py[12], px[12] + 4, py[12], limbs);
+    ctx.fb.thickLine(px[10], py[10], px[13], py[13], limbs);
+    ctx.fb.thickLine(px[12], py[12], px[14], py[14], limbs);
 
     // head: filled circle joined to the neck
     int headR = span / 16;

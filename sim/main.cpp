@@ -11,6 +11,7 @@
 #include "../core/scene.h"
 #include "../core/settings.h"
 #include "../scenes/scene_clock.h"
+#include "../scenes/scene_analogclock.h"
 #include "../scenes/scene_wordclock.h"
 #include "../scenes/scene_pong.h"
 #include "../scenes/scene_yoga.h"
@@ -175,6 +176,7 @@ int main() {
   RaylibGifSource gifSource;
 
   ClockScene clock;
+  AnalogClockScene analogClock;
   WordClockScene wordClock;
   PongScene pong;
   YogaScene yoga;
@@ -184,8 +186,9 @@ int main() {
   PlasmaScene plasma;
   SettingsScene settingsScene(settings, store);
 
-  Scene* scenes[] = {&clock, &wordClock, &pong,   &yoga,          &gifs,
-                     &spiro, &fire,      &plasma, &settingsScene};
+  Scene* scenes[] = {&clock, &analogClock, &wordClock, &pong,
+                     &yoga,  &gifs,        &spiro,     &fire,
+                     &plasma, &settingsScene};
   const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
   int current = 0;
 
