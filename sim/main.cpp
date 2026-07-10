@@ -1,6 +1,7 @@
 // Coriolis desktop simulator — the first display backend. Renders the
 // framebuffer in a window with chunky pixels, feeds scenes the system clock,
-// and maps the keyboard to the input keys a remote/gamepad will provide.
+// maps the keyboard to the input a remote/gamepad will provide, persists
+// settings to a file, and serves GIFs from a ./gifs folder.
 //
 // Build: cmake -B build && cmake --build build   (see README.md)
 #include "raylib.h"
@@ -8,12 +9,19 @@
 #include "../core/config.h"
 #include "../core/display.h"
 #include "../core/scene.h"
+#include "../core/settings.h"
 #include "../scenes/scene_clock.h"
+#include "../scenes/scene_wordclock.h"
 #include "../scenes/scene_pong.h"
+#include "../scenes/scene_yoga.h"
+#include "../scenes/scene_gifs.h"
 #include "../scenes/scene_plasma.h"
 #include "../scenes/scene_fire.h"
 #include "../scenes/scene_spiro.h"
+#include "../scenes/scene_settings.h"
 
+#include <cstdio>
+#include <cstring>
 #include <ctime>
 
 using namespace coriolis;
@@ -48,6 +56,107 @@ class KeyboardInput : public InputState {
   }
 };
 
+// settings in a key=value text file next to the exe — on hardware this
+// becomes SD or emulated EEPROM
+class FileSettingsStore : public SettingsStore {
+ public:
+  bool load(Settings& out) {
+    FILE* f = fopen(FILENAME, "r");
+    if (!f) return false;
+    char key[32];
+    int value;
+    while (fscanf(f, "%31[^=]=%d\n", key, &value) == 2) {
+      if (strcmp(key, "brightness") == 0) out.brightness = uint8_t(value);
+      else if (strcmp(key, "palette") == 0) out.paletteIndex = value;
+      else if (strcmp(key, "rotation") == 0) out.rotation = uint8_t(value);
+      else if (strcmp(key, "autoplay") == 0) out.autoplay = value != 0;
+      else if (strcmp(key, "autoplaySeconds") == 0)
+        out.autoplaySeconds = uint16_t(value);
+    }
+    fclose(f);
+    return true;
+  }
+
+  void save(const Settings& s) {
+    FILE* f = fopen(FILENAME, "w");
+    if (!f) return;
+    fprintf(f, "brightness=%d\n", s.brightness);
+    fprintf(f, "palette=%d\n", s.paletteIndex);
+    fprintf(f, "rotation=%d\n", s.rotation);
+    fprintf(f, "autoplay=%d\n", s.autoplay ? 1 : 0);
+    fprintf(f, "autoplaySeconds=%d\n", s.autoplaySeconds);
+    fclose(f);
+  }
+
+ private:
+  static const char* const FILENAME;
+};
+const char* const FileSettingsStore::FILENAME = "coriolis_settings.txt";
+
+// GIFs from ./gifs via raylib's animated GIF loader — on hardware this
+// becomes pixelmatix/GifDecoder reading from SD
+class RaylibGifSource : public GifSource {
+ public:
+  ~RaylibGifSource() {
+    if (img_.data) UnloadImage(img_);
+    if (scanned_ && files_.count > 0) UnloadDirectoryFiles(files_);
+  }
+
+  int count() {
+    if (!scanned_) {
+      scanned_ = true;
+      if (DirectoryExists("gifs"))
+        files_ = LoadDirectoryFilesEx("gifs", ".gif", false);
+    }
+    return int(files_.count);
+  }
+
+  bool open(int index) {
+    if (img_.data) { UnloadImage(img_); img_.data = nullptr; }
+    frames_ = 0;
+    frame_ = 0;
+    if (index < 0 || index >= count()) return false;
+    img_ = LoadImageAnim(files_.paths[index], &frames_);
+    return img_.data != nullptr && frames_ > 0;
+  }
+
+  uint32_t drawNextFrame(FrameBuffer& fb) {
+    if (!img_.data || frames_ < 1) return 0;
+
+    // nearest-neighbor fit, centered, aspect preserved
+    float sx = float(fb.width()) / img_.width;
+    float sy = float(fb.height()) / img_.height;
+    float s = sx < sy ? sx : sy;
+    int dw = int(img_.width * s);
+    int dh = int(img_.height * s);
+    int ox = (fb.width() - dw) / 2;
+    int oy = (fb.height() - dh) / 2;
+
+    const Color* pixels =
+        reinterpret_cast<const Color*>(img_.data) +
+        size_t(frame_) * img_.width * img_.height;
+
+    fb.clear();
+    for (int y = 0; y < dh; y++) {
+      int srcY = int(y / s);
+      for (int x = 0; x < dw; x++) {
+        const Color& c = pixels[srcY * img_.width + int(x / s)];
+        fb.set(ox + x, oy + y, RGB(c.r, c.g, c.b));
+      }
+    }
+
+    frame_ = (frame_ + 1) % frames_;
+    return 80;  // raylib doesn't expose per-frame delays; 80ms reads well
+  }
+
+ private:
+  FilePathList files_ = {0, 0, nullptr};
+  bool scanned_ = false;
+  Image img_ = {nullptr, 0, 0, 0, 0};
+  int frames_ = 0;
+  int frame_ = 0;
+};
+
 int main() {
   // chunky pixels, the whole point — but keep the window on a 1080p screen
   int scale = 8;
@@ -58,30 +167,39 @@ int main() {
   FrameBuffer fb;
   SystemTime timeSource;
   KeyboardInput heldKeys;
-  int paletteIndex = 0;
-  // display rotation in quarter turns; on the square display this is
-  // lossless, so portrait content (Tetris) is a setting, not a rebuild.
-  // The hardware backend will apply the same transform when copying to
-  // the panels.
-  int rotation = 0;
+
+  Settings settings;
+  FileSettingsStore store;
+  store.load(settings);
+
+  RaylibGifSource gifSource;
 
   ClockScene clock;
+  WordClockScene wordClock;
   PongScene pong;
-  PlasmaScene plasma;
-  FireScene fire;
+  YogaScene yoga;
+  GifScene gifs(gifSource);
   SpiroScene spiro;
-  Scene* scenes[] = {&clock, &pong, &spiro, &fire, &plasma};
+  FireScene fire;
+  PlasmaScene plasma;
+  SettingsScene settingsScene(settings, store);
+
+  Scene* scenes[] = {&clock, &wordClock, &pong,   &yoga,          &gifs,
+                     &spiro, &fire,      &plasma, &settingsScene};
   const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
   int current = 0;
 
-  Context ctx = {fb, timeSource, heldKeys, &palettes::byIndex(paletteIndex), 0};
+  Context ctx = {fb, timeSource, heldKeys,
+                 &palettes::byIndex(settings.paletteIndex), 0};
 
   scenes[current]->start(ctx);
 
   uint32_t nextFrameMs = 0;
+  uint32_t lastSwitchMs = 0;
+
   while (!WindowShouldClose()) {
     ctx.nowMs = uint32_t(GetTime() * 1000.0);
-    ctx.palette = &palettes::byIndex(paletteIndex);
+    ctx.palette = &palettes::byIndex(settings.paletteIndex);
 
     // keyboard stands in for the remote/gamepad; scenes get first refusal
     Key pressed = Key::None;
@@ -95,29 +213,38 @@ int main() {
     bool consumed = false;
     if (pressed != Key::None) consumed = scenes[current]->input(ctx, pressed);
 
+    int switchTo = -1;
     if (!consumed) {
-      if (pressed == Key::Right || IsKeyPressed(KEY_SPACE)) {
-        scenes[current]->stop(ctx);
-        current = (current + 1) % sceneCount;
-        scenes[current]->start(ctx);
-        nextFrameMs = 0;
-      }
-      else if (pressed == Key::Left) {
-        scenes[current]->stop(ctx);
-        current = (current + sceneCount - 1) % sceneCount;
-        scenes[current]->start(ctx);
-        nextFrameMs = 0;
-      }
-      else if (pressed == Key::Up) {
-        paletteIndex = (paletteIndex + 1) % palettes::COUNT;
-      }
-      else if (pressed == Key::Down) {
-        paletteIndex = (paletteIndex + palettes::COUNT - 1) % palettes::COUNT;
-      }
+      if (pressed == Key::Right || IsKeyPressed(KEY_SPACE))
+        switchTo = (current + 1) % sceneCount;
+      else if (pressed == Key::Left)
+        switchTo = (current + sceneCount - 1) % sceneCount;
+      else if (pressed == Key::Up)
+        settings.paletteIndex =
+            (settings.paletteIndex + 1) % palettes::COUNT;
+      else if (pressed == Key::Down)
+        settings.paletteIndex =
+            (settings.paletteIndex + palettes::COUNT - 1) % palettes::COUNT;
     }
 
-    if (IsKeyPressed(KEY_R) && WIDTH == HEIGHT) {
-      rotation = (rotation + 1) % 4;
+    if (IsKeyPressed(KEY_R) && WIDTH == HEIGHT)
+      settings.rotation = uint8_t((settings.rotation + 1) % 4);
+
+    // autoplay cycles eligible scenes; anything manual resets its timer
+    if (settings.autoplay && switchTo < 0 &&
+        scenes[current]->autoplayEligible() &&
+        ctx.nowMs - lastSwitchMs >= uint32_t(settings.autoplaySeconds) * 1000) {
+      switchTo = (current + 1) % sceneCount;
+      while (!scenes[switchTo]->autoplayEligible())
+        switchTo = (switchTo + 1) % sceneCount;
+    }
+
+    if (switchTo >= 0) {
+      scenes[current]->stop(ctx);
+      current = switchTo;
+      scenes[current]->start(ctx);
+      nextFrameMs = 0;
+      lastSwitchMs = ctx.nowMs;
     }
 
     // honor each scene's requested frame delay, like the device loop will
@@ -130,9 +257,10 @@ int main() {
     ClearBackground(BLACK);
     for (int y = 0; y < HEIGHT; y++) {
       for (int x = 0; x < WIDTH; x++) {
-        const RGB& c = fb.at(x, y);
+        RGB c = fb.at(x, y);
+        c.dim(settings.brightness);
         int dx = x, dy = y;
-        switch (rotation) {
+        switch (settings.rotation) {
           case 1: dx = HEIGHT - 1 - y; dy = x; break;
           case 2: dx = WIDTH - 1 - x; dy = HEIGHT - 1 - y; break;
           case 3: dx = y; dy = WIDTH - 1 - x; break;
@@ -146,6 +274,7 @@ int main() {
     EndDrawing();
   }
 
+  store.save(settings);
   CloseWindow();
   return 0;
 }

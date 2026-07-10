@@ -58,6 +58,10 @@ class Scene {
   virtual ~Scene() {}
   virtual const char* name() const = 0;
 
+  // autoplay skips scenes that shouldn't be interrupted or cycled into
+  // (settings, an activity in progress, a game being played)
+  virtual bool autoplayEligible() const { return true; }
+
   virtual void start(Context&) {}
   virtual void stop(Context&) {}
 

@@ -47,14 +47,22 @@ cmake --build build-square
 |-----|--------|
 | `SPACE` / `→` | next scene |
 | `←` | previous scene |
-| `↑` / `↓` | cycle palette |
+| `↑` / `↓` | cycle palette (when the scene doesn't use them) |
 | `R` | rotate the display 90° (square build) |
-| `ESC` | quit |
+| `ESC` | quit (saves settings) |
 
 Arrow keys are offered to the active scene first, matching how a
-remote/gamepad will behave on the device. In Pong, `↑`/`↓` grab the left
-paddle (the match runs AI-vs-AI until you interfere) and `ENTER` restarts
-the match.
+remote/gamepad will behave on the device. Scene-specific keys:
+
+- **Pong**: `↑`/`↓` grab the left paddle (AI-vs-AI until you interfere),
+  `ENTER` restarts the match.
+- **Yoga**: `ENTER` pauses, `↑`/`↓` shorten/lengthen the pose hold time.
+- **Gifs**: `↑`/`↓` browse files. Drop `.gif` files into a `gifs/` folder
+  next to the exe (`build/gifs/`).
+- **Settings**: `↑`/`↓` pick a row, `←`/`→` adjust. Values apply live and
+  persist to `coriolis_settings.txt` next to the exe (SD/EEPROM on the
+  device later). Autoplay cycles scenes, skipping games in progress,
+  activities, and the settings screen itself.
 
 ## Adding a scene
 

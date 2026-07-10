@@ -17,6 +17,9 @@ class PongScene : public Scene {
  public:
   const char* name() const { return "Pong"; }
 
+  // fine to autoplay past the ambient AI match, never past a human game
+  bool autoplayEligible() const { return !playerLeft_; }
+
   void start(Context& ctx) {
     scoreL_ = scoreR_ = 0;
     leftY_ = rightY_ = ctx.fb.height() / 2.0f;

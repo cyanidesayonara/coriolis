@@ -9,7 +9,7 @@
 namespace coriolis {
 
 // 3x5 glyphs, one byte per row, 3 low bits used (MSB = left pixel).
-// Coverage: digits, colon, minus, degree. Extend as scenes need more.
+// Coverage: digits, A-Z (lowercase maps to upper), and a little punctuation.
 namespace font3x5 {
 
 static const int GLYPH_W = 3;
@@ -28,15 +28,49 @@ inline const uint8_t* glyph(char c) {
       {0b111, 0b101, 0b111, 0b101, 0b111},  // 8
       {0b111, 0b101, 0b111, 0b001, 0b111},  // 9
   };
+  static const uint8_t letters[26][5] = {
+      {0b010, 0b101, 0b111, 0b101, 0b101},  // A
+      {0b110, 0b101, 0b110, 0b101, 0b110},  // B
+      {0b011, 0b100, 0b100, 0b100, 0b011},  // C
+      {0b110, 0b101, 0b101, 0b101, 0b110},  // D
+      {0b111, 0b100, 0b110, 0b100, 0b111},  // E
+      {0b111, 0b100, 0b110, 0b100, 0b100},  // F
+      {0b011, 0b100, 0b101, 0b101, 0b011},  // G
+      {0b101, 0b101, 0b111, 0b101, 0b101},  // H
+      {0b111, 0b010, 0b010, 0b010, 0b111},  // I
+      {0b001, 0b001, 0b001, 0b101, 0b010},  // J
+      {0b101, 0b110, 0b100, 0b110, 0b101},  // K
+      {0b100, 0b100, 0b100, 0b100, 0b111},  // L
+      {0b101, 0b111, 0b101, 0b101, 0b101},  // M
+      {0b110, 0b101, 0b101, 0b101, 0b101},  // N
+      {0b111, 0b101, 0b101, 0b101, 0b111},  // O
+      {0b110, 0b101, 0b110, 0b100, 0b100},  // P
+      {0b010, 0b101, 0b101, 0b110, 0b001},  // Q
+      {0b110, 0b101, 0b110, 0b101, 0b101},  // R
+      {0b011, 0b100, 0b010, 0b001, 0b110},  // S
+      {0b111, 0b010, 0b010, 0b010, 0b010},  // T
+      {0b101, 0b101, 0b101, 0b101, 0b111},  // U
+      {0b101, 0b101, 0b101, 0b101, 0b010},  // V
+      {0b101, 0b101, 0b101, 0b111, 0b101},  // W
+      {0b101, 0b101, 0b010, 0b101, 0b101},  // X
+      {0b101, 0b101, 0b010, 0b010, 0b010},  // Y
+      {0b111, 0b001, 0b010, 0b100, 0b111},  // Z
+  };
   static const uint8_t colon[5] = {0b000, 0b010, 0b000, 0b010, 0b000};
   static const uint8_t minus[5] = {0b000, 0b000, 0b111, 0b000, 0b000};
   static const uint8_t degree[5] = {0b010, 0b101, 0b010, 0b000, 0b000};
+  static const uint8_t apostrophe[5] = {0b010, 0b010, 0b000, 0b000, 0b000};
+  static const uint8_t dot[5] = {0b000, 0b000, 0b000, 0b000, 0b010};
   static const uint8_t blank[5] = {0, 0, 0, 0, 0};
 
   if (c >= '0' && c <= '9') return digits[c - '0'];
+  if (c >= 'A' && c <= 'Z') return letters[c - 'A'];
+  if (c >= 'a' && c <= 'z') return letters[c - 'a'];
   if (c == ':') return colon;
   if (c == '-') return minus;
   if (c == '*') return degree;  // '*' stands in for the degree sign
+  if (c == '\'') return apostrophe;
+  if (c == '.') return dot;
   return blank;
 }
 
