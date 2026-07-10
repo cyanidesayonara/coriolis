@@ -1,6 +1,6 @@
-// Display dimensions. Coriolis targets two shapes with identical panels:
-// Stage A: 128x64 widescreen (default), Stage B: 128x128 square.
-// All code must work at either size — override at build time, never hardcode.
+// Display dimensions. The final form is decided: 128x128 square (four 64x64
+// panels). A widescreen 128x64 build remains available via -DWIDE=ON for
+// experiments — code must still work at any size, never hardcode.
 #ifndef CORIOLIS_CONFIG_H
 #define CORIOLIS_CONFIG_H
 
@@ -9,7 +9,7 @@
 #endif
 
 #ifndef CORIOLIS_HEIGHT
-#define CORIOLIS_HEIGHT 64
+#define CORIOLIS_HEIGHT 128
 #endif
 
 namespace coriolis {

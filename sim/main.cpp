@@ -32,13 +32,20 @@ class SystemTime : public TimeSource {
 };
 
 int main() {
-  const int scale = 8;  // chunky pixels, the whole point
+  // chunky pixels, the whole point — but keep the window on a 1080p screen
+  int scale = 8;
+  while (scale > 2 && (WIDTH * scale > 1700 || HEIGHT * scale > 900)) scale--;
   InitWindow(WIDTH * scale, HEIGHT * scale, "Coriolis");
   SetTargetFPS(120);
 
   FrameBuffer fb;
   SystemTime timeSource;
   int paletteIndex = 0;
+  // display rotation in quarter turns; on the square display this is
+  // lossless, so portrait content (Tetris) is a setting, not a rebuild.
+  // The hardware backend will apply the same transform when copying to
+  // the panels.
+  int rotation = 0;
 
   ClockScene clock;
   PlasmaScene plasma;
@@ -90,6 +97,10 @@ int main() {
       }
     }
 
+    if (IsKeyPressed(KEY_R) && WIDTH == HEIGHT) {
+      rotation = (rotation + 1) % 4;
+    }
+
     // honor each scene's requested frame delay, like the device loop will
     if (ctx.nowMs >= nextFrameMs) {
       uint32_t requestedDelay = scenes[current]->draw(ctx);
@@ -101,7 +112,13 @@ int main() {
     for (int y = 0; y < HEIGHT; y++) {
       for (int x = 0; x < WIDTH; x++) {
         const RGB& c = fb.at(x, y);
-        DrawRectangle(x * scale, y * scale, scale - 1, scale - 1,
+        int dx = x, dy = y;
+        switch (rotation) {
+          case 1: dx = HEIGHT - 1 - y; dy = x; break;
+          case 2: dx = WIDTH - 1 - x; dy = HEIGHT - 1 - y; break;
+          case 3: dx = y; dy = WIDTH - 1 - x; break;
+        }
+        DrawRectangle(dx * scale, dy * scale, scale - 1, scale - 1,
                       Color{c.r, c.g, c.b, 255});
       }
     }

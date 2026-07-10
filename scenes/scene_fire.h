@@ -53,8 +53,11 @@ class FireScene : public Scene {
   }
 
  private:
-  static const uint8_t COOLING = 60;
-  static const uint8_t SPARKING = 120;
+  // the two tuning dials: more COOLING = shorter flames, more SPARKING =
+  // busier fire. These aim for flames over ~2/3 of the height with dark
+  // sky above, rather than a full-screen inferno.
+  static const uint8_t COOLING = 100;
+  static const uint8_t SPARKING = 90;
 
   uint8_t heat_[PIXELS];
 
