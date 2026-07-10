@@ -1,5 +1,0 @@
-brightness=255
-palette=0
-rotation=0
-autoplay=0
-autoplaySeconds=30
