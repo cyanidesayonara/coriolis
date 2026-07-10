@@ -19,6 +19,19 @@ struct Palette {
     if (brightness != 255) c.dim(brightness);
     return c;
   }
+
+  // like lookup, but boosted so the color is bright enough for text and
+  // figures even where the palette itself is dark (Ocean's deeps, Heat's
+  // black end)
+  RGB lookupBright(uint8_t index, uint8_t minPeak = 180) const {
+    RGB c = lookup(index);
+    uint8_t peak = c.r > c.g ? (c.r > c.b ? c.r : c.b)
+                             : (c.g > c.b ? c.g : c.b);
+    if (peak >= minPeak) return c;
+    if (peak == 0) return RGB(minPeak, minPeak, minPeak);
+    return RGB(uint8_t(c.r * minPeak / peak), uint8_t(c.g * minPeak / peak),
+               uint8_t(c.b * minPeak / peak));
+  }
 };
 
 namespace palettes {
@@ -49,13 +62,13 @@ inline Palette heat() {
 }
 
 inline Palette ocean() {
-  return gradient("Ocean", RGB(0x001030), RGB(0x0059B3), RGB(0x00B386),
-                  RGB(0x99FFEE));
+  return gradient("Ocean", RGB(0x0040A0), RGB(0x0080E0), RGB(0x00C8A0),
+                  RGB(0xAAFFEE));
 }
 
 inline Palette forest() {
-  return gradient("Forest", RGB(0x001800), RGB(0x228B22), RGB(0x9ACD32),
-                  RGB(0xE0FFC0));
+  return gradient("Forest", RGB(0x0A5010), RGB(0x30A030), RGB(0xA0D040),
+                  RGB(0xE8FFC8));
 }
 
 inline Palette ice() {

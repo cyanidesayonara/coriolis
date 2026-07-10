@@ -174,24 +174,31 @@ class YogaScene : public Scene {
       py[i] = oy + int(j[i][1] * span);
     }
 
-    RGB body = ctx.palette->lookup(0);
-    RGB limbs = ctx.palette->lookup(24);
+    RGB body = ctx.palette->lookupBright(0);
+    RGB limbs = ctx.palette->lookupBright(24);
 
-    // torso: shoulders bar, spine, neck
+    // torso: shoulder bar plus both flanks down to the pelvis — the filled
+    // triangle silhouette reads far more human than a single spine line
     ctx.fb.thickLine(px[2], py[2], px[3], py[3], body);
+    ctx.fb.thickLine(px[2], py[2], px[8], py[8], body);
+    ctx.fb.thickLine(px[3], py[3], px[8], py[8], body);
     ctx.fb.thickLine(px[1], py[1], px[8], py[8], body);
 
-    // arms: shoulder -> elbow -> wrist
+    // arms: shoulder -> elbow -> wrist, with hands
     ctx.fb.thickLine(px[2], py[2], px[4], py[4], limbs);
     ctx.fb.thickLine(px[4], py[4], px[5], py[5], limbs);
     ctx.fb.thickLine(px[3], py[3], px[6], py[6], limbs);
     ctx.fb.thickLine(px[6], py[6], px[7], py[7], limbs);
+    ctx.fb.fillCircle(px[5], py[5], 2, limbs);
+    ctx.fb.fillCircle(px[7], py[7], 2, limbs);
 
-    // legs: pelvis -> knee -> ankle
+    // legs: pelvis -> knee -> ankle, with flat feet
     ctx.fb.thickLine(px[8], py[8], px[9], py[9], limbs);
     ctx.fb.thickLine(px[9], py[9], px[10], py[10], limbs);
     ctx.fb.thickLine(px[8], py[8], px[11], py[11], limbs);
     ctx.fb.thickLine(px[11], py[11], px[12], py[12], limbs);
+    ctx.fb.thickLine(px[10] - 2, py[10], px[10] + 4, py[10], limbs);
+    ctx.fb.thickLine(px[12] - 2, py[12], px[12] + 4, py[12], limbs);
 
     // head: filled circle joined to the neck
     int headR = span / 16;

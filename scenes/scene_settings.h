@@ -68,7 +68,7 @@ class SettingsScene : public Scene {
   uint32_t draw(Context& ctx) {
     ctx.fb.clear();
 
-    RGB title = ctx.palette->lookup(0);
+    RGB title = ctx.palette->lookupBright(0);
     font3x5::drawText(ctx.fb, "SETTINGS", 4, 3, 1, title);
     ctx.fb.hLine(0, ctx.fb.width() - 1, 11, RGB(50, 50, 50));
 
@@ -82,7 +82,7 @@ class SettingsScene : public Scene {
 
     for (int i = 0; i < ROWS; i++) {
       bool selected = i == row_;
-      RGB color = selected ? ctx.palette->lookup(0) : RGB(120, 120, 120);
+      RGB color = selected ? ctx.palette->lookupBright(0) : RGB(120, 120, 120);
 
       if (selected) font3x5::drawText(ctx.fb, ">", 1, y, 1, color);
       font3x5::drawText(ctx.fb, labels[i], 7, y, 1, color);

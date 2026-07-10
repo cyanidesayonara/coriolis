@@ -225,6 +225,8 @@ int main() {
       else if (pressed == Key::Down)
         settings.paletteIndex =
             (settings.paletteIndex + palettes::COUNT - 1) % palettes::COUNT;
+      else if (pressed == Key::Back)
+        switchTo = 0;  // home to the clock from anywhere (incl. Settings)
     }
 
     if (IsKeyPressed(KEY_R) && WIDTH == HEIGHT)

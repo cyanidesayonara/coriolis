@@ -35,9 +35,10 @@ class ClockScene : public Scene {
     int x = (ctx.fb.width() - w) / 2;
     int y = (ctx.fb.height() - font3x5::GLYPH_H * scale) / 2;
 
-    // hue drifts through the palette over ~4 minutes
+    // hue drifts through the palette over ~4 minutes; boosted so digits
+    // stay readable even in a palette's dark regions
     uint8_t hue = uint8_t(ctx.nowMs / 1000);
-    RGB digitColor = ctx.palette->lookup(hue);
+    RGB digitColor = ctx.palette->lookupBright(hue);
 
     // colon blinks on even seconds: draw time in two parts around it
     bool colonOn = (t.second % 2) == 0;
