@@ -194,9 +194,11 @@ class YogaScene : public Scene {
       if (alen < 1.0f) alen = 1.0f;
       float perpX = -axy / alen, perpY = axx / alen;
 
+      // reach the true shoulder joints so the arms root on the torso; the
+      // clamp only catches degenerate data
       float dxs = float(px[2] - px[3]), dys = float(py[2] - py[3]);
       float shoHalf = 0.5f * sqrtf(dxs * dxs + dys * dys);
-      float minSho = span * 0.050f, maxSho = span * 0.070f;
+      float minSho = span * 0.050f, maxSho = span * 0.095f;
       if (shoHalf < minSho) shoHalf = minSho;
       if (shoHalf > maxSho) shoHalf = maxSho;
       float hipHalf = span * 0.038f;
@@ -209,16 +211,20 @@ class YogaScene : public Scene {
       ctx.fb.fillTriangle(sx0, sy0, sx1, sy1, hx0, hy0, body);
       ctx.fb.fillTriangle(sx1, sy1, hx1, hy1, hx0, hy0, body);
 
-      // rounded shoulders and hips
+      // rounded shoulders and hips, and the neck runs from the head down
+      // to the torso's real top edge — no gap
       ctx.fb.fillCircle(int(smx), int(smy), 2, body);
       ctx.fb.fillCircle(px[8], py[8], int(hipHalf), body);
+      ctx.fb.boldLine(int(smx), int(smy), px[0], py[0], body);
     }
 
-    // arms: shoulder -> elbow -> wrist, elbow caps, fists
+    // arms: shoulder -> elbow -> wrist, deltoid roots, elbow caps, fists
     ctx.fb.thickLine(px[2], py[2], px[4], py[4], limbs);
     ctx.fb.thickLine(px[4], py[4], px[5], py[5], limbs);
     ctx.fb.thickLine(px[3], py[3], px[6], py[6], limbs);
     ctx.fb.thickLine(px[6], py[6], px[7], py[7], limbs);
+    ctx.fb.fillCircle(px[2], py[2], 2, limbs);
+    ctx.fb.fillCircle(px[3], py[3], 2, limbs);
     ctx.fb.fillCircle(px[4], py[4], 1, limbs);
     ctx.fb.fillCircle(px[6], py[6], 1, limbs);
     ctx.fb.fillCircle(px[5], py[5], 2, limbs);
@@ -235,10 +241,9 @@ class YogaScene : public Scene {
     ctx.fb.thickLine(px[10], py[10], px[13], py[13], limbs);
     ctx.fb.thickLine(px[12], py[12], px[14], py[14], limbs);
 
-    // head: filled circle joined to the neck
+    // head last, over the neck
     int headR = span / 16;
     if (headR < 3) headR = 3;
-    ctx.fb.thickLine(px[1], py[1], px[0], py[0], body);
     ctx.fb.fillCircle(px[0], py[0], headR, body);
   }
 };

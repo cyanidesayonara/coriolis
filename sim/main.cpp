@@ -15,6 +15,7 @@
 #include "../scenes/scene_wordclock.h"
 #include "../scenes/scene_pong.h"
 #include "../scenes/scene_yoga.h"
+#include "../scenes/scene_breathe.h"
 #include "../scenes/scene_gifs.h"
 #include "../scenes/scene_plasma.h"
 #include "../scenes/scene_fire.h"
@@ -180,15 +181,16 @@ int main() {
   WordClockScene wordClock;
   PongScene pong;
   YogaScene yoga;
+  BreatheScene breathe;
   GifScene gifs(gifSource);
   SpiroScene spiro;
   FireScene fire;
   PlasmaScene plasma;
   SettingsScene settingsScene(settings, store);
 
-  Scene* scenes[] = {&clock, &analogClock, &wordClock, &pong,
-                     &yoga,  &gifs,        &spiro,     &fire,
-                     &plasma, &settingsScene};
+  Scene* scenes[] = {&clock,   &analogClock, &wordClock, &pong,
+                     &yoga,    &breathe,     &gifs,      &spiro,
+                     &fire,    &plasma,      &settingsScene};
   const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
   int current = 0;
 
