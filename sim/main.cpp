@@ -274,8 +274,9 @@ int main() {
                       Color{c.r, c.g, c.b, 255});
       }
     }
-    DrawText(scenes[current]->name(), 8, 8, 20, RAYWHITE);
-    DrawText(ctx.palette->name, 8, 30, 14, GRAY);
+    // debug labels at the bottom, clear of the matrix's own top bar
+    DrawText(scenes[current]->name(), 8, HEIGHT * scale - 42, 20, RAYWHITE);
+    DrawText(ctx.palette->name, 8, HEIGHT * scale - 20, 14, GRAY);
     EndDrawing();
   }
 

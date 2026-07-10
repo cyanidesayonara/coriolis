@@ -183,26 +183,55 @@ class YogaScene : public Scene {
     int matY = oy + int(0.93f * span);
     ctx.fb.rect(ox + span / 10, matY, span - span / 5, 2, guide::matColor());
 
-    // torso: filled between the shoulders and the pelvis, plus a pelvis
-    // knuckle so the hips read
-    ctx.fb.fillTriangle(px[2], py[2], px[3], py[3], px[8], py[8], body);
-    ctx.fb.thickLine(px[2], py[2], px[3], py[3], body);
-    ctx.fb.fillCircle(px[8], py[8], 2, body);
+    // torso: a quad with real width in every view. In side poses the two
+    // shoulders nearly coincide, so the width comes from the perpendicular
+    // of the shoulders->pelvis axis with enforced minimums — the trunk
+    // never collapses to a sliver.
+    {
+      float smx = (px[2] + px[3]) * 0.5f, smy = (py[2] + py[3]) * 0.5f;
+      float axx = px[8] - smx, axy = py[8] - smy;
+      float alen = sqrtf(axx * axx + axy * axy);
+      if (alen < 1.0f) alen = 1.0f;
+      float perpX = -axy / alen, perpY = axx / alen;
 
-    // arms: shoulder -> elbow -> wrist, with hands
+      float dxs = float(px[2] - px[3]), dys = float(py[2] - py[3]);
+      float shoHalf = 0.5f * sqrtf(dxs * dxs + dys * dys);
+      float minSho = span * 0.050f, maxSho = span * 0.070f;
+      if (shoHalf < minSho) shoHalf = minSho;
+      if (shoHalf > maxSho) shoHalf = maxSho;
+      float hipHalf = span * 0.038f;
+
+      int sx0 = int(smx + perpX * shoHalf), sy0 = int(smy + perpY * shoHalf);
+      int sx1 = int(smx - perpX * shoHalf), sy1 = int(smy - perpY * shoHalf);
+      int hx0 = int(px[8] + perpX * hipHalf), hy0 = int(py[8] + perpY * hipHalf);
+      int hx1 = int(px[8] - perpX * hipHalf), hy1 = int(py[8] - perpY * hipHalf);
+
+      ctx.fb.fillTriangle(sx0, sy0, sx1, sy1, hx0, hy0, body);
+      ctx.fb.fillTriangle(sx1, sy1, hx1, hy1, hx0, hy0, body);
+
+      // rounded shoulders and hips
+      ctx.fb.fillCircle(int(smx), int(smy), 2, body);
+      ctx.fb.fillCircle(px[8], py[8], int(hipHalf), body);
+    }
+
+    // arms: shoulder -> elbow -> wrist, elbow caps, fists
     ctx.fb.thickLine(px[2], py[2], px[4], py[4], limbs);
     ctx.fb.thickLine(px[4], py[4], px[5], py[5], limbs);
     ctx.fb.thickLine(px[3], py[3], px[6], py[6], limbs);
     ctx.fb.thickLine(px[6], py[6], px[7], py[7], limbs);
+    ctx.fb.fillCircle(px[4], py[4], 1, limbs);
+    ctx.fb.fillCircle(px[6], py[6], 1, limbs);
     ctx.fb.fillCircle(px[5], py[5], 2, limbs);
     ctx.fb.fillCircle(px[7], py[7], 2, limbs);
 
-    // legs: pelvis -> knee -> ankle; feet run ankle -> toe, so flexed vs
-    // pointed is decided by the pose data
-    ctx.fb.thickLine(px[8], py[8], px[9], py[9], limbs);
-    ctx.fb.thickLine(px[9], py[9], px[10], py[10], limbs);
-    ctx.fb.thickLine(px[8], py[8], px[11], py[11], limbs);
-    ctx.fb.thickLine(px[11], py[11], px[12], py[12], limbs);
+    // legs: beefier than arms — bold lines with knee caps; feet run
+    // ankle -> toe, so flexed vs pointed is decided by the pose data
+    ctx.fb.boldLine(px[8], py[8], px[9], py[9], limbs);
+    ctx.fb.boldLine(px[9], py[9], px[10], py[10], limbs);
+    ctx.fb.boldLine(px[8], py[8], px[11], py[11], limbs);
+    ctx.fb.boldLine(px[11], py[11], px[12], py[12], limbs);
+    ctx.fb.fillCircle(px[9], py[9], 2, limbs);
+    ctx.fb.fillCircle(px[11], py[11], 2, limbs);
     ctx.fb.thickLine(px[10], py[10], px[13], py[13], limbs);
     ctx.fb.thickLine(px[12], py[12], px[14], py[14], limbs);
 

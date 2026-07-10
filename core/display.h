@@ -84,6 +84,13 @@ class FrameBuffer {
     line(x0, y0 + 1, x1, y1 + 1, c);
   }
 
+  // ~3px line for the beefier limbs
+  void boldLine(int x0, int y0, int x1, int y1, const RGB& c) {
+    thickLine(x0, y0, x1, y1, c);
+    line(x0 - 1, y0, x1 - 1, y1, c);
+    line(x0, y0 - 1, x1, y1 - 1, c);
+  }
+
   void fillTriangle(int x0, int y0, int x1, int y1, int x2, int y2,
                     const RGB& c) {
     int minX = x0 < x1 ? (x0 < x2 ? x0 : x2) : (x1 < x2 ? x1 : x2);
