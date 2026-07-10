@@ -16,6 +16,12 @@ FetchContent_MakeAvailable(raylib)
 add_executable(coriolis_sim sim/main.cpp)
 target_link_libraries(coriolis_sim PRIVATE raylib)
 
+# static-link the MinGW runtime so the exe runs without libstdc++-6.dll etc.
+# on PATH (double-clickable, portable)
+if(MINGW)
+  target_link_options(coriolis_sim PRIVATE -static)
+endif()
+
 # display shape: default 128x128 square (the decided final form); the
 # widescreen experiment build is available with
 #   cmake -B build -DWIDE=ON
