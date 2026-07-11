@@ -92,6 +92,7 @@ class SimAudio : public AudioSink {
 
   void setEnabled(bool e) { enabled_ = e; }
   bool enabled() const { return enabled_; }
+  bool ready() const { return ready_; }
 
   void play(Cue c) {
     int i = int(c);
@@ -359,6 +360,8 @@ int main(int argc, char** argv) {
   KeyboardInput heldKeys;
   SimAudio audio;
   audio.init();
+  printf("audio device: %s (press A in the window to toggle sound)\n",
+         audio.ready() ? "ready" : "NOT available");
 
   Settings settings;
   FileSettingsStore store;
@@ -513,6 +516,11 @@ int main(int argc, char** argv) {
     DrawText(inSettings ? settingsScene.name() : scenes[current]->name(), 8,
              HEIGHT * scale - 42, 20, RAYWHITE);
     DrawText(ctx.palette->name, 8, HEIGHT * scale - 20, 14, GRAY);
+    const char* astat = !audio.ready() ? "audio: n/a"
+                                        : (audio.enabled() ? "audio: ON [A]"
+                                                           : "audio: off [A]");
+    DrawText(astat, WIDTH * scale - 130, HEIGHT * scale - 20, 14,
+             audio.enabled() ? GREEN : GRAY);
     EndDrawing();
   }
 
