@@ -1,10 +1,14 @@
-// Settings scene: up/down picks a row, left/right adjusts it. Values apply
-// live (the backend reads the Settings struct every frame) and persist when
-// the scene is left.
+// Settings: one scrollable list with section headers — GENERAL first, then
+// a section per scene. Opened via the dedicated settings button (never part
+// of the scene rotation), and opening it from a scene jumps straight to
+// that scene's section. Up/down picks a row, left/right adjusts, values
+// apply live and persist when the menu is left.
 #ifndef CORIOLIS_SCENE_SETTINGS_H
 #define CORIOLIS_SCENE_SETTINGS_H
 
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 
 #include "../core/scene.h"
 #include "../core/font.h"
@@ -21,7 +25,16 @@ class SettingsScene : public Scene {
   const char* name() const { return "Settings"; }
   bool autoplayEligible() const { return false; }
 
-  void start(Context&) { row_ = 0; dirty_ = false; }
+  // jump to the section for the scene the user came from
+  void openSection(const char* sceneName) {
+    row_ = 0;
+    for (int i = 0; i < ITEM_COUNT; i++) {
+      if (sectionMatches(items_[i].section, sceneName)) {
+        row_ = i;
+        break;
+      }
+    }
+  }
 
   void stop(Context&) {
     if (dirty_) store_.save(settings_);
@@ -29,19 +42,116 @@ class SettingsScene : public Scene {
   }
 
   bool input(Context&, Key k) {
-    if (k == Key::Up) { row_ = (row_ + ROWS - 1) % ROWS; return true; }
-    if (k == Key::Down) { row_ = (row_ + 1) % ROWS; return true; }
+    if (k == Key::Up) { row_ = (row_ + ITEM_COUNT - 1) % ITEM_COUNT; return true; }
+    if (k == Key::Down) { row_ = (row_ + 1) % ITEM_COUNT; return true; }
 
     int dir = k == Key::Right ? 1 : (k == Key::Left ? -1 : 0);
     if (dir == 0) return false;
 
     dirty_ = true;
-    switch (row_) {
-      case 0: {  // brightness in coarse steps
+    adjust(items_[row_].id, dir);
+    return true;
+  }
+
+  uint32_t draw(Context& ctx) {
+    ctx.fb.clear();
+
+    RGB titleColor = ctx.palette->lookupBright(0);
+    font3x5::drawText(ctx.fb, "SETTINGS", 4, 2, 1, titleColor);
+    ctx.fb.hLine(0, ctx.fb.width() - 1, 9, RGB(50, 50, 50));
+
+    // build the visible window: headers take a row of their own
+    const int rowH = 8;
+    const int top = 12;
+    int maxRows = (ctx.fb.height() - top - 2) / rowH;
+
+    // flatten items + headers into display rows, remembering where the
+    // selected item lands
+    int displayCount = 0;
+    int selectedDisplay = 0;
+    struct Row { bool header; int item; };
+    Row rows[ITEM_COUNT * 2];
+    const char* lastSection = "";
+    for (int i = 0; i < ITEM_COUNT; i++) {
+      if (strcmp(items_[i].section, lastSection) != 0) {
+        rows[displayCount].header = true;
+        rows[displayCount].item = i;
+        displayCount++;
+        lastSection = items_[i].section;
+      }
+      if (i == row_) selectedDisplay = displayCount;
+      rows[displayCount].header = false;
+      rows[displayCount].item = i;
+      displayCount++;
+    }
+
+    // keep the selection inside the window
+    if (selectedDisplay < scroll_) scroll_ = selectedDisplay;
+    if (selectedDisplay >= scroll_ + maxRows)
+      scroll_ = selectedDisplay - maxRows + 1;
+
+    int y = top;
+    for (int d = scroll_; d < displayCount && d < scroll_ + maxRows; d++) {
+      const Row& r = rows[d];
+      if (r.header) {
+        font3x5::drawText(ctx.fb, items_[r.item].section, 3, y, 1,
+                          RGB(0, 170, 150));
+      } else {
+        bool selected = r.item == row_;
+        RGB color = selected ? titleColor : RGB(120, 120, 120);
+        if (selected) font3x5::drawText(ctx.fb, ">", 1, y, 1, color);
+        font3x5::drawText(ctx.fb, items_[r.item].label, 8, y, 1, color);
+
+        char value[16];
+        valueText(items_[r.item].id, value, sizeof(value));
+        for (char* p = value; *p; ++p) *p = char(toupper((unsigned char)*p));
+        int vw = font3x5::textWidth(value, 1);
+        font3x5::drawText(ctx.fb, value, ctx.fb.width() - vw - 3, y, 1, color);
+      }
+      y += rowH;
+    }
+
+    return 50;
+  }
+
+ private:
+  struct Item {
+    const char* section;
+    const char* label;
+    uint8_t id;
+  };
+
+  static const int ITEM_COUNT = 11;
+  const Item items_[ITEM_COUNT] = {
+      {"GENERAL", "BRIGHT", 0},  {"GENERAL", "PALETTE", 1},
+      {"GENERAL", "ROTATE", 2},  {"GENERAL", "AUTO", 3},
+      {"GENERAL", "SECS", 4},    {"YOGA", "BODY", 5},
+      {"YOGA", "HOLD", 6},       {"BREATHE", "STYLE", 7},
+      {"BREATHE", "BREATH", 8},  {"PONG", "LEVEL", 9},
+      {"FIRE", "SPARKS", 10},
+  };
+
+  Settings& settings_;
+  SettingsStore& store_;
+  int row_ = 0;
+  int scroll_ = 0;
+  bool dirty_ = false;
+
+  static bool sectionMatches(const char* section, const char* sceneName) {
+    // case-insensitive prefix match: scene "Yoga" -> section "YOGA"
+    for (int i = 0; section[i] && sceneName[i]; i++) {
+      if (toupper((unsigned char)section[i]) !=
+          toupper((unsigned char)sceneName[i]))
+        return false;
+    }
+    return true;
+  }
+
+  void adjust(uint8_t id, int dir) {
+    switch (id) {
+      case 0: {
         int b = settings_.brightness + dir * 32;
-        if (b < 16) b = 16;
-        if (b > 255) b = 255;
-        settings_.brightness = uint8_t(b);
+        settings_.brightness = uint8_t(b < 16 ? 16 : (b > 255 ? 255 : b));
         break;
       }
       case 1:
@@ -56,76 +166,63 @@ class SettingsScene : public Scene {
         break;
       case 4: {
         int s = settings_.autoplaySeconds + dir * 10;
-        if (s < 10) s = 10;
-        if (s > 600) s = 600;
-        settings_.autoplaySeconds = uint16_t(s);
+        settings_.autoplaySeconds = uint16_t(s < 10 ? 10 : (s > 600 ? 600 : s));
         break;
       }
-    }
-    return true;
-  }
-
-  uint32_t draw(Context& ctx) {
-    ctx.fb.clear();
-
-    RGB title = ctx.palette->lookupBright(0);
-    font3x5::drawText(ctx.fb, "SETTINGS", 4, 3, 1, title);
-    ctx.fb.hLine(0, ctx.fb.width() - 1, 11, RGB(50, 50, 50));
-
-    const char* labels[ROWS] = {"BRIGHT", "PALETTE", "ROTATE", "AUTO",
-                                "SECS"};
-    char value[16];
-
-    int y = 16;
-    int rowH = (ctx.fb.height() - 20) / ROWS;
-    if (rowH > 14) rowH = 14;
-
-    for (int i = 0; i < ROWS; i++) {
-      bool selected = i == row_;
-      RGB color = selected ? ctx.palette->lookupBright(0) : RGB(120, 120, 120);
-
-      if (selected) font3x5::drawText(ctx.fb, ">", 1, y, 1, color);
-      font3x5::drawText(ctx.fb, labels[i], 7, y, 1, color);
-
-      switch (i) {
-        case 0:
-          snprintf(value, sizeof(value), "%d", settings_.brightness);
-          break;
-        case 1:
-          snprintf(value, sizeof(value), "%s",
-                   palettes::byIndex(settings_.paletteIndex).name);
-          break;
-        case 2:
-          snprintf(value, sizeof(value), "%d", settings_.rotation * 90);
-          break;
-        case 3:
-          snprintf(value, sizeof(value), "%s",
-                   settings_.autoplay ? "ON" : "OFF");
-          break;
-        case 4:
-          snprintf(value, sizeof(value), "%d", settings_.autoplaySeconds);
-          break;
+      case 5:
+        settings_.yogaBody = uint8_t(1 - settings_.yogaBody);
+        break;
+      case 6: {
+        int s = settings_.yogaHoldSec + dir * 5;
+        settings_.yogaHoldSec = uint16_t(s < 5 ? 5 : (s > 60 ? 60 : s));
+        break;
       }
-      // uppercase for the 3x5 font's sake
-      for (char* p = value; *p; ++p)
-        if (*p >= 'a' && *p <= 'z') *p = char(*p - 'a' + 'A');
-
-      int vw = font3x5::textWidth(value, 1);
-      font3x5::drawText(ctx.fb, value, ctx.fb.width() - vw - 3, y, 1, color);
-
-      y += rowH;
+      case 7:
+        settings_.breatheStyle = uint8_t(1 - settings_.breatheStyle);
+        break;
+      case 8: {
+        int s = settings_.breatheSec + dir;
+        settings_.breatheSec = uint8_t(s < 3 ? 3 : (s > 8 ? 8 : s));
+        break;
+      }
+      case 9: {
+        int l = settings_.pongLevel + dir;
+        settings_.pongLevel = uint8_t(l < 0 ? 0 : (l > 2 ? 2 : l));
+        break;
+      }
+      case 10:
+        settings_.fireSparks = !settings_.fireSparks;
+        break;
     }
-
-    return 50;
   }
 
- private:
-  static const int ROWS = 5;
-
-  Settings& settings_;
-  SettingsStore& store_;
-  int row_ = 0;
-  bool dirty_ = false;
+  void valueText(uint8_t id, char* out, int n) {
+    switch (id) {
+      case 0: snprintf(out, n, "%d", settings_.brightness); break;
+      case 1:
+        snprintf(out, n, "%s", palettes::byIndex(settings_.paletteIndex).name);
+        break;
+      case 2: snprintf(out, n, "%d", settings_.rotation * 90); break;
+      case 3: snprintf(out, n, "%s", settings_.autoplay ? "ON" : "OFF"); break;
+      case 4: snprintf(out, n, "%d", settings_.autoplaySeconds); break;
+      case 5:
+        snprintf(out, n, "%s", settings_.yogaBody == 0 ? "FEM" : "MALE");
+        break;
+      case 6: snprintf(out, n, "%d", settings_.yogaHoldSec); break;
+      case 7:
+        snprintf(out, n, "%s", settings_.breatheStyle == 0 ? "BOX" : "4-7-8");
+        break;
+      case 8: snprintf(out, n, "%d", settings_.breatheSec); break;
+      case 9:
+        snprintf(out, n, "%s",
+                 settings_.pongLevel == 0
+                     ? "EASY"
+                     : (settings_.pongLevel == 1 ? "NORM" : "HARD"));
+        break;
+      case 10: snprintf(out, n, "%s", settings_.fireSparks ? "ON" : "OFF"); break;
+      default: out[0] = 0;
+    }
+  }
 };
 
 }

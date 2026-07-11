@@ -14,12 +14,14 @@
 #include "../core/scene.h"
 #include "../core/font.h"
 #include "../core/math8.h"
+#include "../core/settings.h"
 #include "guide_ui.h"
 
 namespace coriolis {
 
 struct YogaPose {
   const char* name;
+  int face;  // -1 profile left, 0 front, +1 profile right
   // x,y pairs, 0..1: head, neck, lSho, rSho, lElb, lWri, rElb, rWri,
   // pelvis, lKnee, lAnk, rKnee, rAnk, lToe, rToe
   float j[15][2];
@@ -28,44 +30,44 @@ struct YogaPose {
 namespace yoga_poses {
 
 // front view, standing straight, arms at the sides, feet grounded
-static const YogaPose MOUNTAIN = {"MOUNTAIN", {
-    {0.50f, 0.14f}, {0.50f, 0.26f}, {0.42f, 0.29f}, {0.58f, 0.29f},
+static const YogaPose MOUNTAIN = {"MOUNTAIN", 0, {
+    {0.50f, 0.185f}, {0.50f, 0.26f}, {0.42f, 0.29f}, {0.58f, 0.29f},
     {0.40f, 0.42f}, {0.39f, 0.54f}, {0.60f, 0.42f}, {0.61f, 0.54f},
     {0.50f, 0.53f}, {0.46f, 0.70f}, {0.45f, 0.90f}, {0.54f, 0.70f},
     {0.55f, 0.90f}, {0.41f, 0.92f}, {0.59f, 0.92f}}};
 
 // front view, legs wide, arms raised in a V
-static const YogaPose STAR = {"STAR", {
-    {0.50f, 0.14f}, {0.50f, 0.27f}, {0.42f, 0.30f}, {0.58f, 0.30f},
+static const YogaPose STAR = {"STAR", 0, {
+    {0.50f, 0.19f}, {0.50f, 0.27f}, {0.42f, 0.30f}, {0.58f, 0.30f},
     {0.30f, 0.21f}, {0.20f, 0.11f}, {0.70f, 0.21f}, {0.80f, 0.11f},
     {0.50f, 0.53f}, {0.38f, 0.70f}, {0.28f, 0.90f}, {0.62f, 0.70f},
     {0.72f, 0.90f}, {0.23f, 0.92f}, {0.77f, 0.92f}}};
 
 // front view, right foot against the standing leg, palms together overhead
-static const YogaPose TREE = {"TREE", {
-    {0.50f, 0.12f}, {0.50f, 0.24f}, {0.43f, 0.27f}, {0.57f, 0.27f},
+static const YogaPose TREE = {"TREE", 0, {
+    {0.50f, 0.165f}, {0.50f, 0.24f}, {0.43f, 0.27f}, {0.57f, 0.27f},
     {0.37f, 0.16f}, {0.48f, 0.05f}, {0.63f, 0.16f}, {0.52f, 0.05f},
     {0.50f, 0.52f}, {0.47f, 0.70f}, {0.46f, 0.90f}, {0.63f, 0.62f},
     {0.51f, 0.68f}, {0.42f, 0.92f}, {0.50f, 0.73f}}};
 
 // wide lunge, arms straight out over the legs
-static const YogaPose WARRIOR = {"WARRIOR 2", {
-    {0.50f, 0.18f}, {0.50f, 0.30f}, {0.42f, 0.33f}, {0.58f, 0.33f},
+static const YogaPose WARRIOR = {"WARRIOR 2", 0, {
+    {0.50f, 0.225f}, {0.50f, 0.30f}, {0.42f, 0.33f}, {0.58f, 0.33f},
     {0.28f, 0.33f}, {0.13f, 0.33f}, {0.72f, 0.33f}, {0.87f, 0.33f},
     {0.50f, 0.56f}, {0.31f, 0.70f}, {0.28f, 0.90f}, {0.66f, 0.73f},
     {0.75f, 0.90f}, {0.21f, 0.91f}, {0.82f, 0.91f}}};
 
 // side view, the inverted V: hands planted, hips high, heels reaching —
 // feet flexed, toes toward the hands
-static const YogaPose DOWN_DOG = {"DOWN DOG", {
-    {0.30f, 0.62f}, {0.36f, 0.52f}, {0.34f, 0.54f}, {0.36f, 0.55f},
+static const YogaPose DOWN_DOG = {"DOWN DOG", -1, {
+    {0.32f, 0.575f}, {0.36f, 0.52f}, {0.34f, 0.54f}, {0.36f, 0.55f},
     {0.26f, 0.70f}, {0.19f, 0.90f}, {0.28f, 0.71f}, {0.21f, 0.91f},
     {0.56f, 0.30f}, {0.66f, 0.57f}, {0.74f, 0.86f}, {0.68f, 0.58f},
     {0.75f, 0.87f}, {0.67f, 0.90f}, {0.69f, 0.91f}}};
 
 // side view, lying with the chest lifted — feet pointed, tops on the floor
-static const YogaPose COBRA = {"COBRA", {
-    {0.26f, 0.54f}, {0.31f, 0.64f}, {0.32f, 0.66f}, {0.34f, 0.67f},
+static const YogaPose COBRA = {"COBRA", -1, {
+    {0.29f, 0.60f}, {0.31f, 0.64f}, {0.32f, 0.66f}, {0.34f, 0.67f},
     {0.32f, 0.78f}, {0.29f, 0.90f}, {0.35f, 0.79f}, {0.32f, 0.91f},
     {0.55f, 0.87f}, {0.71f, 0.89f}, {0.87f, 0.89f}, {0.72f, 0.90f},
     {0.88f, 0.90f}, {0.94f, 0.92f}, {0.95f, 0.93f}}};
@@ -74,6 +76,8 @@ static const YogaPose COBRA = {"COBRA", {
 
 class YogaScene : public Scene {
  public:
+  explicit YogaScene(Settings& settings) : settings_(settings) {}
+
   const char* name() const { return "Yoga"; }
   bool autoplayEligible() const { return false; }
 
@@ -94,10 +98,11 @@ class YogaScene : public Scene {
       paused_ = !paused_;
       return true;
     }
-    if (k == Key::Up || k == Key::Down) {  // adjust pace
-      holdMs_ += (k == Key::Up) ? -5000 : 5000;
-      if (holdMs_ < 5000) holdMs_ = 5000;
-      if (holdMs_ > 60000) holdMs_ = 60000;
+    if (k == Key::Up || k == Key::Down) {  // adjust pace (shared setting)
+      int s = settings_.yogaHoldSec + ((k == Key::Up) ? -5 : 5);
+      if (s < 5) s = 5;
+      if (s > 60) s = 60;
+      settings_.yogaHoldSec = uint16_t(s);
       return true;
     }
     return false;
@@ -106,10 +111,12 @@ class YogaScene : public Scene {
   uint32_t draw(Context& ctx) {
     ctx.fb.clear();
 
+    uint32_t holdMs = uint32_t(settings_.yogaHoldSec) * 1000;
     uint32_t elapsed = ctx.nowMs - stepStartMs_;
+    if (elapsed >= holdMs && paused_) elapsed = holdMs - 1;
     if (paused_) {
       stepStartMs_ = ctx.nowMs - elapsed;  // freeze progress
-    } else if (elapsed >= holdMs_) {
+    } else if (elapsed >= holdMs) {
       step_ = (step_ + 1) % STEPS;
       stepStartMs_ = ctx.nowMs;
       elapsed = 0;
@@ -130,7 +137,7 @@ class YogaScene : public Scene {
       j[i][1] = prev.j[i][1] + (pose.j[i][1] - prev.j[i][1]) * t;
     }
 
-    drawFigure(ctx, j);
+    drawFigure(ctx, j, pose.face);
 
     guide::drawTopBar(ctx, pose.name);
 
@@ -145,7 +152,7 @@ class YogaScene : public Scene {
     }
 
     // hold-progress bar along the bottom, teal like the mat
-    int barW = int(float(ctx.fb.width()) * elapsed / holdMs_);
+    int barW = int(float(ctx.fb.width()) * elapsed / holdMs);
     ctx.fb.hLine(0, barW, ctx.fb.height() - 1, guide::matColor());
 
     return 33;
@@ -155,13 +162,13 @@ class YogaScene : public Scene {
   static const int STEPS = 6;
   static const uint32_t TRANSITION_MS = 1400;
 
+  Settings& settings_;
   const YogaPose* routine_[STEPS];
   int step_;
   bool paused_;
   uint32_t stepStartMs_;
-  uint32_t holdMs_ = 15000;
 
-  void drawFigure(Context& ctx, float j[15][2]) {
+  void drawFigure(Context& ctx, float j[15][2], int face) {
     // fit the unit space into the display with a margin, keeping it square
     // so poses don't stretch on non-square builds
     int size = ctx.fb.width() < ctx.fb.height() ? ctx.fb.width()
@@ -201,7 +208,7 @@ class YogaScene : public Scene {
       float minSho = span * 0.050f, maxSho = span * 0.095f;
       if (shoHalf < minSho) shoHalf = minSho;
       if (shoHalf > maxSho) shoHalf = maxSho;
-      float hipHalf = span * 0.038f;
+      float hipHalf = span * (settings_.yogaBody == 0 ? 0.048f : 0.038f);
 
       int sx0 = int(smx + perpX * shoHalf), sy0 = int(smy + perpY * shoHalf);
       int sx1 = int(smx - perpX * shoHalf), sy1 = int(smy - perpY * shoHalf);
@@ -245,6 +252,23 @@ class YogaScene : public Scene {
     int headR = span / 16;
     if (headR < 3) headR = 3;
     ctx.fb.fillCircle(px[0], py[0], headR, body);
+
+    // hair: a bun, top-back of the head relative to where she's facing
+    if (settings_.yogaBody == 0) {
+      int bunX = face == 0 ? px[0] : px[0] - face * (headR - 1);
+      int bunY = face == 0 ? py[0] - headR : py[0] - headR + 2;
+      ctx.fb.fillCircle(bunX, bunY, 2, guide::limbColor());
+    }
+
+    // face: two eyes head-on, one in profile
+    RGB eyeColor(70, 30, 30);
+    if (face == 0) {
+      ctx.fb.set(px[0] - 2, py[0] - 1, eyeColor);
+      ctx.fb.set(px[0] + 2, py[0] - 1, eyeColor);
+    } else {
+      ctx.fb.set(px[0] + face * 3, py[0] - 1, eyeColor);
+      ctx.fb.set(px[0] + face * (headR - 1), py[0] + 1, eyeColor);  // nose tip
+    }
   }
 };
 

@@ -8,11 +8,20 @@
 namespace coriolis {
 
 struct Settings {
+  // general
   uint8_t brightness = 255;      // output brightness, 16..255
   int paletteIndex = 0;
   uint8_t rotation = 0;          // quarter turns
   bool autoplay = false;         // cycle scenes automatically
   uint16_t autoplaySeconds = 30;
+
+  // per-scene
+  uint8_t yogaBody = 0;          // 0 female, 1 male
+  uint16_t yogaHoldSec = 15;
+  uint8_t breatheStyle = 0;      // 0 box (4-4-4-4), 1 relax (4-7-8)
+  uint8_t breatheSec = 4;        // in-breath seconds
+  uint8_t pongLevel = 1;         // 0 easy, 1 normal, 2 hard
+  bool fireSparks = true;
 };
 
 class SettingsStore {

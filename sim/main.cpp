@@ -74,6 +74,14 @@ class FileSettingsStore : public SettingsStore {
       else if (strcmp(key, "autoplay") == 0) out.autoplay = value != 0;
       else if (strcmp(key, "autoplaySeconds") == 0)
         out.autoplaySeconds = uint16_t(value);
+      else if (strcmp(key, "yogaBody") == 0) out.yogaBody = uint8_t(value);
+      else if (strcmp(key, "yogaHoldSec") == 0)
+        out.yogaHoldSec = uint16_t(value);
+      else if (strcmp(key, "breatheStyle") == 0)
+        out.breatheStyle = uint8_t(value);
+      else if (strcmp(key, "breatheSec") == 0) out.breatheSec = uint8_t(value);
+      else if (strcmp(key, "pongLevel") == 0) out.pongLevel = uint8_t(value);
+      else if (strcmp(key, "fireSparks") == 0) out.fireSparks = value != 0;
     }
     fclose(f);
     return true;
@@ -87,6 +95,12 @@ class FileSettingsStore : public SettingsStore {
     fprintf(f, "rotation=%d\n", s.rotation);
     fprintf(f, "autoplay=%d\n", s.autoplay ? 1 : 0);
     fprintf(f, "autoplaySeconds=%d\n", s.autoplaySeconds);
+    fprintf(f, "yogaBody=%d\n", s.yogaBody);
+    fprintf(f, "yogaHoldSec=%d\n", s.yogaHoldSec);
+    fprintf(f, "breatheStyle=%d\n", s.breatheStyle);
+    fprintf(f, "breatheSec=%d\n", s.breatheSec);
+    fprintf(f, "pongLevel=%d\n", s.pongLevel);
+    fprintf(f, "fireSparks=%d\n", s.fireSparks ? 1 : 0);
     fclose(f);
   }
 
@@ -179,20 +193,22 @@ int main() {
   ClockScene clock;
   AnalogClockScene analogClock;
   WordClockScene wordClock;
-  PongScene pong;
-  YogaScene yoga;
-  BreatheScene breathe;
+  PongScene pong(settings);
+  YogaScene yoga(settings);
+  BreatheScene breathe(settings);
   GifScene gifs(gifSource);
   SpiroScene spiro;
-  FireScene fire;
+  FireScene fire(settings);
   PlasmaScene plasma;
   SettingsScene settingsScene(settings, store);
 
-  Scene* scenes[] = {&clock,   &analogClock, &wordClock, &pong,
-                     &yoga,    &breathe,     &gifs,      &spiro,
-                     &fire,    &plasma,      &settingsScene};
+  // settings is deliberately NOT in the rotation: it opens on its own key,
+  // so it can't be stumbled into or autoplayed through
+  Scene* scenes[] = {&clock,   &analogClock, &wordClock, &pong,  &yoga,
+                     &breathe, &gifs,        &spiro,     &fire,  &plasma};
   const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
   int current = 0;
+  bool inSettings = false;
 
   Context ctx = {fb, timeSource, heldKeys,
                  &palettes::byIndex(settings.paletteIndex), 0};
@@ -215,11 +231,35 @@ int main() {
     if (IsKeyPressed(KEY_ENTER)) pressed = Key::Select;
     if (IsKeyPressed(KEY_BACKSPACE)) pressed = Key::Back;
 
+    Scene* active =
+        inSettings ? static_cast<Scene*>(&settingsScene) : scenes[current];
+
     bool consumed = false;
-    if (pressed != Key::None) consumed = scenes[current]->input(ctx, pressed);
+    if (pressed != Key::None) consumed = active->input(ctx, pressed);
+
+    // the settings key toggles the menu from anywhere and jumps to the
+    // section of the scene it was opened from (device: the remote's menu
+    // button)
+    if (IsKeyPressed(KEY_S)) {
+      if (inSettings) {
+        settingsScene.stop(ctx);  // persists any changes
+        inSettings = false;
+      } else {
+        settingsScene.openSection(scenes[current]->name());
+        inSettings = true;
+      }
+      nextFrameMs = 0;
+      consumed = true;
+    }
 
     int switchTo = -1;
-    if (!consumed) {
+    if (!consumed && inSettings) {
+      if (pressed == Key::Back) {  // back also closes the menu
+        settingsScene.stop(ctx);
+        inSettings = false;
+        nextFrameMs = 0;
+      }
+    } else if (!consumed) {
       if (pressed == Key::Right || IsKeyPressed(KEY_SPACE))
         switchTo = (current + 1) % sceneCount;
       else if (pressed == Key::Left)
@@ -231,14 +271,14 @@ int main() {
         settings.paletteIndex =
             (settings.paletteIndex + palettes::COUNT - 1) % palettes::COUNT;
       else if (pressed == Key::Back)
-        switchTo = 0;  // home to the clock from anywhere (incl. Settings)
+        switchTo = 0;  // home to the clock from anywhere
     }
 
     if (IsKeyPressed(KEY_R) && WIDTH == HEIGHT)
       settings.rotation = uint8_t((settings.rotation + 1) % 4);
 
-    // autoplay cycles eligible scenes; anything manual resets its timer
-    if (settings.autoplay && switchTo < 0 &&
+    // autoplay cycles eligible scenes; paused while the menu is open
+    if (!inSettings && settings.autoplay && switchTo < 0 &&
         scenes[current]->autoplayEligible() &&
         ctx.nowMs - lastSwitchMs >= uint32_t(settings.autoplaySeconds) * 1000) {
       switchTo = (current + 1) % sceneCount;
@@ -256,7 +296,9 @@ int main() {
 
     // honor each scene's requested frame delay, like the device loop will
     if (ctx.nowMs >= nextFrameMs) {
-      uint32_t requestedDelay = scenes[current]->draw(ctx);
+      Scene* drawScene =
+          inSettings ? static_cast<Scene*>(&settingsScene) : scenes[current];
+      uint32_t requestedDelay = drawScene->draw(ctx);
       nextFrameMs = ctx.nowMs + requestedDelay;
     }
 
@@ -277,7 +319,8 @@ int main() {
       }
     }
     // debug labels at the bottom, clear of the matrix's own top bar
-    DrawText(scenes[current]->name(), 8, HEIGHT * scale - 42, 20, RAYWHITE);
+    DrawText(inSettings ? settingsScene.name() : scenes[current]->name(), 8,
+             HEIGHT * scale - 42, 20, RAYWHITE);
     DrawText(ctx.palette->name, 8, HEIGHT * scale - 20, 14, GRAY);
     EndDrawing();
   }

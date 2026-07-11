@@ -48,8 +48,16 @@ cmake --build build-square
 | `SPACE` / `→` | next scene |
 | `←` | previous scene |
 | `↑` / `↓` | cycle palette (when the scene doesn't use them) |
+| `S` | open/close settings — jumps to the current scene's section |
+| `BACKSPACE` | back: closes settings, otherwise home to the clock |
 | `R` | rotate the display 90° (square build) |
 | `ESC` | quit (saves settings) |
+
+Settings is not part of the scene rotation — only `S` reaches it (the
+remote's menu button on the device). It is one scrolling list with
+sections: GENERAL, then one per scene (yoga body & pace, breathing style,
+pong difficulty, fireplace sparks). Games are never themed; clocks and
+patterns follow the palette.
 
 Arrow keys are offered to the active scene first, matching how a
 remote/gamepad will behave on the device. Scene-specific keys:

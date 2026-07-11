@@ -10,11 +10,14 @@
 #include "../core/scene.h"
 #include "../core/font.h"
 #include "../core/math8.h"
+#include "../core/settings.h"
 
 namespace coriolis {
 
 class PongScene : public Scene {
  public:
+  explicit PongScene(Settings& settings) : settings_(settings) {}
+
   const char* name() const { return "Pong"; }
 
   // fine to autoplay past the ambient AI match, never past a human game
@@ -101,24 +104,25 @@ class PongScene : public Scene {
       }
     }
 
-    // --- render -------------------------------------------------------
+    // --- render: fixed classic colors — games are never themed, a palette
+    // must not be able to make the paddles invisible ---------------------
     ctx.fb.clear();
 
-    RGB fieldColor = ctx.palette->lookup(160, 90);
+    RGB fieldColor(60, 60, 60);
     for (int y = 0; y < h; y += 4) ctx.fb.vLine(w / 2, y, y + 1, fieldColor);
 
     // scores blink while a finished match waits to reset
     bool matchOver = scoreL_ >= WIN_SCORE || scoreR_ >= WIN_SCORE;
     bool showScores = !matchOver || (ctx.nowMs / 250) % 2 == 0;
     if (showScores) {
-      RGB scoreColor = ctx.palette->lookup(32);
+      RGB scoreColor(150, 150, 150);
       char text[2] = {char('0' + scoreL_), 0};
       font3x5::drawText(ctx.fb, text, w / 2 - 14, 3, 2, scoreColor);
       text[0] = char('0' + scoreR_);
       font3x5::drawText(ctx.fb, text, w / 2 + 8, 3, 2, scoreColor);
     }
 
-    RGB paddleColor = ctx.palette->lookup(0);
+    RGB paddleColor(230, 230, 230);
     ctx.fb.rect(PADDLE_X, int(leftY_ - paddleHalf), 2, int(paddleHalf * 2),
                 paddleColor);
     ctx.fb.rect(w - PADDLE_X - 2, int(rightY_ - paddleHalf), 2,
@@ -136,7 +140,13 @@ class PongScene : public Scene {
   static const int PADDLE_X = 3;
   static const int WIN_SCORE = 9;
   static const int PADDLE_SPEED = 80;  // px/s, player
-  static const int AI_SPEED = 62;      // px/s, beatable on purpose
+
+  Settings& settings_;
+
+  // px/s by difficulty setting; normal stays beatable on purpose
+  int aiSpeed() const {
+    return settings_.pongLevel == 0 ? 48 : (settings_.pongLevel == 1 ? 62 : 78);
+  }
 
   float ballX_, ballY_, ballVX_, ballVY_;
   float leftY_, rightY_;
@@ -176,8 +186,8 @@ class PongScene : public Scene {
   void steerAi(float& paddleY, bool ballIncoming, float dt, int h) {
     float target = ballIncoming ? ballY_ : h / 2.0f;
     float diff = target - paddleY;
-    if (diff > 2) paddleY += AI_SPEED * dt;
-    else if (diff < -2) paddleY -= AI_SPEED * dt;
+    if (diff > 2) paddleY += aiSpeed() * dt;
+    else if (diff < -2) paddleY -= aiSpeed() * dt;
   }
 
   static void clampPaddle(float& y, float half, int h) {
