@@ -34,24 +34,26 @@ class FireScene : public Scene {
 
     // --- simulate flames, column by column, inside the firebox ----------
     // columns are independent (vertical diffusion only), so a well-fed
-    // column rises as a tall tongue while its neighbours stay low
+    // column rises as a tall tongue while its neighbours stay low. Fire
+    // originates at the top of the log pile (baseY), not the hearth, so the
+    // logs sit in front of the flames rather than floating above them.
     int fireTop = archApexY_ + 1;
+    int baseY = hearthY_ - LOG_H;
     float t = phase_ * 0.02f;
     for (int x = ix0_; x <= ix1_; x++) {
       // gentle cooling so hot columns reach high before tapering out
-      for (int y = fireTop; y <= hearthY_; y++) {
-        int altitude = hearthY_ - y;
+      for (int y = fireTop; y <= baseY; y++) {
+        int altitude = baseY - y;
         uint8_t cool = uint8_t(random8(0, 7) + altitude * 42 / 100);
         heat_[idx(x, y)] = qsub8(heat_[idx(x, y)], cool);
       }
-      for (int y = fireTop; y < hearthY_ - 1; y++) {
+      for (int y = fireTop; y < baseY - 1; y++) {
         heat_[idx(x, y)] =
             uint8_t((heat_[idx(x, y + 1)] * 2 + heat_[idx(x, y + 2)]) / 3);
       }
 
-      // a low glowing ember bed along the logs, so valleys still smoulder
-      heat_[idx(x, hearthY_)] =
-          qadd8(heat_[idx(x, hearthY_)], random8(12, 44));
+      // a low glowing ember bed along the log tops, so valleys still smoulder
+      heat_[idx(x, baseY)] = qadd8(heat_[idx(x, baseY)], random8(12, 44));
 
       // several travelling waves make moving hot spots; squaring the
       // intensity concentrates ignition at the peaks, giving tongues with
@@ -72,7 +74,7 @@ class FireScene : public Scene {
       intensity *= 0.35f + 0.65f * centerW;
 
       if (random8() < uint8_t(intensity * 200)) {
-        int y = hearthY_ - randomInt(3);
+        int y = baseY - randomInt(3);
         uint8_t add = uint8_t(random8(45, 90) + intensity * 130);
         heat_[idx(x, y)] = qadd8(heat_[idx(x, y)], add);
       }
@@ -81,7 +83,7 @@ class FireScene : public Scene {
     // --- render ---------------------------------------------------------
     ctx.fb.clear();
 
-    for (int y = fireTop; y <= hearthY_; y++) {
+    for (int y = fireTop; y <= baseY; y++) {
       for (int x = ix0_; x <= ix1_; x++) {
         uint8_t v = heat_[idx(x, y)];
         if (v > 5 && insideOpening(x, y))
@@ -98,6 +100,7 @@ class FireScene : public Scene {
 
  private:
   static const int MAX_PARTICLES = 28;
+  static const int LOG_H = 7;  // height of the log pile above the hearth
 
   struct Particle {
     float x, y, vx, vy;
@@ -184,18 +187,24 @@ class FireScene : public Scene {
   }
 
   void drawLogs(Context& ctx) {
-    RGB bark(92, 55, 25), barkLight(120, 74, 36), cut(170, 120, 70);
-    int y0 = hearthY_ - 4;
-    // two rounded-end logs crossed over the fire base
-    for (int i = 0; i < 2; i++) {
-      int lx = i == 0 ? ix0_ + 2 : ix0_ + (ix1_ - ix0_) / 4;
-      int lw = i == 0 ? (ix1_ - ix0_) - 4 : (ix1_ - ix0_) / 2;
-      int ly = i == 0 ? y0 : y0 - 3;
-      RGB c = i == 0 ? bark : barkLight;
-      ctx.fb.rect(lx, ly, lw, 3, c);
-      ctx.fb.fillCircle(lx, ly + 1, 1, cut);
-      ctx.fb.fillCircle(lx + lw, ly + 1, 1, cut);
-    }
+    RGB bark(92, 55, 25), barkLight(120, 74, 36), cut(175, 125, 72);
+    int fw = ix1_ - ix0_;
+    int cx = archCX_;
+
+    // a pile centered on the hearth: a wide bottom log resting on the floor
+    // and a shorter one leaning across it, drawn after the fire so the
+    // flames read as rising from behind/above the wood
+    int bottomW = fw * 62 / 100;
+    int bottomY = hearthY_ - 3;  // rests on the hearth floor
+    ctx.fb.rect(cx - bottomW / 2, bottomY, bottomW, 3, bark);
+    ctx.fb.fillCircle(cx - bottomW / 2, bottomY + 1, 1, cut);
+    ctx.fb.fillCircle(cx + bottomW / 2, bottomY + 1, 1, cut);
+
+    int topW = fw * 44 / 100;
+    int topY = hearthY_ - LOG_H;  // top of the pile = where the fire starts
+    ctx.fb.rect(cx - topW / 2 + 3, topY, topW, 3, barkLight);
+    ctx.fb.fillCircle(cx - topW / 2 + 3, topY + 1, 2, cut);
+    ctx.fb.fillCircle(cx + topW / 2 + 3, topY + 1, 2, cut);
   }
 
   void spawn(uint8_t type, float x, float y, float vx, float vy, int life) {
@@ -209,16 +218,17 @@ class FireScene : public Scene {
 
   void updateParticles(Context& ctx) {
     float baseX = float(archCX_);
-    // embers off the logs
+    int fireBase = hearthY_ - LOG_H;  // embers lift off the flames, not floor
+    // embers off the fire
     if (settings_.fireSparks) {
       if (random8() < 7) {
         float x = baseX + randomInt(ix1_ - ix0_) - (ix1_ - ix0_) / 2;
-        spawn(0, x, float(hearthY_ - 3), (random8(3) - 1) * 0.3f,
+        spawn(0, x, float(fireBase), (random8(3) - 1) * 0.3f,
               -(1.0f + random8(90) / 100.0f), 30 + random8(24));
       }
       if (random8() < 2) {  // a pop throws several — DFPlayer pop trigger here
         for (int k = 0; k < 4; k++)
-          spawn(0, baseX + randomInt(20) - 10, float(hearthY_ - 4),
+          spawn(0, baseX + randomInt(20) - 10, float(fireBase),
                 (random8(5) - 2) * 0.4f, -(1.3f + random8(120) / 100.0f),
                 34 + random8(26));
       }

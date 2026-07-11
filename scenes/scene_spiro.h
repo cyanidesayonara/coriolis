@@ -31,9 +31,13 @@ class SpiroScene : public Scene {
     const int miny = H / 2 - radiusy, maxy = H / 2 + radiusy + 1;
     const int cx = W / 2, cy = H / 2;
 
-    (void)cx; (void)cy;
     uint8_t spirooffset = uint8_t(256 / spirocount_);
 
+    // as in the original, wind the strand count up/down when an arm sweeps
+    // through the center — but test a small neighborhood, not the exact
+    // pixel, so it actually triggers every revolution at 128x128
+    const int tol = radiusx / 12 + 1;
+    bool change = false;
     for (int i = 0; i < spirocount_; i++) {
       uint8_t a = uint8_t(theta1_ + i * spirooffset);
       int x = rescale8(sin8(a), uint8_t(minx), uint8_t(maxx));
@@ -45,6 +49,10 @@ class SpiroScene : public Scene {
 
       RGB c = ctx.palette->lookup(uint8_t(hueoffset_ + i * spirooffset), 128);
       ctx.fb.at(x2, y2).add(c);
+
+      if ((x2 > cx ? x2 - cx : cx - x2) <= tol &&
+          (y2 > cy ? y2 - cy : cy - y2) <= tol)
+        change = true;
     }
 
     // both oscillators are time-based so the pattern is identical at any
@@ -54,15 +62,16 @@ class SpiroScene : public Scene {
       theta2_ += 2;
     }
 
-    // step the strand count once per revolution of theta1 (its wrap from
-    // 255 back to 0) — winds up 1,2,3,4,8,16... to the width, then back
-    // down. The original tied this to arms sweeping the exact center pixel,
-    // which lands too rarely at 128x128 and left it stuck.
     if (ctx.nowMs - lastTheta1_ >= 16) {
       lastTheta1_ = ctx.nowMs;
-      uint8_t before = theta1_;
       theta1_ += 1;
-      if (theta1_ < before) {  // wrapped: one revolution completed
+    }
+
+    // one count step per center sweep, gated so a single pass counts once
+    if (ctx.nowMs - lastCount_ >= 75) {
+      lastCount_ = ctx.nowMs;
+      if (change && !handledChange_) {
+        handledChange_ = true;
         if (spirocount_ >= W || spirocount_ == 1)
           spiroincrement_ = !spiroincrement_;
         if (spiroincrement_)
@@ -70,6 +79,7 @@ class SpiroScene : public Scene {
         else
           spirocount_ = spirocount_ > 4 ? spirocount_ / 2 : spirocount_ - 1;
       }
+      if (!change) handledChange_ = false;
     }
 
     if (ctx.nowMs - lastHue_ >= 33) {

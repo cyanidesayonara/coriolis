@@ -81,12 +81,18 @@ inline Palette grayscale() {
                   RGB(0xFFFFFF));
 }
 
-static const int COUNT = 6;
+// black to green only, for an authentic digital-rain look
+inline Palette matrix() {
+  return gradient("Matrix", RGB(0x001500), RGB(0x008010), RGB(0x00FF33),
+                  RGB(0xB6FFB6));
+}
+
+static const int COUNT = 7;
 
 // stable set for cycling in scenes/menus
 inline const Palette& byIndex(int i) {
-  static const Palette all[COUNT] = {rainbow(), heat(),      ocean(),
-                                     forest(),  ice(),       grayscale()};
+  static const Palette all[COUNT] = {rainbow(), heat(),  ocean(),   forest(),
+                                     ice(),     grayscale(), matrix()};
   if (i < 0) i = 0;
   if (i >= COUNT) i = COUNT - 1;
   return all[i];

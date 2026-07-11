@@ -1,10 +1,12 @@
-// Digital rain — Matrix-style streams falling down the display, each with a
-// bright head and a fading tail. Themed by the current palette, so it reads
-// green on Forest, blue on Ocean, and so on.
+// Digital rain — Matrix-style columns of glyphs falling down the display,
+// each stream with a bright white leading character and a tail of glyphs
+// fading into the palette color. Pair it with the MATRIX palette for the
+// authentic black-and-green look.
 #ifndef CORIOLIS_SCENE_RAIN_H
 #define CORIOLIS_SCENE_RAIN_H
 
 #include "../core/scene.h"
+#include "../core/font.h"
 #include "../core/math8.h"
 
 namespace coriolis {
@@ -14,48 +16,74 @@ class RainScene : public Scene {
   const char* name() const { return "Rain"; }
 
   void start(Context& ctx) {
-    ctx.fb.clear();
     int cols = ctx.fb.width() / CW;
-    for (int i = 0; i < cols; i++) {
-      dropY_[i] = -float(random8(0, uint8_t(ctx.fb.height())));
-      speed_[i] = randSpeed();
+    int rows = ctx.fb.height() / CH;
+    for (int c = 0; c < cols; c++) {
+      head_[c] = -float(random8(0, uint8_t(rows + 4)));
+      speed_[c] = randSpeed();
+      for (int r = 0; r < rows && r < MAXR; r++) grid_[c][r] = randChar();
     }
   }
 
   uint32_t draw(Context& ctx) {
-    ctx.fb.dimAll(205);  // fade the trailing streams
+    ctx.fb.clear();
 
     const int W = ctx.fb.width(), H = ctx.fb.height();
-    int cols = W / CW;
+    int cols = W / CW, rows = H / CH;
+    if (rows > MAXR) rows = MAXR;
 
-    for (int i = 0; i < cols; i++) {
-      dropY_[i] += speed_[i];
-      int y = int(dropY_[i]);
-      int x = i * CW;
+    RGB white(210, 255, 210);  // the leading glyph
 
-      RGB head = ctx.palette->lookupBright(uint8_t(150 + i * 3));
-      RGB neck = head;
-      neck.dim(150);
-      for (int dx = 0; dx < CW && x + dx < W; dx++) {
-        ctx.fb.set(x + dx, y, head);
-        ctx.fb.set(x + dx, y - 1, neck);
+    for (int c = 0; c < cols; c++) {
+      head_[c] += speed_[c];
+      int headRow = int(head_[c]);
+
+      for (int k = 0; k < TRAIL; k++) {
+        int r = headRow - k;
+        if (r < 0 || r >= rows) continue;
+        RGB color;
+        if (k == 0) {
+          color = white;
+        } else {
+          color = ctx.palette->lookupBright(150);
+          color.dim(uint8_t(200 - k * (190 / TRAIL)));
+        }
+        font3x5::drawChar(ctx.fb, grid_[c][r], c * CW, r * CH, 1, color);
       }
 
-      if (y > H + int(random8(0, 40))) {  // respawn above, staggered
-        dropY_[i] = -float(random8(0, uint8_t(H / 2)));
-        speed_[i] = randSpeed();
+      // flicker: occasionally swap a glyph somewhere in the visible trail
+      if (random8() < 26) {
+        int r = headRow - random8(0, TRAIL);
+        if (r >= 0 && r < rows) grid_[c][r] = randChar();
+      }
+
+      // respawn above once the whole tail has cleared the bottom
+      if (headRow - TRAIL > rows) {
+        head_[c] = -float(random8(0, uint8_t(rows / 2 + 1)));
+        speed_[c] = randSpeed();
       }
     }
 
-    return 40;
+    return 50;
   }
 
  private:
-  static const int CW = 2;  // stream width in pixels
-  float dropY_[128];
-  float speed_[128];
+  static const int CW = 4;    // cell width  (3px glyph + gap)
+  static const int CH = 6;    // cell height (5px glyph + gap)
+  static const int TRAIL = 13;
+  static const int MAXC = 48;
+  static const int MAXR = 48;
 
-  static float randSpeed() { return 0.6f + random8(0, 100) / 100.0f * 1.6f; }
+  float head_[MAXC];
+  float speed_[MAXC];
+  char grid_[MAXC][MAXR];
+
+  static float randSpeed() { return 0.14f + random8(0, 100) / 100.0f * 0.34f; }
+
+  static char randChar() {
+    uint8_t v = random8(0, 36);
+    return v < 10 ? char('0' + v) : char('A' + (v - 10));
+  }
 };
 
 }
