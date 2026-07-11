@@ -64,9 +64,16 @@ class FireScene : public Scene {
       if (intensity > 1) intensity = 1;
       intensity *= intensity;
 
-      if (random8() < uint8_t(intensity * 230)) {
+      // the biggest tongues belong in the middle: taper the fire toward the
+      // firebox walls (edges still glow, just lower)
+      float centerW = 1.0f - float(x > archCX_ ? x - archCX_ : archCX_ - x) /
+                                 float(archR_);
+      if (centerW < 0) centerW = 0;
+      intensity *= 0.35f + 0.65f * centerW;
+
+      if (random8() < uint8_t(intensity * 200)) {
         int y = hearthY_ - randomInt(3);
-        uint8_t add = uint8_t(random8(60, 120) + intensity * 150);
+        uint8_t add = uint8_t(random8(45, 90) + intensity * 130);
         heat_[idx(x, y)] = qadd8(heat_[idx(x, y)], add);
       }
     }
@@ -112,21 +119,21 @@ class FireScene : public Scene {
   void geometry(Context& ctx) {
     const int w = ctx.fb.width();
     const int h = ctx.fb.height();
-    // zoomed in: the brick fills nearly to the edges and the firebox is
-    // large, so the view sits inside the fireplace
-    SL_ = w * 6 / 100;
-    SR_ = w * 94 / 100;
-    hearthY_ = h - h * 6 / 100;
-    ix0_ = w * 24 / 100;
-    ix1_ = w * 76 / 100;
+    // fully zoomed in: brick runs off every edge (no exterior shown) with a
+    // large central firebox and a flue slot at the top
+    SL_ = 0;
+    SR_ = w - 1;
+    hearthY_ = h - h * 5 / 100;
+    ix0_ = w * 18 / 100;
+    ix1_ = w * 82 / 100;
     archCX_ = w / 2;
     archR_ = (ix1_ - ix0_) / 2;
-    archSpringY_ = h * 54 / 100;
+    archSpringY_ = h * 52 / 100;
     archApexY_ = archSpringY_ - archR_;
-    flueHalf_ = w * 6 / 100;
-    surroundTop_ = h * 16 / 100;
-    chimL_ = w * 32 / 100;
-    chimR_ = w * 68 / 100;
+    flueHalf_ = w * 7 / 100;
+    surroundTop_ = 0;
+    chimL_ = 0;
+    chimR_ = w - 1;
   }
 
   // the keyhole: rectangular firebox + arch + a thin flue up to the top
@@ -140,9 +147,9 @@ class FireScene : public Scene {
   }
 
   bool inBrickRegion(int x, int y) const {
-    bool mainSurround = x >= SL_ && x <= SR_ && y >= surroundTop_ && y <= hearthY_;
-    bool chimney = x >= chimL_ && x <= chimR_ && y < surroundTop_;
-    return (mainSurround || chimney) && !insideOpening(x, y);
+    // brick fills the whole frame down to the hearth, minus the firebox
+    // opening and the flue slot
+    return y >= 0 && y <= hearthY_ && !insideOpening(x, y);
   }
 
   void drawSurround(Context& ctx) {
@@ -166,14 +173,13 @@ class FireScene : public Scene {
       }
     }
 
-    // mantel shelf: a lighter stone bar protruding over the firebox
-    int my = surroundTop_;
+    // a stone lintel across the top of the firebox opening (spring line)
     RGB stone(150, 140, 128);
-    ctx.fb.rect(SL_ - 3, my - 2, (SR_ - SL_) + 6, 3, stone);
+    ctx.fb.rect(ix0_ - 3, archSpringY_ - 1, (ix1_ - ix0_) + 6, 2, stone);
 
-    // hearth floor
+    // hearth floor across the bottom
     RGB hearth(90, 78, 70);
-    ctx.fb.rect(SL_ - 3, hearthY_, (SR_ - SL_) + 6, ctx.fb.height() - hearthY_,
+    ctx.fb.rect(0, hearthY_, ctx.fb.width(), ctx.fb.height() - hearthY_,
                 hearth);
   }
 

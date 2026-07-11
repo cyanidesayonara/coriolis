@@ -21,6 +21,7 @@
 #include "../scenes/scene_plasma.h"
 #include "../scenes/scene_fire.h"
 #include "../scenes/scene_spiro.h"
+#include "../scenes/scene_rain.h"
 #include "../scenes/scene_settings.h"
 
 #include <cstdio>
@@ -209,6 +210,7 @@ int main() {
   BreatheScene breathe(settings);
   GifScene gifs(gifSource);
   SpiroScene spiro;
+  RainScene rain;
   FireScene fire(settings);
   PlasmaScene plasma;
   SettingsScene settingsScene(settings, store);
@@ -217,7 +219,7 @@ int main() {
   // so it can't be stumbled into or autoplayed through
   Scene* scenes[] = {&clock,    &analogClock, &wordClock, &pong,
                      &yoga,     &exercise,    &breathe,   &gifs,
-                     &spiro,    &fire,        &plasma};
+                     &spiro,    &rain,        &fire,      &plasma};
   const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
   int current = 0;
   bool inSettings = false;
