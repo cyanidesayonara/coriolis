@@ -33,7 +33,7 @@ from it. See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
 <tr>
 <td align="center"><img src="docs/screenshots/pong.png" width="200"><br>Pong</td>
 <td align="center"><img src="docs/screenshots/snake.png" width="200"><br>Snake</td>
-<td></td>
+<td align="center"><img src="docs/screenshots/tetris.png" width="200"><br>Tetris</td>
 </tr>
 </table>
 
@@ -114,6 +114,8 @@ remote/gamepad will behave on the device. Scene-specific keys:
   `ENTER` restarts the match.
 - **Snake**: arrows steer; walls and your own tail are fatal; `ENTER`
   retries after game over.
+- **Tetris**: `←`/`→` move, `↑` rotate, `↓` soft-drop, `ENTER` hard-drop;
+  a landing shadow shows where the piece will fall.
 - **Yoga**: `ENTER` pauses, `↑`/`↓` shorten/lengthen the pose hold time.
 - **Gifs**: `↑`/`↓` browse files. Drop `.gif` files into a `gifs/` folder
   next to the exe (`build/gifs/`).
