@@ -55,9 +55,14 @@ cmake --build build-square
 
 Settings is not part of the scene rotation — only `S` reaches it (the
 remote's menu button on the device). It is one scrolling list with
-sections: GENERAL, then one per scene (yoga body & pace, breathing style,
-pong difficulty, fireplace sparks). Games are never themed; clocks and
-patterns follow the palette.
+sections: GENERAL, then one per scene (yoga body & pace, exercise program
+& reps & pace, breathing style, pong difficulty, fireplace sparks). Games
+are never themed; clocks and patterns follow the palette; guides and the
+fireplace keep their own fixed look.
+
+Guide scenes (`↑`/`↓` set the pace, `ENTER` pauses):
+- **Yoga** holds poses; **Exercise** animates reps with a bodyweight or
+  kettlebell program (settings); **Breathe** is box or 4-7-8.
 
 Arrow keys are offered to the active scene first, matching how a
 remote/gamepad will behave on the device. Scene-specific keys:

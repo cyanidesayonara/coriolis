@@ -27,7 +27,6 @@ class SpiroScene : public Scene {
     const int ry = ctx.fb.height() / 4;
     uint8_t offset = uint8_t(256 / count_);
 
-    bool anyAtCenter = false;
     for (int i = 0; i < count_; i++) {
       uint8_t phase = uint8_t(theta1_ + i * offset);
       int cx = CENTER_X - rx + (sin8(phase) * 2 * rx) / 255;
@@ -39,8 +38,6 @@ class SpiroScene : public Scene {
 
       RGB c = ctx.palette->lookup(uint8_t(hue_ + i * offset), 128);
       ctx.fb.at(x, y).add(c);
-
-      if (x == CENTER_X && y == CENTER_Y) anyAtCenter = true;
     }
 
     theta2_ += 2;
@@ -51,10 +48,13 @@ class SpiroScene : public Scene {
       hue_ += 1;
     }
 
-    // when arms sweep through center, occasionally double/halve their count
-    if (anyAtCenter && ctx.nowMs - lastCountMs_ >= 2000) {
+    // the strand count pulses up and back down on a loop — the signature
+    // Borealis behavior (the original tied this to sweeps through the
+    // center, which almost never land exactly on a pixel at 128x128)
+    if (ctx.nowMs - lastCountMs_ >= 2200) {
       lastCountMs_ = ctx.nowMs;
-      if (count_ >= 64 || count_ == 1) growing_ = !growing_;
+      if (count_ >= 32) growing_ = false;
+      else if (count_ <= 1) growing_ = true;
       count_ = growing_ ? count_ * 2 : count_ / 2;
       if (count_ < 1) count_ = 1;
     }

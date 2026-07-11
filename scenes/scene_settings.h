@@ -121,14 +121,15 @@ class SettingsScene : public Scene {
     uint8_t id;
   };
 
-  static const int ITEM_COUNT = 11;
+  static const int ITEM_COUNT = 14;
   const Item items_[ITEM_COUNT] = {
-      {"GENERAL", "BRIGHT", 0},  {"GENERAL", "PALETTE", 1},
-      {"GENERAL", "ROTATE", 2},  {"GENERAL", "AUTO", 3},
-      {"GENERAL", "SECS", 4},    {"YOGA", "BODY", 5},
-      {"YOGA", "HOLD", 6},       {"BREATHE", "STYLE", 7},
-      {"BREATHE", "BREATH", 8},  {"PONG", "LEVEL", 9},
-      {"FIRE", "SPARKS", 10},
+      {"GENERAL", "BRIGHT", 0},   {"GENERAL", "PALETTE", 1},
+      {"GENERAL", "ROTATE", 2},   {"GENERAL", "AUTO", 3},
+      {"GENERAL", "SECS", 4},     {"YOGA", "BODY", 5},
+      {"YOGA", "HOLD", 6},        {"EXERCISE", "PROGRAM", 11},
+      {"EXERCISE", "REPS", 12},   {"EXERCISE", "PACE", 13},
+      {"BREATHE", "STYLE", 7},    {"BREATHE", "BREATH", 8},
+      {"PONG", "LEVEL", 9},       {"FIRE", "SPARKS", 10},
   };
 
   Settings& settings_;
@@ -193,6 +194,19 @@ class SettingsScene : public Scene {
       case 10:
         settings_.fireSparks = !settings_.fireSparks;
         break;
+      case 11:
+        settings_.exerciseProgram = uint8_t(1 - settings_.exerciseProgram);
+        break;
+      case 12: {
+        int r = settings_.exerciseReps + dir * 2;
+        settings_.exerciseReps = uint8_t(r < 4 ? 4 : (r > 20 ? 20 : r));
+        break;
+      }
+      case 13: {
+        int p = settings_.exerciseRepSec + dir;
+        settings_.exerciseRepSec = uint8_t(p < 2 ? 2 : (p > 6 ? 6 : p));
+        break;
+      }
     }
   }
 
@@ -220,6 +234,12 @@ class SettingsScene : public Scene {
                      : (settings_.pongLevel == 1 ? "NORM" : "HARD"));
         break;
       case 10: snprintf(out, n, "%s", settings_.fireSparks ? "ON" : "OFF"); break;
+      case 11:
+        snprintf(out, n, "%s",
+                 settings_.exerciseProgram == 0 ? "BODY" : "KBELL");
+        break;
+      case 12: snprintf(out, n, "%d", settings_.exerciseReps); break;
+      case 13: snprintf(out, n, "%d", settings_.exerciseRepSec); break;
       default: out[0] = 0;
     }
   }

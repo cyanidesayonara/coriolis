@@ -18,6 +18,9 @@ struct Settings {
   // per-scene
   uint8_t yogaBody = 0;          // 0 female, 1 male
   uint16_t yogaHoldSec = 15;
+  uint8_t exerciseProgram = 0;   // 0 bodyweight, 1 kettlebell
+  uint8_t exerciseReps = 8;
+  uint8_t exerciseRepSec = 3;    // seconds per rep
   uint8_t breatheStyle = 0;      // 0 box (4-4-4-4), 1 relax (4-7-8)
   uint8_t breatheSec = 4;        // in-breath seconds
   uint8_t pongLevel = 1;         // 0 easy, 1 normal, 2 hard
