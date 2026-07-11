@@ -1,10 +1,44 @@
 # Coriolis
 
 LED matrix wall display — successor to [Borealis](https://github.com/cyanidesayonara/borealis)
-(Aurora → Borealis → Coriolis). A wall clock first, with patterns, weather,
-audio-reactive visuals and games to follow.
+(Aurora → Borealis → Coriolis). A 128×128 HUB75 panel driven by a Teensy 4.1:
+a wall clock first, with ambient art, a guided-fitness suite, and games.
 
-See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
+Developed entirely against a desktop simulator; the images below are captured
+from it. See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
+
+## Scenes
+
+<table>
+<tr>
+<td align="center"><img src="docs/screenshots/clock.png" width="200"><br>Digital clock</td>
+<td align="center"><img src="docs/screenshots/analog.png" width="200"><br>Analog clock</td>
+<td align="center"><img src="docs/screenshots/wordclock.png" width="200"><br>Word clock</td>
+</tr>
+<tr>
+<td align="center"><img src="docs/screenshots/spiro.png" width="200"><br>Spiro</td>
+<td align="center"><img src="docs/screenshots/mandala.png" width="200"><br>Mandala</td>
+<td align="center"><img src="docs/screenshots/rain.png" width="200"><br>Digital rain</td>
+</tr>
+<tr>
+<td align="center"><img src="docs/screenshots/fireplace.png" width="200"><br>Fireplace</td>
+<td align="center"><img src="docs/screenshots/plasma.png" width="200"><br>Plasma</td>
+<td align="center"><img src="docs/screenshots/overlay.png" width="200"><br>Clock overlay</td>
+</tr>
+<tr>
+<td align="center"><img src="docs/screenshots/yoga.png" width="200"><br>Yoga</td>
+<td align="center"><img src="docs/screenshots/exercise.png" width="200"><br>Exercise (kettlebell)</td>
+<td align="center"><img src="docs/screenshots/breathe.png" width="200"><br>Breathe</td>
+</tr>
+<tr>
+<td align="center"><img src="docs/screenshots/pong.png" width="200"><br>Pong</td>
+<td align="center"><img src="docs/screenshots/snake.png" width="200"><br>Snake</td>
+<td></td>
+</tr>
+</table>
+
+Any of the three clocks can also be shown as a movable, resizable **overlay**
+on top of any other scene (the `C` button), just like Borealis.
 
 ## Architecture
 
@@ -23,8 +57,9 @@ The simulator is not a side tool — it's the primary development environment.
 Scenes are written and tuned on the desktop; the hardware backend only
 replaces the window with panels and the keyboard with a remote/gamepad.
 
-The display shape is a build flag (`128x64` widescreen by default, `-DSQUARE=ON`
-for `128x128`), and scenes must handle both.
+The display is `128x128` square (the decided final form). A `128x64` widescreen
+variant survives as a build flag (`-DWIDE=ON`) for experiments, so scenes stay
+resolution-agnostic.
 
 ## Build and run the simulator
 
@@ -34,11 +69,14 @@ automatically on first configure).
 ```sh
 cmake -B build
 cmake --build build
-./build/coriolis_sim          # Windows: build\Debug\coriolis_sim.exe
+./build/coriolis_sim          # Windows: build\coriolis_sim.exe
 
-# the 128x128 variant:
-cmake -B build-square -DSQUARE=ON
-cmake --build build-square
+# the widescreen 128x64 variant:
+cmake -B build-wide -DWIDE=ON
+cmake --build build-wide
+
+# regenerate the README screenshots:
+./build/coriolis_sim --shots docs/screenshots
 ```
 
 ## Controls (simulator)
@@ -49,16 +87,21 @@ cmake --build build-square
 | `←` | previous scene |
 | `↑` / `↓` | cycle palette (when the scene doesn't use them) |
 | `S` | open/close settings — jumps to the current scene's section |
+| `C` | cycle the clock overlay (off / digital / analog / word) |
 | `BACKSPACE` | back: closes settings, otherwise home to the clock |
-| `R` | rotate the display 90° (square build) |
+| `R` | rotate the display 90° |
 | `ESC` | quit (saves settings) |
+
+Each control maps to a button on the device's IR remote (`S` = menu, `C` =
+the overlay button, arrows + OK + back). A USB gamepad is the optional
+better input for the games.
 
 Settings is not part of the scene rotation — only `S` reaches it (the
 remote's menu button on the device). It is one scrolling list with
-sections: GENERAL, then one per scene (yoga body & pace, exercise program
-& reps & pace, breathing style, pong difficulty, fireplace sparks). Games
-are never themed; clocks and patterns follow the palette; guides and the
-fireplace keep their own fixed look.
+sections: GENERAL (brightness, palette, rotation, autoplay), OVERLAY (clock
+type, position, size), then one per scene (yoga, exercise, breathe, pong,
+snake, fireplace). Games are never themed; clocks and patterns follow the
+palette; guides and the fireplace keep their own fixed look.
 
 Guide scenes (`↑`/`↓` set the pace, `ENTER` pauses):
 - **Yoga** holds poses; **Exercise** animates reps with a bodyweight or

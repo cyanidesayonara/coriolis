@@ -176,13 +176,34 @@ the BOM.
 
 Rough total: ~€280-330 for the full 128x128 build.
 
+## Software status (July 2026)
+
+The desktop-first software is well underway — 15 scenes running in the
+simulator (see the README gallery):
+
+- **Clocks**: digital, analog, word — plus a movable/resizable clock overlay
+  that rides on top of any other scene.
+- **Ambient art**: Spiro, Mandala (kaleidoscopic Spiro), digital rain,
+  fireplace, plasma.
+- **Guided fitness**: yoga (skeleton poses), exercise (bodyweight +
+  kettlebell reps), breathe (box / 4-7-8) — a shared figure renderer and a
+  common intro/settings frame.
+- **Games**: Pong, Snake — with intro cards and per-scene settings.
+- **Infrastructure**: sectioned settings menu persisted to a file, autoplay,
+  7 palettes (incl. Matrix green), rotation, GIF slideshow, a `--shots`
+  screenshot generator. Audio (DFPlayer) hooks are stubbed in place.
+
+Still to come in software: DFPlayer audio design, Tetris, more
+poses/exercises, GIF frame timing, weather/calendar providers, and the
+hardware backend once the platform is chosen.
+
 ## Phases
 
 1. **Mull platform** (Santtu) → order hardware when decided.
-2. **Software skeleton, desktop-first** (can start immediately): repo
-   scaffolding, display-interface layer, port the best Borealis patterns onto
-   it, run in the simulator. PlatformIO + modern toolchain; ArduinoJson;
-   GifDecoder (not the old GifPlayer); watchdog from day one.
+2. **Software skeleton, desktop-first** (DONE — see status above): repo
+   scaffolding, display-interface layer, ported the best Borealis patterns,
+   running in the simulator. Still to wire on the hardware side: ArduinoJson,
+   GifDecoder (not the old GifPlayer), watchdog from day one.
 3. **Bench bring-up**: controller + 2 panels on the desk, hardware backend,
    settings, brightness, remote/input.
 4. **Features** in priority order: clock/weather feed → audio-reactive →

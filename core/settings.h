@@ -15,6 +15,11 @@ struct Settings {
   bool autoplay = false;         // cycle scenes automatically
   uint16_t autoplaySeconds = 30;
 
+  // clock overlay, shown on top of any scene (its own button toggles type)
+  uint8_t overlayType = 0;       // 0 off, 1 digital, 2 analog, 3 word
+  uint8_t overlayPos = 4;        // 3x3 grid, 0=top-left .. 4=center .. 8=bot-right
+  uint8_t overlaySize = 1;       // 0 small, 1 medium, 2 large
+
   // per-scene
   uint8_t yogaBody = 0;          // 0 female, 1 male
   uint16_t yogaHoldSec = 15;

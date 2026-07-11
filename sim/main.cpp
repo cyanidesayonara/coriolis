@@ -25,8 +25,10 @@
 #include "../scenes/scene_mandala.h"
 #include "../scenes/scene_rain.h"
 #include "../scenes/scene_settings.h"
+#include "../scenes/clock_overlay.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 
@@ -92,6 +94,11 @@ class FileSettingsStore : public SettingsStore {
       else if (strcmp(key, "breatheSec") == 0) out.breatheSec = uint8_t(value);
       else if (strcmp(key, "pongLevel") == 0) out.pongLevel = uint8_t(value);
       else if (strcmp(key, "snakeSpeed") == 0) out.snakeSpeed = uint8_t(value);
+      else if (strcmp(key, "overlayType") == 0)
+        out.overlayType = uint8_t(value);
+      else if (strcmp(key, "overlayPos") == 0) out.overlayPos = uint8_t(value);
+      else if (strcmp(key, "overlaySize") == 0)
+        out.overlaySize = uint8_t(value);
       else if (strcmp(key, "fireSparks") == 0) out.fireSparks = value != 0;
     }
     fclose(f);
@@ -115,6 +122,9 @@ class FileSettingsStore : public SettingsStore {
     fprintf(f, "breatheSec=%d\n", s.breatheSec);
     fprintf(f, "pongLevel=%d\n", s.pongLevel);
     fprintf(f, "snakeSpeed=%d\n", s.snakeSpeed);
+    fprintf(f, "overlayType=%d\n", s.overlayType);
+    fprintf(f, "overlayPos=%d\n", s.overlayPos);
+    fprintf(f, "overlaySize=%d\n", s.overlaySize);
     fprintf(f, "fireSparks=%d\n", s.fireSparks ? 1 : 0);
     fclose(f);
   }
@@ -188,7 +198,83 @@ class RaylibGifSource : public GifSource {
   int frame_ = 0;
 };
 
-int main() {
+// write the framebuffer to a PNG, scaled up with chunky pixels and a thin
+// grid, so it reads like the real panel in the README
+static void exportShot(FrameBuffer& fb, const char* path, int scale) {
+  int W = fb.width() * scale, H = fb.height() * scale;
+  unsigned char* buf = (unsigned char*)malloc(size_t(W) * H * 3);
+  for (int y = 0; y < H; y++) {
+    for (int x = 0; x < W; x++) {
+      RGB c = fb.at(x / scale, y / scale);
+      bool grid = (x % scale == 0) || (y % scale == 0);
+      if (grid) c.dim(150);
+      int o = (y * W + x) * 3;
+      buf[o] = c.r; buf[o + 1] = c.g; buf[o + 2] = c.b;
+    }
+  }
+  Image img = {buf, W, H, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8};
+  ExportImage(img, path);
+  free(buf);
+}
+
+// render one scene to a PNG: pick a palette, optionally press OK to start a
+// guide/game, let it settle, and stamp on the overlay if asked
+static void shoot(const char* dir, const char* file, Scene* sc,
+                  Settings settings, TimeSource& time, InputState& held,
+                  int paletteIdx, bool startIt, int frames) {
+  FrameBuffer fb;
+  settings.paletteIndex = paletteIdx;
+  Context ctx = {fb, time, held, &palettes::byIndex(paletteIdx), 0};
+  sc->start(ctx);
+  if (startIt) sc->input(ctx, Key::Select);
+  for (int f = 0; f < frames; f++) {
+    ctx.nowMs = uint32_t(f * 16);
+    ctx.palette = &palettes::byIndex(paletteIdx);
+    sc->draw(ctx);
+    if (settings.overlayType) overlay::draw(ctx, settings);
+  }
+  char path[256];
+  snprintf(path, sizeof(path), "%s/%s", dir, file);
+  exportShot(fb, path, 5);
+  printf("wrote %s\n", path);
+}
+
+// `coriolis_sim --shots <dir>` renders the gallery and exits
+static int renderShots(const char* dir) {
+  SetConfigFlags(FLAG_WINDOW_HIDDEN);
+  InitWindow(64, 64, "shots");  // a context is needed for image encoding
+
+  SystemTime time;
+  KeyboardInput held;
+  Settings s;              // defaults; per-shot overrides below
+  Settings ov = s;
+  ov.overlayType = 1;      // digital overlay, centered
+  ov.overlaySize = 2;
+
+  ClockScene clock;               shoot(dir, "clock.png", &clock, s, time, held, 2, false, 60);
+  AnalogClockScene analog;        shoot(dir, "analog.png", &analog, s, time, held, 2, false, 60);
+  WordClockScene word;            shoot(dir, "wordclock.png", &word, s, time, held, 3, false, 60);
+  SpiroScene spiro;               shoot(dir, "spiro.png", &spiro, s, time, held, 0, false, 900);
+  MandalaScene mandala;           shoot(dir, "mandala.png", &mandala, s, time, held, 4, false, 500);
+  RainScene rain;                 shoot(dir, "rain.png", &rain, s, time, held, 6, false, 200);
+  FireScene fire(s);              shoot(dir, "fireplace.png", &fire, s, time, held, 0, false, 300);
+  PlasmaScene plasma;             shoot(dir, "plasma.png", &plasma, s, time, held, 0, false, 60);
+  YogaScene yoga(s);              shoot(dir, "yoga.png", &yoga, s, time, held, 0, true, 120);
+  Settings kb = s; kb.exerciseProgram = 1;
+  ExerciseScene ex(kb);           shoot(dir, "exercise.png", &ex, kb, time, held, 0, true, 90);
+  BreatheScene breathe(s);        shoot(dir, "breathe.png", &breathe, s, time, held, 0, true, 60);
+  PongScene pong(s);              shoot(dir, "pong.png", &pong, s, time, held, 0, true, 120);
+  SnakeScene snake(s);            shoot(dir, "snake.png", &snake, s, time, held, 0, true, 200);
+  SpiroScene spiro2;              shoot(dir, "overlay.png", &spiro2, ov, time, held, 0, false, 900);
+
+  CloseWindow();
+  return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc >= 3 && strcmp(argv[1], "--shots") == 0)
+    return renderShots(argv[2]);
+
   // chunky pixels, the whole point — but keep the window on a 1080p screen
   int scale = 8;
   while (scale > 2 && (WIDTH * scale > 1700 || HEIGHT * scale > 900)) scale--;
@@ -297,6 +383,10 @@ int main() {
     if (IsKeyPressed(KEY_R) && WIDTH == HEIGHT)
       settings.rotation = uint8_t((settings.rotation + 1) % 4);
 
+    // the clock-overlay button: cycle off -> digital -> analog -> word
+    if (IsKeyPressed(KEY_C))
+      settings.overlayType = uint8_t((settings.overlayType + 1) % 4);
+
     // autoplay cycles eligible scenes; paused while the menu is open
     if (!inSettings && settings.autoplay && switchTo < 0 &&
         scenes[current]->autoplayEligible() &&
@@ -319,6 +409,8 @@ int main() {
       Scene* drawScene =
           inSettings ? static_cast<Scene*>(&settingsScene) : scenes[current];
       uint32_t requestedDelay = drawScene->draw(ctx);
+      // the clock overlay rides on top of whatever just drew (not settings)
+      if (!inSettings) overlay::draw(ctx, settings);
       nextFrameMs = ctx.nowMs + requestedDelay;
     }
 
