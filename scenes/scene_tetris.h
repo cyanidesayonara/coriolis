@@ -98,7 +98,8 @@ class TetrisScene : public Scene {
   }
 
  private:
-  static const int GW = 10, GH = 20, CELL = 5;
+  // classic Tetris is 10 wide x 20 tall; bigger cells fill the tall display
+  static const int GW = 10, GH = 20, CELL = 6;
 
   uint8_t grid_[GW][GH];  // 0 empty, else colorIndex 1..7
   int type_, rot_, px_, py_, next_;
@@ -210,7 +211,7 @@ class TetrisScene : public Scene {
 
   void render(Context& ctx) {
     ctx.fb.clear();
-    int bx = 10, by = 14;
+    int bx = 6, by = 4;  // board fills the left; panel on the right
 
     // well border
     RGB border(60, 60, 60);
@@ -239,21 +240,23 @@ class TetrisScene : public Scene {
     }
 
     // side panel: NEXT preview, score, lines
-    int panelX = bx + GW * CELL + 8;
-    font3x5::drawText(ctx.fb, "NEXT", panelX, by, 1, RGB(150, 150, 150));
+    int panelX = bx + GW * CELL + 6;
+    RGB label(150, 150, 150), value(230, 230, 230);
+    font3x5::drawText(ctx.fb, "NEXT", panelX, by + 4, 1, label);
     for (int i = 0; i < 4; i++)
       cell(ctx, TETROMINO[next_][0][i][0], TETROMINO[next_][0][i][1],
-           pieceColor(next_), panelX, by + 8);
+           pieceColor(next_), panelX, by + 14);
 
     char buf[12];
     snprintf(buf, sizeof(buf), "%d", score_);
-    font3x5::drawText(ctx.fb, "SCORE", panelX, by + 34, 1, RGB(150, 150, 150));
-    font3x5::drawText(ctx.fb, buf, panelX, by + 42, 1, RGB(230, 230, 230));
+    font3x5::drawText(ctx.fb, "SCORE", panelX, by + 46, 1, label);
+    font3x5::drawText(ctx.fb, buf, panelX, by + 55, 1, value);
     snprintf(buf, sizeof(buf), "%d", lines_);
-    font3x5::drawText(ctx.fb, "LINES", panelX, by + 54, 1, RGB(150, 150, 150));
-    font3x5::drawText(ctx.fb, buf, panelX, by + 62, 1, RGB(230, 230, 230));
-    snprintf(buf, sizeof(buf), "LV %d", level());
-    font3x5::drawText(ctx.fb, buf, panelX, by + 74, 1, RGB(150, 150, 150));
+    font3x5::drawText(ctx.fb, "LINES", panelX, by + 74, 1, label);
+    font3x5::drawText(ctx.fb, buf, panelX, by + 83, 1, value);
+    snprintf(buf, sizeof(buf), "%d", level());
+    font3x5::drawText(ctx.fb, "LEVEL", panelX, by + 102, 1, label);
+    font3x5::drawText(ctx.fb, buf, panelX, by + 111, 1, value);
 
     if (dead_) {
       const char* go = "GAME";
