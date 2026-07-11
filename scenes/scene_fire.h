@@ -33,27 +33,40 @@ class FireScene : public Scene {
     phase_ += 3;
 
     // --- simulate flames, column by column, inside the firebox ----------
-    int fireTop = archApexY_ + 2;
-    float t = phase_ * 0.03f;
+    // columns are independent (vertical diffusion only), so a well-fed
+    // column rises as a tall tongue while its neighbours stay low
+    int fireTop = archApexY_ + 1;
+    float t = phase_ * 0.02f;
     for (int x = ix0_; x <= ix1_; x++) {
-      // cool, harder with altitude so the fire tapers to tips
+      // gentle cooling so hot columns reach high before tapering out
       for (int y = fireTop; y <= hearthY_; y++) {
         int altitude = hearthY_ - y;
-        uint8_t cool = uint8_t(random8(0, 9) + altitude * 55 / 100);
+        uint8_t cool = uint8_t(random8(0, 7) + altitude * 42 / 100);
         heat_[idx(x, y)] = qsub8(heat_[idx(x, y)], cool);
       }
-      // heat rises and diffuses upward
       for (int y = fireTop; y < hearthY_ - 1; y++) {
         heat_[idx(x, y)] =
             uint8_t((heat_[idx(x, y + 1)] * 2 + heat_[idx(x, y + 2)]) / 3);
       }
-      // feed the base unevenly: two travelling waves make hot spots that
-      // drift, so flames lick higher in some places and lower in others
-      float wave = sinf(x * 0.20f + t) * sinf(x * 0.07f - t * 0.6f);
-      float fuel = 0.45f + 0.55f * (wave * 0.5f + 0.5f);
-      if (random8() < 170) {
-        int y = hearthY_ - randomInt(2);
-        uint8_t add = uint8_t(random8(50, 110) + fuel * 130);
+
+      // a low glowing ember bed along the logs, so valleys still smoulder
+      heat_[idx(x, hearthY_)] =
+          qadd8(heat_[idx(x, hearthY_)], random8(12, 44));
+
+      // several travelling waves make moving hot spots; squaring the
+      // intensity concentrates ignition at the peaks, giving tongues with
+      // dark gaps between them rather than an even wall of fire
+      float wave = sinf(x * 0.13f + t * 1.3f) +
+                   sinf(x * 0.061f - t * 0.8f) * 0.7f +
+                   sinf(x * 0.27f + t * 2.1f) * 0.4f;
+      float intensity = (wave + 2.1f) / 4.2f;
+      if (intensity < 0) intensity = 0;
+      if (intensity > 1) intensity = 1;
+      intensity *= intensity;
+
+      if (random8() < uint8_t(intensity * 230)) {
+        int y = hearthY_ - randomInt(3);
+        uint8_t add = uint8_t(random8(60, 120) + intensity * 150);
         heat_[idx(x, y)] = qadd8(heat_[idx(x, y)], add);
       }
     }
@@ -99,19 +112,21 @@ class FireScene : public Scene {
   void geometry(Context& ctx) {
     const int w = ctx.fb.width();
     const int h = ctx.fb.height();
-    SL_ = w * 15 / 100;
-    SR_ = w * 85 / 100;
-    hearthY_ = h - h * 7 / 100;
-    ix0_ = w * 30 / 100;
-    ix1_ = w * 70 / 100;
+    // zoomed in: the brick fills nearly to the edges and the firebox is
+    // large, so the view sits inside the fireplace
+    SL_ = w * 6 / 100;
+    SR_ = w * 94 / 100;
+    hearthY_ = h - h * 6 / 100;
+    ix0_ = w * 24 / 100;
+    ix1_ = w * 76 / 100;
     archCX_ = w / 2;
     archR_ = (ix1_ - ix0_) / 2;
-    archSpringY_ = h * 62 / 100;
+    archSpringY_ = h * 54 / 100;
     archApexY_ = archSpringY_ - archR_;
-    flueHalf_ = w * 5 / 100;
-    surroundTop_ = h * 30 / 100;
-    chimL_ = w * 34 / 100;
-    chimR_ = w * 66 / 100;
+    flueHalf_ = w * 6 / 100;
+    surroundTop_ = h * 16 / 100;
+    chimL_ = w * 32 / 100;
+    chimR_ = w * 68 / 100;
   }
 
   // the keyhole: rectangular firebox + arch + a thin flue up to the top

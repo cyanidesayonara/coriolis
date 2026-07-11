@@ -19,7 +19,7 @@ class SpiroScene : public Scene {
     spirocount_ = 1;
     spiroincrement_ = false;
     handledChange_ = false;
-    lastTheta1_ = lastHue_ = lastCount_ = ctx.nowMs;
+    lastTheta1_ = lastTheta2_ = lastHue_ = lastCount_ = ctx.nowMs;
   }
 
   uint32_t draw(Context& ctx) {
@@ -50,9 +50,14 @@ class SpiroScene : public Scene {
         change = true;
     }
 
-    theta2_ += 2;
+    // both oscillators are time-based so the pattern is identical at any
+    // frame rate; theta2 runs at twice theta1's rate (the original 2:1 ratio)
+    if (ctx.nowMs - lastTheta2_ >= 16) {
+      lastTheta2_ = ctx.nowMs;
+      theta2_ += 2;
+    }
 
-    if (ctx.nowMs - lastTheta1_ >= 12) {
+    if (ctx.nowMs - lastTheta1_ >= 16) {
       lastTheta1_ = ctx.nowMs;
       theta1_ += 1;
     }
@@ -76,14 +81,14 @@ class SpiroScene : public Scene {
       hueoffset_ += 1;
     }
 
-    return 0;
+    return 8;
   }
 
  private:
   uint8_t theta1_, theta2_, hueoffset_;
   int spirocount_;
   bool spiroincrement_, handledChange_;
-  uint32_t lastTheta1_, lastHue_, lastCount_;
+  uint32_t lastTheta1_, lastTheta2_, lastHue_, lastCount_;
 };
 
 }

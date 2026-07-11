@@ -93,18 +93,6 @@ inline void drawFigure(Context& ctx, const float j[15][2], int face,
       ctx.fb.boldLine(int(smx), int(smy), px[0], py[0], body);
   }
 
-  // arms: shoulder -> elbow -> wrist, deltoid roots, elbow caps, fists
-  ctx.fb.thickLine(px[2], py[2], px[4], py[4], limbs);
-  ctx.fb.thickLine(px[4], py[4], px[5], py[5], limbs);
-  ctx.fb.thickLine(px[3], py[3], px[6], py[6], limbs);
-  ctx.fb.thickLine(px[6], py[6], px[7], py[7], limbs);
-  ctx.fb.fillCircle(px[2], py[2], 2, limbs);
-  ctx.fb.fillCircle(px[3], py[3], 2, limbs);
-  ctx.fb.fillCircle(px[4], py[4], 1, limbs);
-  ctx.fb.fillCircle(px[6], py[6], 1, limbs);
-  ctx.fb.fillCircle(px[5], py[5], 2, limbs);
-  ctx.fb.fillCircle(px[7], py[7], 2, limbs);
-
   // legs: beefier than arms; feet run ankle -> toe so flexed vs pointed is
   // decided by the pose data
   ctx.fb.boldLine(px[8], py[8], px[9], py[9], limbs);
@@ -148,6 +136,19 @@ inline void drawFigure(Context& ctx, const float j[15][2], int face,
     ctx.fb.set(fx + face * (headR - 2), fy + 1, eyeColor);
     ctx.fb.set(fx + face * 3, fy + 3, eyeColor);
   }
+
+  // arms last, so raised arms (a press, palms overhead) read in FRONT of the
+  // head rather than behind it: shoulder -> elbow -> wrist, caps and fists
+  ctx.fb.thickLine(px[2], py[2], px[4], py[4], limbs);
+  ctx.fb.thickLine(px[4], py[4], px[5], py[5], limbs);
+  ctx.fb.thickLine(px[3], py[3], px[6], py[6], limbs);
+  ctx.fb.thickLine(px[6], py[6], px[7], py[7], limbs);
+  ctx.fb.fillCircle(px[2], py[2], 2, limbs);
+  ctx.fb.fillCircle(px[3], py[3], 2, limbs);
+  ctx.fb.fillCircle(px[4], py[4], 1, limbs);
+  ctx.fb.fillCircle(px[6], py[6], 1, limbs);
+  ctx.fb.fillCircle(px[5], py[5], 2, limbs);
+  ctx.fb.fillCircle(px[7], py[7], 2, limbs);
 }
 
 // a kettlebell hanging from (or held at) the midpoint of the two wrists,
