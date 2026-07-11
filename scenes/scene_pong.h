@@ -104,24 +104,31 @@ class PongScene : public Scene {
       if (ballY_ < 1) { ballY_ = 1; ballVY_ = -ballVY_; }
       if (ballY_ > h - 2) { ballY_ = float(h - 2); ballVY_ = -ballVY_; }
 
+      // top/bottom walls also click
+      if (ballY_ <= 1 || ballY_ >= h - 2) ctx.audio.play(Cue::Bounce);
+
       // paddles: reflect, speed up a little, hit position sets the angle
       if (ballVX_ < 0 && ballX_ <= PADDLE_X + 2 && ballX_ >= PADDLE_X - 1 &&
           hits(leftY_, paddleHalf)) {
         bounce(leftY_, paddleHalf);
         ballX_ = PADDLE_X + 2;
+        ctx.audio.play(Cue::Bounce);
       }
       if (ballVX_ > 0 && ballX_ >= w - PADDLE_X - 3 &&
           ballX_ <= w - PADDLE_X && hits(rightY_, paddleHalf)) {
         bounce(rightY_, paddleHalf);
         ballX_ = float(w - PADDLE_X - 3);
+        ctx.audio.play(Cue::Bounce);
       }
 
       // out past an edge: point scored
       if (ballX_ < -2) {
         scoreR_++;
+        ctx.audio.play(Cue::Score);
         endPoint(ctx);
       } else if (ballX_ > w + 2) {
         scoreL_++;
+        ctx.audio.play(Cue::Score);
         endPoint(ctx);
       }
     }

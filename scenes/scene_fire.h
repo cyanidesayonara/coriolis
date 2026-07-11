@@ -26,7 +26,10 @@ class FireScene : public Scene {
     memset(heat_, 0, sizeof(heat_));
     for (int i = 0; i < MAX_PARTICLES; i++) particles_[i].life = 0;
     geometry(ctx);
+    ctx.audio.loop(Cue::Crackle);  // the ambient fire bed
   }
+
+  void stop(Context& ctx) { ctx.audio.loop(Cue::None); }
 
   uint32_t draw(Context& ctx) {
     geometry(ctx);
@@ -226,7 +229,8 @@ class FireScene : public Scene {
         spawn(0, x, float(fireBase), (random8(3) - 1) * 0.3f,
               -(1.0f + random8(90) / 100.0f), 30 + random8(24));
       }
-      if (random8() < 2) {  // a pop throws several — DFPlayer pop trigger here
+      if (random8() < 2) {  // a pop throws several embers and a pop sound
+        ctx.audio.play(Cue::Pop);
         for (int k = 0; k < 4; k++)
           spawn(0, baseX + randomInt(20) - 10, float(fireBase),
                 (random8(5) - 2) * 0.4f, -(1.3f + random8(120) / 100.0f),

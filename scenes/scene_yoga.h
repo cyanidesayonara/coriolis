@@ -101,6 +101,8 @@ class YogaScene : public Scene {
       if (k == Key::Select) {
         started_ = true;
         stepStartMs_ = ctx.nowMs;
+        ctx.audio.play(Cue::StartBell);
+        ctx.audio.voice(step_);  // speak the first pose name
         return true;
       }
       if (k == Key::Up || k == Key::Down) {
@@ -145,8 +147,9 @@ class YogaScene : public Scene {
       step_ = (step_ + 1) % STEPS;
       stepStartMs_ = ctx.nowMs;
       elapsed = 0;
-      // pose change: on the device this is where the DFPlayer chime and
-      // spoken pose name fire
+      // pose change: chime, then speak the new pose name
+      ctx.audio.play(Cue::Chime);
+      ctx.audio.voice(step_);
     }
 
     const YogaPose& pose = *routine_[step_];

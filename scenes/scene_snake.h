@@ -47,6 +47,7 @@ class SnakeScene : public Scene {
     lastStepMs_ = ctx.nowMs;
     placeFood();
     started_ = true;
+    ctx.audio.play(Cue::StartBell);
   }
 
   bool input(Context& ctx, Key k) {
@@ -87,7 +88,7 @@ class SnakeScene : public Scene {
     uint32_t step = stepMs();
     if (!dead_ && ctx.nowMs - lastStepMs_ >= step) {
       lastStepMs_ = ctx.nowMs;
-      advance();
+      advance(ctx);
     }
 
     render(ctx);
@@ -131,19 +132,24 @@ class SnakeScene : public Scene {
     }
   }
 
-  void advance() {
+  void advance(Context& ctx) {
     dir_ = pendingDir_;
     Cell h = at(0);
     int nx = h.x + (dir_ == 1) - (dir_ == 3);
     int ny = h.y + (dir_ == 2) - (dir_ == 0);
 
-    if (nx < 0 || ny < 0 || nx >= gw_ || ny >= gh_) { dead_ = true; return; }
+    if (nx < 0 || ny < 0 || nx >= gw_ || ny >= gh_) {
+      dead_ = true;
+      ctx.audio.play(Cue::Die);
+      return;
+    }
 
     Cell tail = at(len_ - 1);
     bool growing = (nx == food_.x && ny == food_.y);
     // hitting the body kills, except the tail cell which is about to vacate
     if (occ_[nx][ny] && !(nx == tail.x && ny == tail.y && !growing)) {
       dead_ = true;
+      ctx.audio.play(Cue::Die);
       return;
     }
 
@@ -157,6 +163,7 @@ class SnakeScene : public Scene {
     if (growing) {
       if (len_ < MAXLEN) len_++;
       score_++;
+      ctx.audio.play(Cue::Eat);
       placeFood();
     }
   }

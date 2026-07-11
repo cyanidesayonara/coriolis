@@ -31,6 +31,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <cmath>
 
 using namespace coriolis;
 
@@ -61,6 +62,75 @@ class KeyboardInput : public InputState {
       case Key::Back: return IsKeyDown(KEY_BACKSPACE);
       default: return false;
     }
+  }
+};
+
+// audio cues as short synthesized beeps — the DFPlayer's stand-in. Off by
+// default (toggle with A) so it doesn't chatter during development. On the
+// device this becomes a DFPlayer Mini playing numbered clips from SD.
+class SimAudio : public AudioSink {
+ public:
+  void init() {
+    InitAudioDevice();
+    ready_ = IsAudioDeviceReady();
+    if (!ready_) return;
+    make(Cue::Chime, 880, 90, false);
+    make(Cue::StartBell, 660, 170, false);
+    make(Cue::FinishBell, 523, 240, false);
+    make(Cue::BreatheIn, 523, 220, false);
+    make(Cue::BreatheHold, 440, 90, false);
+    make(Cue::BreatheOut, 392, 280, false);
+    make(Cue::Pop, 190, 55, true);
+    make(Cue::Eat, 1046, 45, false);
+    make(Cue::Die, 320, 340, true);
+    make(Cue::Bounce, 640, 25, false);
+    make(Cue::Score, 784, 140, false);
+    voice_ = build(700, 70, false);
+    voiceReady_ = true;
+  }
+
+  void setEnabled(bool e) { enabled_ = e; }
+  bool enabled() const { return enabled_; }
+
+  void play(Cue c) {
+    int i = int(c);
+    if (ready_ && enabled_ && i > 0 && i < NCUE && loaded_[i]) PlaySound(snd_[i]);
+  }
+  void voice(int) { if (ready_ && enabled_ && voiceReady_) PlaySound(voice_); }
+  void loop(Cue) {}  // the ambient crackle bed isn't modeled in the sim
+
+ private:
+  static const int NCUE = 16;
+  Sound snd_[NCUE];
+  bool loaded_[NCUE] = {false};
+  Sound voice_;
+  bool ready_ = false, enabled_ = false, voiceReady_ = false;
+
+  void make(Cue c, float f, int ms, bool descend) {
+    int i = int(c);
+    snd_[i] = build(f, ms, descend);
+    loaded_[i] = true;
+  }
+
+  Sound build(float f, int ms, bool descend) {
+    unsigned int sr = 22050, n = sr * unsigned(ms) / 1000;
+    short* d = (short*)malloc(size_t(n) * 2);
+    for (unsigned i = 0; i < n; i++) {
+      float prog = float(i) / n;
+      float freq = descend ? f * (1.0f - 0.6f * prog) : f;
+      float env = 1.0f - prog;  // linear decay
+      float s = sinf(2.0f * 3.14159265f * freq * (float(i) / sr)) * env * 0.35f;
+      d[i] = short(s * 32767);
+    }
+    Wave w;
+    w.frameCount = n;
+    w.sampleRate = sr;
+    w.sampleSize = 16;
+    w.channels = 1;
+    w.data = d;
+    Sound snd = LoadSoundFromWave(w);
+    free(d);
+    return snd;
   }
 };
 
@@ -221,10 +291,10 @@ static void exportShot(FrameBuffer& fb, const char* path, int scale) {
 // guide/game, let it settle, and stamp on the overlay if asked
 static void shoot(const char* dir, const char* file, Scene* sc,
                   Settings settings, TimeSource& time, InputState& held,
-                  int paletteIdx, bool startIt, int frames) {
+                  AudioSink& audio, int paletteIdx, bool startIt, int frames) {
   FrameBuffer fb;
   settings.paletteIndex = paletteIdx;
-  Context ctx = {fb, time, held, &palettes::byIndex(paletteIdx), 0};
+  Context ctx = {fb, time, held, audio, &palettes::byIndex(paletteIdx), 0};
   sc->start(ctx);
   if (startIt) sc->input(ctx, Key::Select);
   for (int f = 0; f < frames; f++) {
@@ -246,26 +316,27 @@ static int renderShots(const char* dir) {
 
   SystemTime time;
   KeyboardInput held;
+  SilentAudio audio;
   Settings s;              // defaults; per-shot overrides below
   Settings ov = s;
   ov.overlayType = 1;      // digital overlay, centered
   ov.overlaySize = 2;
 
-  ClockScene clock;               shoot(dir, "clock.png", &clock, s, time, held, 2, false, 60);
-  AnalogClockScene analog;        shoot(dir, "analog.png", &analog, s, time, held, 2, false, 60);
-  WordClockScene word;            shoot(dir, "wordclock.png", &word, s, time, held, 3, false, 60);
-  SpiroScene spiro;               shoot(dir, "spiro.png", &spiro, s, time, held, 0, false, 900);
-  MandalaScene mandala;           shoot(dir, "mandala.png", &mandala, s, time, held, 4, false, 500);
-  RainScene rain;                 shoot(dir, "rain.png", &rain, s, time, held, 6, false, 200);
-  FireScene fire(s);              shoot(dir, "fireplace.png", &fire, s, time, held, 0, false, 300);
-  PlasmaScene plasma;             shoot(dir, "plasma.png", &plasma, s, time, held, 0, false, 60);
-  YogaScene yoga(s);              shoot(dir, "yoga.png", &yoga, s, time, held, 0, true, 120);
+  ClockScene clock;               shoot(dir, "clock.png", &clock, s, time, held, audio, 2, false, 60);
+  AnalogClockScene analog;        shoot(dir, "analog.png", &analog, s, time, held, audio, 2, false, 60);
+  WordClockScene word;            shoot(dir, "wordclock.png", &word, s, time, held, audio, 3, false, 60);
+  SpiroScene spiro;               shoot(dir, "spiro.png", &spiro, s, time, held, audio, 0, false, 900);
+  MandalaScene mandala;           shoot(dir, "mandala.png", &mandala, s, time, held, audio, 4, false, 500);
+  RainScene rain;                 shoot(dir, "rain.png", &rain, s, time, held, audio, 6, false, 200);
+  FireScene fire(s);              shoot(dir, "fireplace.png", &fire, s, time, held, audio, 0, false, 300);
+  PlasmaScene plasma;             shoot(dir, "plasma.png", &plasma, s, time, held, audio, 0, false, 60);
+  YogaScene yoga(s);              shoot(dir, "yoga.png", &yoga, s, time, held, audio, 0, true, 120);
   Settings kb = s; kb.exerciseProgram = 1;
-  ExerciseScene ex(kb);           shoot(dir, "exercise.png", &ex, kb, time, held, 0, true, 90);
-  BreatheScene breathe(s);        shoot(dir, "breathe.png", &breathe, s, time, held, 0, true, 60);
-  PongScene pong(s);              shoot(dir, "pong.png", &pong, s, time, held, 0, true, 120);
-  SnakeScene snake(s);            shoot(dir, "snake.png", &snake, s, time, held, 0, true, 200);
-  SpiroScene spiro2;              shoot(dir, "overlay.png", &spiro2, ov, time, held, 0, false, 900);
+  ExerciseScene ex(kb);           shoot(dir, "exercise.png", &ex, kb, time, held, audio, 0, true, 90);
+  BreatheScene breathe(s);        shoot(dir, "breathe.png", &breathe, s, time, held, audio, 0, true, 60);
+  PongScene pong(s);              shoot(dir, "pong.png", &pong, s, time, held, audio, 0, true, 120);
+  SnakeScene snake(s);            shoot(dir, "snake.png", &snake, s, time, held, audio, 0, true, 200);
+  SpiroScene spiro2;              shoot(dir, "overlay.png", &spiro2, ov, time, held, audio, 0, false, 900);
 
   CloseWindow();
   return 0;
@@ -284,6 +355,8 @@ int main(int argc, char** argv) {
   FrameBuffer fb;
   SystemTime timeSource;
   KeyboardInput heldKeys;
+  SimAudio audio;
+  audio.init();
 
   Settings settings;
   FileSettingsStore store;
@@ -316,7 +389,7 @@ int main(int argc, char** argv) {
   int current = 0;
   bool inSettings = false;
 
-  Context ctx = {fb, timeSource, heldKeys,
+  Context ctx = {fb, timeSource, heldKeys, audio,
                  &palettes::byIndex(settings.paletteIndex), 0};
 
   scenes[current]->start(ctx);
@@ -386,6 +459,9 @@ int main(int argc, char** argv) {
     // the clock-overlay button: cycle off -> digital -> analog -> word
     if (IsKeyPressed(KEY_C))
       settings.overlayType = uint8_t((settings.overlayType + 1) % 4);
+
+    // A toggles the simulator's beep audio (off by default)
+    if (IsKeyPressed(KEY_A)) audio.setEnabled(!audio.enabled());
 
     // autoplay cycles eligible scenes; paused while the menu is open
     if (!inSettings && settings.autoplay && switchTo < 0 &&

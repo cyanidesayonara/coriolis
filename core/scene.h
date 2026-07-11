@@ -9,6 +9,7 @@
 
 #include "display.h"
 #include "palette.h"
+#include "audio.h"
 
 namespace coriolis {
 
@@ -49,6 +50,7 @@ struct Context {
   FrameBuffer& fb;
   TimeSource& time;
   InputState& held;
+  AudioSink& audio;
   const Palette* palette;
   uint32_t nowMs;  // monotonic milliseconds since start
 };

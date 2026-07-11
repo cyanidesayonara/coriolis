@@ -103,6 +103,8 @@ class ExerciseScene : public Scene {
         move_ = 0;
         resting_ = false;
         phaseStartMs_ = ctx.nowMs;
+        ctx.audio.play(Cue::StartBell);
+        ctx.audio.voice(EX_VOICE_BASE + move_);  // speak the move name
         return true;
       }
       if (k == Key::Up || k == Key::Down) {
@@ -149,6 +151,9 @@ class ExerciseScene : public Scene {
         resting_ = false;
         move_ = (move_ + 1) % count_;
         phaseStartMs_ = ctx.nowMs;
+        lastRep_ = -1;
+        ctx.audio.play(Cue::Chime);
+        ctx.audio.voice(EX_VOICE_BASE + move_);  // speak the next move name
         return 33;
       }
       drawRest(ctx, remain);
@@ -160,8 +165,14 @@ class ExerciseScene : public Scene {
     if (!paused_ && rep >= settings_.exerciseReps) {
       resting_ = true;
       phaseStartMs_ = ctx.nowMs;
-      // move complete: on the device a chime plays here
+      ctx.audio.play(Cue::FinishBell);  // move complete
       return 33;
+    }
+
+    // count the reps aloud, like a coach
+    if (!paused_ && rep != lastRep_) {
+      lastRep_ = rep;
+      ctx.audio.voice(NUM_VOICE_BASE + rep + 1);
     }
 
     // triangle within a rep: a -> b -> a, eased
@@ -198,11 +209,15 @@ class ExerciseScene : public Scene {
  private:
   static const uint32_t REST_MS = 4000;
   static const int MAX_MOVES = 4;
+  // voice-clip index namespaces (see docs/AUDIO.md)
+  static const int EX_VOICE_BASE = 100;   // exercise move names
+  static const int NUM_VOICE_BASE = 200;  // spoken numbers 1..N
 
   Settings& settings_;
   const Exercise* program_[MAX_MOVES];
   int count_ = 0;
   int move_ = 0;
+  int lastRep_ = -1;
   bool resting_ = false;
   bool paused_ = false;
   bool started_ = false;

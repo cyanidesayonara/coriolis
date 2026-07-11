@@ -30,6 +30,8 @@ class BreatheScene : public Scene {
         started_ = true;
         cycleStartMs_ = ctx.nowMs;
         cycles_ = 0;
+        lastPhase_ = -1;
+        ctx.audio.play(Cue::StartBell);
         return true;
       }
       if (k == Key::Up || k == Key::Down) {
@@ -89,6 +91,14 @@ class BreatheScene : public Scene {
     float t = (inCycle - acc) / float(phaseLen[phase]);
     t = t * t * (3.0f - 2.0f * t);  // ease the growth
 
+    // a soft cue as each phase begins
+    if (phase != lastPhase_) {
+      lastPhase_ = phase;
+      static const Cue cues[4] = {Cue::BreatheIn, Cue::BreatheHold,
+                                  Cue::BreatheOut, Cue::BreatheHold};
+      ctx.audio.play(cues[phase]);
+    }
+
     int size = ctx.fb.width() < ctx.fb.height() ? ctx.fb.width()
                                                 : ctx.fb.height();
     int minR = size / 10;
@@ -134,6 +144,7 @@ class BreatheScene : public Scene {
  private:
   Settings& settings_;
   bool started_ = false;
+  int lastPhase_ = -1;
   uint32_t cycleStartMs_ = 0;
   int cycles_ = 0;
 };
