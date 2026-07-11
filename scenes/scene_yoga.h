@@ -17,6 +17,7 @@
 #include "../core/settings.h"
 #include "guide_ui.h"
 #include "figure.h"
+#include "intro.h"
 
 namespace coriolis {
 
@@ -91,10 +92,24 @@ class YogaScene : public Scene {
     routine_[5] = &yoga_poses::COBRA;
     step_ = 0;
     paused_ = false;
+    started_ = false;
     stepStartMs_ = ctx.nowMs;
   }
 
   bool input(Context& ctx, Key k) {
+    if (!started_) {  // setup screen: OK begins, up/down sets the pace
+      if (k == Key::Select) {
+        started_ = true;
+        stepStartMs_ = ctx.nowMs;
+        return true;
+      }
+      if (k == Key::Up || k == Key::Down) {
+        int s = settings_.yogaHoldSec + ((k == Key::Up) ? 5 : -5);
+        settings_.yogaHoldSec = uint16_t(s < 5 ? 5 : (s > 60 ? 60 : s));
+        return true;
+      }
+      return false;
+    }
     if (k == Key::Select) {
       paused_ = !paused_;
       return true;
@@ -110,6 +125,15 @@ class YogaScene : public Scene {
   }
 
   uint32_t draw(Context& ctx) {
+    if (!started_) {
+      char l0[16], l1[16];
+      snprintf(l0, sizeof(l0), "%d POSES", STEPS);
+      snprintf(l1, sizeof(l1), "HOLD %d SEC", settings_.yogaHoldSec);
+      const char* lines[] = {l0, l1};
+      intro::draw(ctx, "YOGA", lines, 2, guide::titleColor());
+      return 60;
+    }
+
     ctx.fb.clear();
 
     uint32_t holdMs = uint32_t(settings_.yogaHoldSec) * 1000;
@@ -164,6 +188,7 @@ class YogaScene : public Scene {
   const YogaPose* routine_[STEPS];
   int step_;
   bool paused_;
+  bool started_;
   uint32_t stepStartMs_;
 };
 

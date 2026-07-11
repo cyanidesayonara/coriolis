@@ -11,6 +11,7 @@
 #include "../core/font.h"
 #include "../core/settings.h"
 #include "guide_ui.h"
+#include "intro.h"
 
 namespace coriolis {
 
@@ -21,12 +22,23 @@ class BreatheScene : public Scene {
   const char* name() const { return "Breathe"; }
   bool autoplayEligible() const { return false; }
 
-  void start(Context& ctx) {
-    cycleStartMs_ = ctx.nowMs;
-    cycles_ = 0;
-  }
+  void start(Context&) { started_ = false; }
 
-  bool input(Context&, Key k) {
+  bool input(Context& ctx, Key k) {
+    if (!started_) {
+      if (k == Key::Select) {
+        started_ = true;
+        cycleStartMs_ = ctx.nowMs;
+        cycles_ = 0;
+        return true;
+      }
+      if (k == Key::Up || k == Key::Down) {
+        int s = settings_.breatheSec + ((k == Key::Up) ? 1 : -1);
+        settings_.breatheSec = uint8_t(s < 3 ? 3 : (s > 8 ? 8 : s));
+        return true;
+      }
+      return false;
+    }
     if (k == Key::Up || k == Key::Down) {  // in-breath length, 3-8s
       int s = settings_.breatheSec + ((k == Key::Up) ? 1 : -1);
       if (s < 3) s = 3;
@@ -38,6 +50,16 @@ class BreatheScene : public Scene {
   }
 
   uint32_t draw(Context& ctx) {
+    if (!started_) {
+      char l0[16], l1[16];
+      snprintf(l0, sizeof(l0), "%s",
+               settings_.breatheStyle == 0 ? "BOX BREATH" : "4-7-8 BREATH");
+      snprintf(l1, sizeof(l1), "%d SEC BASE", settings_.breatheSec);
+      const char* lines[] = {l0, l1};
+      intro::draw(ctx, "BREATHE", lines, 2, guide::titleColor());
+      return 60;
+    }
+
     ctx.fb.clear();
 
     // phase lengths in ms; 4-7-8 scales its classic ratios from the
@@ -111,6 +133,7 @@ class BreatheScene : public Scene {
 
  private:
   Settings& settings_;
+  bool started_ = false;
   uint32_t cycleStartMs_ = 0;
   int cycles_ = 0;
 };

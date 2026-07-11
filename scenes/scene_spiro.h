@@ -1,5 +1,6 @@
-// Spirograph trails — a port of Borealis's PatternSpiro (the pattern that
-// actually ran on the wall for years), reworked against the Coriolis API.
+// Spirograph trails — a faithful port of Borealis's PatternSpiro (which ran
+// on the wall for years). Two nested oscillators trace looping strands; the
+// strand count winds up and back down as arms sweep through the center.
 #ifndef CORIOLIS_SCENE_SPIRO_H
 #define CORIOLIS_SCENE_SPIRO_H
 
@@ -14,59 +15,75 @@ class SpiroScene : public Scene {
 
   void start(Context& ctx) {
     ctx.fb.clear();
-    theta1_ = theta2_ = hue_ = 0;
-    count_ = 1;
-    growing_ = true;
-    lastStepMs_ = lastCountMs_ = 0;
+    theta1_ = theta2_ = hueoffset_ = 0;
+    spirocount_ = 1;
+    spiroincrement_ = false;
+    handledChange_ = false;
+    lastTheta1_ = lastHue_ = lastCount_ = ctx.nowMs;
   }
 
   uint32_t draw(Context& ctx) {
     ctx.fb.dimAll(250);
 
-    const int rx = ctx.fb.width() / 4;
-    const int ry = ctx.fb.height() / 4;
-    uint8_t offset = uint8_t(256 / count_);
+    const int W = ctx.fb.width(), H = ctx.fb.height();
+    const int radiusx = W / 4, radiusy = H / 4;
+    const int minx = W / 2 - radiusx, maxx = W / 2 + radiusx + 1;
+    const int miny = H / 2 - radiusy, maxy = H / 2 + radiusy + 1;
+    const int cx = W / 2, cy = H / 2;
 
-    for (int i = 0; i < count_; i++) {
-      uint8_t phase = uint8_t(theta1_ + i * offset);
-      int cx = CENTER_X - rx + (sin8(phase) * 2 * rx) / 255;
-      int cy = CENTER_Y - ry + (cos8(phase) * 2 * ry) / 255;
+    uint8_t spirooffset = uint8_t(256 / spirocount_);
 
-      uint8_t phase2 = uint8_t(theta2_ + i * offset);
-      int x = cx - rx / 2 + (sin8(phase2) * rx) / 255;
-      int y = cy - ry / 2 + (cos8(phase2) * ry) / 255;
+    bool change = false;
+    for (int i = 0; i < spirocount_; i++) {
+      uint8_t a = uint8_t(theta1_ + i * spirooffset);
+      int x = rescale8(sin8(a), uint8_t(minx), uint8_t(maxx));
+      int y = rescale8(cos8(a), uint8_t(miny), uint8_t(maxy));
 
-      RGB c = ctx.palette->lookup(uint8_t(hue_ + i * offset), 128);
-      ctx.fb.at(x, y).add(c);
+      uint8_t b = uint8_t(theta2_ + i * spirooffset);
+      int x2 = rescale8(sin8(b), uint8_t(x - radiusx), uint8_t(x + radiusx));
+      int y2 = rescale8(cos8(b), uint8_t(y - radiusy), uint8_t(y + radiusy));
+
+      RGB c = ctx.palette->lookup(uint8_t(hueoffset_ + i * spirooffset), 128);
+      ctx.fb.at(x2, y2).add(c);
+
+      if ((x2 == cx && y2 == cy) || (x2 == cx - 1 && y2 == cy - 1))
+        change = true;
     }
 
     theta2_ += 2;
 
-    if (ctx.nowMs - lastStepMs_ >= 12) {
-      lastStepMs_ = ctx.nowMs;
+    if (ctx.nowMs - lastTheta1_ >= 12) {
+      lastTheta1_ = ctx.nowMs;
       theta1_ += 1;
-      hue_ += 1;
     }
 
-    // the strand count pulses up and back down on a loop — the signature
-    // Borealis behavior (the original tied this to sweeps through the
-    // center, which almost never land exactly on a pixel at 128x128)
-    if (ctx.nowMs - lastCountMs_ >= 2200) {
-      lastCountMs_ = ctx.nowMs;
-      if (count_ >= 32) growing_ = false;
-      else if (count_ <= 1) growing_ = true;
-      count_ = growing_ ? count_ * 2 : count_ / 2;
-      if (count_ < 1) count_ = 1;
+    if (ctx.nowMs - lastCount_ >= 75) {
+      lastCount_ = ctx.nowMs;
+      if (change && !handledChange_) {
+        handledChange_ = true;
+        if (spirocount_ >= W || spirocount_ == 1)
+          spiroincrement_ = !spiroincrement_;
+        if (spiroincrement_)
+          spirocount_ = spirocount_ >= 4 ? spirocount_ * 2 : spirocount_ + 1;
+        else
+          spirocount_ = spirocount_ > 4 ? spirocount_ / 2 : spirocount_ - 1;
+      }
+      if (!change) handledChange_ = false;
     }
 
-    return 15;
+    if (ctx.nowMs - lastHue_ >= 33) {
+      lastHue_ = ctx.nowMs;
+      hueoffset_ += 1;
+    }
+
+    return 0;
   }
 
  private:
-  uint8_t theta1_, theta2_, hue_;
-  int count_;
-  bool growing_;
-  uint32_t lastStepMs_, lastCountMs_;
+  uint8_t theta1_, theta2_, hueoffset_;
+  int spirocount_;
+  bool spiroincrement_, handledChange_;
+  uint32_t lastTheta1_, lastHue_, lastCount_;
 };
 
 }

@@ -12,6 +12,7 @@
 #include "../core/settings.h"
 #include "guide_ui.h"
 #include "figure.h"
+#include "intro.h"
 
 namespace coriolis {
 
@@ -46,14 +47,16 @@ static const Exercise JACKS = {"JACKS", 0, false,
    {0.22f,0.08f},{0.68f,0.16f},{0.78f,0.08f},{0.50f,0.50f},{0.40f,0.68f},
    {0.30f,0.90f},{0.60f,0.68f},{0.70f,0.90f},{0.25f,0.92f},{0.75f,0.92f}}};
 
-// kettlebell swing: hinge, bell between the legs -> stand, bell to shoulder
+// kettlebell swing (side view, facing left): a = gorilla hinge with the
+// bell hanging near the floor between the legs; b = stand tall with the
+// arms swung forward and up, bell arcing outward to head height
 static const Exercise KB_SWING = {"KB SWING", -1, true,
-  {{0.40f,0.30f},{0.44f,0.37f},{0.45f,0.39f},{0.46f,0.40f},{0.50f,0.50f},
-   {0.55f,0.62f},{0.51f,0.50f},{0.56f,0.62f},{0.55f,0.52f},{0.60f,0.68f},
-   {0.62f,0.90f},{0.61f,0.68f},{0.63f,0.90f},{0.56f,0.92f},{0.57f,0.92f}},
-  {{0.42f,0.16f},{0.45f,0.24f},{0.45f,0.27f},{0.46f,0.28f},{0.42f,0.34f},
-   {0.40f,0.42f},{0.43f,0.34f},{0.41f,0.42f},{0.50f,0.50f},{0.50f,0.70f},
-   {0.50f,0.90f},{0.51f,0.70f},{0.51f,0.90f},{0.46f,0.92f},{0.47f,0.92f}}};
+  {{0.36f,0.46f},{0.41f,0.49f},{0.43f,0.51f},{0.45f,0.52f},{0.44f,0.66f},
+   {0.45f,0.83f},{0.46f,0.66f},{0.47f,0.83f},{0.58f,0.62f},{0.48f,0.72f},
+   {0.50f,0.90f},{0.51f,0.72f},{0.53f,0.90f},{0.45f,0.92f},{0.48f,0.92f}},
+  {{0.50f,0.17f},{0.50f,0.25f},{0.49f,0.29f},{0.51f,0.30f},{0.41f,0.24f},
+   {0.33f,0.20f},{0.42f,0.25f},{0.34f,0.21f},{0.51f,0.52f},{0.50f,0.71f},
+   {0.50f,0.90f},{0.52f,0.71f},{0.52f,0.90f},{0.45f,0.92f},{0.47f,0.92f}}};
 
 // goblet squat: bell at the chest, stand -> squat
 static const Exercise KB_GOBLET = {"GOBLET", 0, true,
@@ -64,13 +67,15 @@ static const Exercise KB_GOBLET = {"GOBLET", 0, true,
    {0.48f,0.53f},{0.54f,0.49f},{0.52f,0.53f},{0.50f,0.65f},{0.39f,0.74f},
    {0.42f,0.90f},{0.61f,0.74f},{0.58f,0.90f},{0.38f,0.92f},{0.62f,0.92f}}};
 
-// kettlebell press: bell at shoulder -> pressed overhead
+// kettlebell press (two-handed, front view): both hands hold the bell at
+// the chest (a) and press it straight overhead (b). Both wrists share a
+// point so the bell renders at the hands, not in the body's center.
 static const Exercise KB_PRESS = {"KB PRESS", 0, true,
-  {{0.50f,0.18f},{0.50f,0.26f},{0.42f,0.29f},{0.58f,0.29f},{0.40f,0.42f},
-   {0.40f,0.53f},{0.62f,0.34f},{0.60f,0.28f},{0.50f,0.52f},{0.46f,0.70f},
+  {{0.50f,0.18f},{0.50f,0.26f},{0.42f,0.29f},{0.58f,0.29f},{0.45f,0.37f},
+   {0.48f,0.33f},{0.55f,0.37f},{0.52f,0.33f},{0.50f,0.52f},{0.46f,0.70f},
    {0.45f,0.90f},{0.54f,0.70f},{0.55f,0.90f},{0.41f,0.92f},{0.59f,0.92f}},
-  {{0.50f,0.18f},{0.50f,0.26f},{0.42f,0.29f},{0.58f,0.29f},{0.40f,0.42f},
-   {0.40f,0.53f},{0.60f,0.16f},{0.60f,0.05f},{0.50f,0.52f},{0.46f,0.70f},
+  {{0.50f,0.18f},{0.50f,0.26f},{0.42f,0.29f},{0.58f,0.29f},{0.46f,0.14f},
+   {0.48f,0.05f},{0.54f,0.14f},{0.52f,0.05f},{0.50f,0.52f},{0.46f,0.70f},
    {0.45f,0.90f},{0.54f,0.70f},{0.55f,0.90f},{0.41f,0.92f},{0.59f,0.92f}}};
 
 }
@@ -87,10 +92,26 @@ class ExerciseScene : public Scene {
     move_ = 0;
     resting_ = false;
     paused_ = false;
+    started_ = false;
     phaseStartMs_ = ctx.nowMs;
   }
 
-  bool input(Context&, Key k) {
+  bool input(Context& ctx, Key k) {
+    if (!started_) {  // setup screen
+      if (k == Key::Select) {
+        started_ = true;
+        move_ = 0;
+        resting_ = false;
+        phaseStartMs_ = ctx.nowMs;
+        return true;
+      }
+      if (k == Key::Up || k == Key::Down) {
+        int r = settings_.exerciseReps + (k == Key::Up ? 2 : -2);
+        settings_.exerciseReps = uint8_t(r < 4 ? 4 : (r > 20 ? 20 : r));
+        return true;
+      }
+      return false;
+    }
     if (k == Key::Select) { paused_ = !paused_; return true; }
     if (k == Key::Up || k == Key::Down) {  // reps
       int r = settings_.exerciseReps + (k == Key::Up ? 2 : -2);
@@ -103,8 +124,20 @@ class ExerciseScene : public Scene {
   }
 
   uint32_t draw(Context& ctx) {
-    ctx.fb.clear();
     buildProgram();  // reflect a program change made in settings
+
+    if (!started_) {
+      char l0[16], l1[16];
+      snprintf(l0, sizeof(l0), "%s",
+               settings_.exerciseProgram == 0 ? "BODYWEIGHT" : "KETTLEBELL");
+      snprintf(l1, sizeof(l1), "%d MOVES  %d REPS", count_,
+               settings_.exerciseReps);
+      const char* lines[] = {l0, l1};
+      intro::draw(ctx, "EXERCISE", lines, 2, guide::titleColor());
+      return 60;
+    }
+
+    ctx.fb.clear();
 
     uint32_t repMs = uint32_t(settings_.exerciseRepSec) * 1000;
     uint32_t elapsed = ctx.nowMs - phaseStartMs_;
@@ -172,6 +205,7 @@ class ExerciseScene : public Scene {
   int move_ = 0;
   bool resting_ = false;
   bool paused_ = false;
+  bool started_ = false;
   uint32_t phaseStartMs_ = 0;
 
   void buildProgram() {

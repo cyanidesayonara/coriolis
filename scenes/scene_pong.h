@@ -11,6 +11,7 @@
 #include "../core/font.h"
 #include "../core/math8.h"
 #include "../core/settings.h"
+#include "intro.h"
 
 namespace coriolis {
 
@@ -20,19 +21,31 @@ class PongScene : public Scene {
 
   const char* name() const { return "Pong"; }
 
-  // fine to autoplay past the ambient AI match, never past a human game
-  bool autoplayEligible() const { return !playerLeft_; }
+  // a game is never part of the ambient autoplay rotation
+  bool autoplayEligible() const { return false; }
 
-  void start(Context& ctx) {
+  void start(Context& ctx) { started_ = false; }
+
+  void begin(Context& ctx) {
     scoreL_ = scoreR_ = 0;
     leftY_ = rightY_ = ctx.fb.height() / 2.0f;
     playerLeft_ = false;
     lastMs_ = ctx.nowMs;
     serveDir_ = 1;
+    started_ = true;
     serve(ctx, ctx.nowMs + 800);
   }
 
-  bool input(Context&, Key k) {
+  bool input(Context& ctx, Key k) {
+    if (!started_) {  // setup screen: OK starts, up/down set difficulty
+      if (k == Key::Select) { begin(ctx); return true; }
+      if (k == Key::Up || k == Key::Down) {
+        int l = settings_.pongLevel + (k == Key::Up ? 1 : -1);
+        settings_.pongLevel = uint8_t(l < 0 ? 0 : (l > 2 ? 2 : l));
+        return true;
+      }
+      return false;
+    }
     if (k == Key::Up || k == Key::Down) {
       playerLeft_ = true;  // movement itself reads the held state each frame
       return true;
@@ -46,6 +59,15 @@ class PongScene : public Scene {
   }
 
   uint32_t draw(Context& ctx) {
+    if (!started_) {
+      static const char* levels[3] = {"EASY", "NORMAL", "HARD"};
+      char l0[16];
+      snprintf(l0, sizeof(l0), "%s", levels[settings_.pongLevel]);
+      const char* lines[] = {l0, "FIRST TO 9"};
+      intro::draw(ctx, "PONG", lines, 2, RGB(230, 230, 230));
+      return 60;
+    }
+
     const int w = ctx.fb.width();
     const int h = ctx.fb.height();
     const float paddleHalf = h / 12.0f;
@@ -152,6 +174,7 @@ class PongScene : public Scene {
   float leftY_, rightY_;
   int scoreL_, scoreR_;
   bool playerLeft_;
+  bool started_ = false;
   int serveDir_;
   uint32_t lastMs_, serveAtMs_;
 
