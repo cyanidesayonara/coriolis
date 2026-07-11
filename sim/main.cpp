@@ -14,6 +14,7 @@
 #include "../scenes/scene_analogclock.h"
 #include "../scenes/scene_wordclock.h"
 #include "../scenes/scene_pong.h"
+#include "../scenes/scene_snake.h"
 #include "../scenes/scene_yoga.h"
 #include "../scenes/scene_exercise.h"
 #include "../scenes/scene_breathe.h"
@@ -21,6 +22,7 @@
 #include "../scenes/scene_plasma.h"
 #include "../scenes/scene_fire.h"
 #include "../scenes/scene_spiro.h"
+#include "../scenes/scene_mandala.h"
 #include "../scenes/scene_rain.h"
 #include "../scenes/scene_settings.h"
 
@@ -89,6 +91,7 @@ class FileSettingsStore : public SettingsStore {
         out.breatheStyle = uint8_t(value);
       else if (strcmp(key, "breatheSec") == 0) out.breatheSec = uint8_t(value);
       else if (strcmp(key, "pongLevel") == 0) out.pongLevel = uint8_t(value);
+      else if (strcmp(key, "snakeSpeed") == 0) out.snakeSpeed = uint8_t(value);
       else if (strcmp(key, "fireSparks") == 0) out.fireSparks = value != 0;
     }
     fclose(f);
@@ -111,6 +114,7 @@ class FileSettingsStore : public SettingsStore {
     fprintf(f, "breatheStyle=%d\n", s.breatheStyle);
     fprintf(f, "breatheSec=%d\n", s.breatheSec);
     fprintf(f, "pongLevel=%d\n", s.pongLevel);
+    fprintf(f, "snakeSpeed=%d\n", s.snakeSpeed);
     fprintf(f, "fireSparks=%d\n", s.fireSparks ? 1 : 0);
     fclose(f);
   }
@@ -205,11 +209,13 @@ int main() {
   AnalogClockScene analogClock;
   WordClockScene wordClock;
   PongScene pong(settings);
+  SnakeScene snake(settings);
   YogaScene yoga(settings);
   ExerciseScene exercise(settings);
   BreatheScene breathe(settings);
   GifScene gifs(gifSource);
   SpiroScene spiro;
+  MandalaScene mandala;
   RainScene rain;
   FireScene fire(settings);
   PlasmaScene plasma;
@@ -217,9 +223,9 @@ int main() {
 
   // settings is deliberately NOT in the rotation: it opens on its own key,
   // so it can't be stumbled into or autoplayed through
-  Scene* scenes[] = {&clock,    &analogClock, &wordClock, &pong,
-                     &yoga,     &exercise,    &breathe,   &gifs,
-                     &spiro,    &rain,        &fire,      &plasma};
+  Scene* scenes[] = {&clock,    &analogClock, &wordClock, &pong,    &snake,
+                     &yoga,     &exercise,    &breathe,   &gifs,    &spiro,
+                     &mandala,  &rain,        &fire,      &plasma};
   const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
   int current = 0;
   bool inSettings = false;

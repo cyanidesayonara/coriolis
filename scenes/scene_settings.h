@@ -121,7 +121,7 @@ class SettingsScene : public Scene {
     uint8_t id;
   };
 
-  static const int ITEM_COUNT = 14;
+  static const int ITEM_COUNT = 15;
   const Item items_[ITEM_COUNT] = {
       {"GENERAL", "BRIGHT", 0},   {"GENERAL", "PALETTE", 1},
       {"GENERAL", "ROTATE", 2},   {"GENERAL", "AUTO", 3},
@@ -129,7 +129,8 @@ class SettingsScene : public Scene {
       {"YOGA", "HOLD", 6},        {"EXERCISE", "PROGRAM", 11},
       {"EXERCISE", "REPS", 12},   {"EXERCISE", "PACE", 13},
       {"BREATHE", "STYLE", 7},    {"BREATHE", "BREATH", 8},
-      {"PONG", "LEVEL", 9},       {"FIRE", "SPARKS", 10},
+      {"PONG", "LEVEL", 9},       {"SNAKE", "SPEED", 14},
+      {"FIRE", "SPARKS", 10},
   };
 
   Settings& settings_;
@@ -207,6 +208,11 @@ class SettingsScene : public Scene {
         settings_.exerciseRepSec = uint8_t(p < 2 ? 2 : (p > 6 ? 6 : p));
         break;
       }
+      case 14: {
+        int s = settings_.snakeSpeed + dir;
+        settings_.snakeSpeed = uint8_t(s < 0 ? 0 : (s > 2 ? 2 : s));
+        break;
+      }
     }
   }
 
@@ -240,6 +246,12 @@ class SettingsScene : public Scene {
         break;
       case 12: snprintf(out, n, "%d", settings_.exerciseReps); break;
       case 13: snprintf(out, n, "%d", settings_.exerciseRepSec); break;
+      case 14:
+        snprintf(out, n, "%s",
+                 settings_.snakeSpeed == 0
+                     ? "SLOW"
+                     : (settings_.snakeSpeed == 1 ? "NORM" : "FAST"));
+        break;
       default: out[0] = 0;
     }
   }

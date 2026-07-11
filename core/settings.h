@@ -24,6 +24,7 @@ struct Settings {
   uint8_t breatheStyle = 0;      // 0 box (4-4-4-4), 1 relax (4-7-8)
   uint8_t breatheSec = 4;        // in-breath seconds
   uint8_t pongLevel = 1;         // 0 easy, 1 normal, 2 hard
+  uint8_t snakeSpeed = 1;        // 0 slow, 1 normal, 2 fast
   bool fireSparks = true;
 };
 

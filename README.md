@@ -69,6 +69,8 @@ remote/gamepad will behave on the device. Scene-specific keys:
 
 - **Pong**: `↑`/`↓` grab the left paddle (AI-vs-AI until you interfere),
   `ENTER` restarts the match.
+- **Snake**: arrows steer; walls and your own tail are fatal; `ENTER`
+  retries after game over.
 - **Yoga**: `ENTER` pauses, `↑`/`↓` shorten/lengthen the pose hold time.
 - **Gifs**: `↑`/`↓` browse files. Drop `.gif` files into a `gifs/` folder
   next to the exe (`build/gifs/`).
