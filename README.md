@@ -23,7 +23,7 @@ from it. See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
 <tr>
 <td align="center"><img src="docs/screenshots/fireplace.png" width="200"><br>Fireplace</td>
 <td align="center"><img src="docs/screenshots/plasma.png" width="200"><br>Plasma</td>
-<td align="center"><img src="docs/screenshots/overlay.png" width="200"><br>Clock overlay</td>
+<td align="center"><img src="docs/screenshots/bounce.png" width="200"><br>Bouncing clock</td>
 </tr>
 <tr>
 <td align="center"><img src="docs/screenshots/yoga.png" width="200"><br>Yoga</td>
@@ -34,6 +34,11 @@ from it. See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
 <td align="center"><img src="docs/screenshots/pong.png" width="200"><br>Pong</td>
 <td align="center"><img src="docs/screenshots/snake.png" width="200"><br>Snake</td>
 <td align="center"><img src="docs/screenshots/tetris.png" width="200"><br>Tetris</td>
+</tr>
+<tr>
+<td align="center"><img src="docs/screenshots/overlay.png" width="200"><br>Clock overlay</td>
+<td></td>
+<td></td>
 </tr>
 </table>
 
