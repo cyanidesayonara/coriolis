@@ -20,7 +20,7 @@
 #include "../scenes/scene_exercise.h"
 #include "../scenes/scene_breathe.h"
 #include "../scenes/scene_gifs.h"
-#include "../scenes/scene_plasma.h"
+#include "../scenes/scene_aurora.h"
 #include "../scenes/scene_fire.h"
 #include "../scenes/scene_spiro.h"
 #include "../scenes/scene_mandala.h"
@@ -31,6 +31,7 @@
 #include "../scenes/scene_aquarium.h"
 #include "../scenes/scene_settings.h"
 #include "../scenes/clock_overlay.h"
+#include "../scenes/toast.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -335,7 +336,7 @@ static int renderShots(const char* dir) {
   MandalaScene mandala;           shoot(dir, "mandala.png", &mandala, s, time, held, audio, 4, false, 500);
   RainScene rain;                 shoot(dir, "rain.png", &rain, s, time, held, audio, 6, false, 200);
   FireScene fire(s);              shoot(dir, "fireplace.png", &fire, s, time, held, audio, 0, false, 300);
-  PlasmaScene plasma;             shoot(dir, "plasma.png", &plasma, s, time, held, audio, 0, false, 60);
+  AuroraScene auroraShot;         shoot(dir, "aurora.png", &auroraShot, s, time, held, audio, 3, false, 220);
   YogaScene yoga(s);              shoot(dir, "yoga.png", &yoga, s, time, held, audio, 0, true, 120);
   Settings kb = s; kb.exerciseProgram = 1;
   ExerciseScene ex(kb);           shoot(dir, "exercise.png", &ex, kb, time, held, audio, 0, true, 90);
@@ -395,7 +396,7 @@ int main(int argc, char** argv) {
   LifeScene life;
   AquariumScene aquarium;
   FireScene fire(settings);
-  PlasmaScene plasma;
+  AuroraScene aurora;
   SettingsScene settingsScene(settings, store);
 
   // settings is deliberately NOT in the rotation: it opens on its own key,
@@ -404,7 +405,7 @@ int main(int argc, char** argv) {
                      &snake,     &tetris,      &yoga,      &exercise,
                      &breathe,   &gifs,        &spiro,     &mandala,
                      &rain,      &bounce,      &starfield, &life,
-                     &aquarium,  &fire,        &plasma};
+                     &aquarium, &fire, &aurora};
   const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
   int current = 0;
   bool inSettings = false;
@@ -416,6 +417,10 @@ int main(int argc, char** argv) {
 
   uint32_t nextFrameMs = 0;
   uint32_t lastSwitchMs = 0;
+
+  Toast toast;
+  uint32_t transStartMs = 0;  // scene-change fade-in start
+  const uint32_t TRANS_MS = 220;
 
   while (!WindowShouldClose()) {
     ctx.nowMs = uint32_t(GetTime() * 1000.0);
@@ -463,25 +468,35 @@ int main(int argc, char** argv) {
         switchTo = (current + 1) % sceneCount;
       else if (pressed == Key::Left)
         switchTo = (current + sceneCount - 1) % sceneCount;
-      else if (pressed == Key::Up)
-        settings.paletteIndex =
-            (settings.paletteIndex + 1) % palettes::COUNT;
-      else if (pressed == Key::Down)
+      else if (pressed == Key::Up) {
+        settings.paletteIndex = (settings.paletteIndex + 1) % palettes::COUNT;
+        toast.show(palettes::byIndex(settings.paletteIndex).name, ctx.nowMs);
+      } else if (pressed == Key::Down) {
         settings.paletteIndex =
             (settings.paletteIndex + palettes::COUNT - 1) % palettes::COUNT;
-      else if (pressed == Key::Back)
+        toast.show(palettes::byIndex(settings.paletteIndex).name, ctx.nowMs);
+      } else if (pressed == Key::Back)
         switchTo = 0;  // home to the clock from anywhere
     }
 
-    if (IsKeyPressed(KEY_R) && WIDTH == HEIGHT)
+    if (IsKeyPressed(KEY_R) && WIDTH == HEIGHT) {
       settings.rotation = uint8_t((settings.rotation + 1) % 4);
+      toast.show("ROTATED", ctx.nowMs);
+    }
 
     // the clock-overlay button: cycle off -> digital -> analog -> word
-    if (IsKeyPressed(KEY_C))
+    if (IsKeyPressed(KEY_C)) {
       settings.overlayType = uint8_t((settings.overlayType + 1) % 4);
+      char m[20];
+      snprintf(m, sizeof(m), "CLOCK %s", overlay::typeName(settings.overlayType));
+      toast.show(m, ctx.nowMs);
+    }
 
     // A toggles the simulator's beep audio (off by default)
-    if (IsKeyPressed(KEY_A)) audio.setEnabled(!audio.enabled());
+    if (IsKeyPressed(KEY_A)) {
+      audio.setEnabled(!audio.enabled());
+      toast.show(audio.enabled() ? "AUDIO ON" : "AUDIO OFF", ctx.nowMs);
+    }
 
     // autoplay cycles eligible scenes; paused while the menu is open
     if (!inSettings && settings.autoplay && switchTo < 0 &&
@@ -498,6 +513,8 @@ int main(int argc, char** argv) {
       scenes[current]->start(ctx);
       nextFrameMs = 0;
       lastSwitchMs = ctx.nowMs;
+      transStartMs = ctx.nowMs;  // fade the new scene in
+      toast.show(scenes[current]->name(), ctx.nowMs);
     }
 
     // honor each scene's requested frame delay, like the device loop will
@@ -507,8 +524,14 @@ int main(int argc, char** argv) {
       uint32_t requestedDelay = drawScene->draw(ctx);
       // the clock overlay rides on top of whatever just drew (not settings)
       if (!inSettings) overlay::draw(ctx, settings);
+      toast.draw(ctx);  // action confirmations, over everything
       nextFrameMs = ctx.nowMs + requestedDelay;
     }
+
+    // a brief fade-in when the scene changes, for a smooth cut
+    uint8_t transScale = 255;
+    if (ctx.nowMs - transStartMs < TRANS_MS)
+      transScale = uint8_t((ctx.nowMs - transStartMs) * 255 / TRANS_MS);
 
     BeginDrawing();
     ClearBackground(BLACK);
@@ -516,6 +539,7 @@ int main(int argc, char** argv) {
       for (int x = 0; x < WIDTH; x++) {
         RGB c = fb.at(x, y);
         c.dim(settings.brightness);
+        if (transScale < 255) c.dim(transScale);
         int dx = x, dy = y;
         switch (settings.rotation) {
           case 1: dx = HEIGHT - 1 - y; dy = x; break;

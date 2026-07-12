@@ -94,22 +94,37 @@ class SettingsScene : public Scene {
     for (int d = scroll_; d < displayCount && d < scroll_ + maxRows; d++) {
       const Row& r = rows[d];
       if (r.header) {
-        font3x5::drawText(ctx.fb, items_[r.item].section, 3, y, 1,
-                          RGB(0, 170, 150));
+        ctx.fb.rect(1, y + 5, 2, 1, RGB(0, 120, 105));  // section tick
+        font3x5::drawText(ctx.fb, items_[r.item].section, 4, y, 1,
+                          RGB(0, 175, 150));
       } else {
         bool selected = r.item == row_;
-        RGB color = selected ? titleColor : RGB(120, 120, 120);
-        if (selected) font3x5::drawText(ctx.fb, ">", 1, y, 1, color);
-        font3x5::drawText(ctx.fb, items_[r.item].label, 8, y, 1, color);
+        if (selected) {  // a soft highlight bar behind the active row
+          RGB bar = ctx.palette->lookupBright(0);
+          bar.dim(55);
+          ctx.fb.rect(0, y - 1, ctx.fb.width(), rowH - 1, bar);
+        }
+        RGB color = selected ? RGB(255, 255, 255) : RGB(130, 130, 130);
+        font3x5::drawText(ctx.fb, items_[r.item].label, 6, y, 1, color);
 
         char value[16];
         valueText(items_[r.item].id, value, sizeof(value));
         for (char* p = value; *p; ++p) *p = char(toupper((unsigned char)*p));
         int vw = font3x5::textWidth(value, 1);
-        font3x5::drawText(ctx.fb, value, ctx.fb.width() - vw - 3, y, 1, color);
+        RGB vcol = selected ? ctx.palette->lookupBright(0) : RGB(150, 150, 150);
+        font3x5::drawText(ctx.fb, value, ctx.fb.width() - vw - 4, y, 1, vcol);
       }
       y += rowH;
     }
+
+    // scrollbar: shows how far down the list you are
+    int trackH = maxRows * rowH;
+    int thumbH = trackH * maxRows / displayCount;
+    if (thumbH < 4) thumbH = 4;
+    int thumbY = top + (trackH - thumbH) * scroll_ /
+                           (displayCount - maxRows > 0 ? displayCount - maxRows : 1);
+    ctx.fb.rect(ctx.fb.width() - 2, top, 1, trackH, RGB(40, 40, 40));
+    ctx.fb.rect(ctx.fb.width() - 2, thumbY, 1, thumbH, RGB(0, 175, 150));
 
     return 50;
   }

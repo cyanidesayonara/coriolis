@@ -22,7 +22,7 @@ from it. See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
 </tr>
 <tr>
 <td align="center"><img src="docs/screenshots/fireplace.png" width="200"><br>Fireplace</td>
-<td align="center"><img src="docs/screenshots/plasma.png" width="200"><br>Plasma</td>
+<td align="center"><img src="docs/screenshots/aurora.png" width="200"><br>Aurora</td>
 <td align="center"><img src="docs/screenshots/bounce.png" width="200"><br>Bouncing clock</td>
 </tr>
 <tr>
