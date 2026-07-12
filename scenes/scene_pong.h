@@ -50,6 +50,8 @@ class PongScene : public Scene {
       playerLeft_ = true;  // movement itself reads the held state each frame
       return true;
     }
+    if (k == Key::Left || k == Key::Right)
+      return true;  // unused here, but consume so it can't switch scenes
     if (k == Key::Select) {  // restart the match
       scoreL_ = scoreR_ = 0;
       playerLeft_ = false;

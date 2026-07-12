@@ -64,14 +64,15 @@ class SnakeScene : public Scene {
       if (k == Key::Select) { begin(ctx); return true; }
       return false;
     }
-    // 0 up, 1 right, 2 down, 3 left — can't reverse straight back
+    // 0 up, 1 right, 2 down, 3 left — can't reverse straight back. Consume
+    // any arrow (even a rejected reversal) so it never switches scenes.
     int nd = -1;
     if (k == Key::Up) nd = 0;
     else if (k == Key::Right) nd = 1;
     else if (k == Key::Down) nd = 2;
     else if (k == Key::Left) nd = 3;
-    if (nd >= 0 && (nd + 2) % 4 != dir_) {
-      pendingDir_ = nd;
+    if (nd >= 0) {
+      if ((nd + 2) % 4 != dir_) pendingDir_ = nd;
       return true;
     }
     return false;

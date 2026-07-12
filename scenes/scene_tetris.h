@@ -67,12 +67,26 @@ class TetrisScene : public Scene {
       if (k == Key::Select) { begin(ctx); return true; }
       return false;
     }
-    if (k == Key::Left && fits(type_, rot_, px_ - 1, py_)) px_--;
-    else if (k == Key::Right && fits(type_, rot_, px_ + 1, py_)) px_++;
-    else if (k == Key::Up) tryRotate();
-    else if (k == Key::Select) hardDrop(ctx);  // OK slams it down
-    else return false;
-    return true;
+    // consume every control key while playing (even a blocked move), so a
+    // move into the wall never leaks out and switches scenes
+    switch (k) {
+      case Key::Left:
+        if (fits(type_, rot_, px_ - 1, py_)) px_--;
+        return true;
+      case Key::Right:
+        if (fits(type_, rot_, px_ + 1, py_)) px_++;
+        return true;
+      case Key::Up:
+        tryRotate();
+        return true;
+      case Key::Down:
+        return true;  // soft drop is read from the held state each frame
+      case Key::Select:
+        hardDrop(ctx);  // OK slams it down
+        return true;
+      default:
+        return false;  // Back falls through, to leave the game
+    }
   }
 
   uint32_t draw(Context& ctx) {
