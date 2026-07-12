@@ -36,6 +36,11 @@ from it. See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
 <td align="center"><img src="docs/screenshots/tetris.png" width="200"><br>Tetris</td>
 </tr>
 <tr>
+<td align="center"><img src="docs/screenshots/starfield.png" width="200"><br>Starfield</td>
+<td align="center"><img src="docs/screenshots/life.png" width="200"><br>Game of Life</td>
+<td align="center"><img src="docs/screenshots/aquarium.png" width="200"><br>Aquarium</td>
+</tr>
+<tr>
 <td align="center"><img src="docs/screenshots/overlay.png" width="200"><br>Clock overlay</td>
 <td></td>
 <td></td>

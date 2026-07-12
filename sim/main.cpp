@@ -26,6 +26,9 @@
 #include "../scenes/scene_mandala.h"
 #include "../scenes/scene_rain.h"
 #include "../scenes/scene_bounce.h"
+#include "../scenes/scene_starfield.h"
+#include "../scenes/scene_life.h"
+#include "../scenes/scene_aquarium.h"
 #include "../scenes/scene_settings.h"
 #include "../scenes/clock_overlay.h"
 
@@ -341,6 +344,9 @@ static int renderShots(const char* dir) {
   SnakeScene snake(s);            shoot(dir, "snake.png", &snake, s, time, held, audio, 0, true, 200);
   TetrisScene tetris;             shoot(dir, "tetris.png", &tetris, s, time, held, audio, 0, true, 500);
   BounceScene bounce;             shoot(dir, "bounce.png", &bounce, s, time, held, audio, 4, false, 260);
+  StarfieldScene starfield;       shoot(dir, "starfield.png", &starfield, s, time, held, audio, 6, false, 200);
+  LifeScene life;                 shoot(dir, "life.png", &life, s, time, held, audio, 3, false, 120);
+  AquariumScene aquarium;         shoot(dir, "aquarium.png", &aquarium, s, time, held, audio, 2, false, 200);
   SpiroScene spiro2;              shoot(dir, "overlay.png", &spiro2, ov, time, held, audio, 0, false, 900);
 
   CloseWindow();
@@ -385,16 +391,20 @@ int main(int argc, char** argv) {
   MandalaScene mandala;
   RainScene rain;
   BounceScene bounce;
+  StarfieldScene starfield;
+  LifeScene life;
+  AquariumScene aquarium;
   FireScene fire(settings);
   PlasmaScene plasma;
   SettingsScene settingsScene(settings, store);
 
   // settings is deliberately NOT in the rotation: it opens on its own key,
   // so it can't be stumbled into or autoplayed through
-  Scene* scenes[] = {&clock,  &analogClock, &wordClock, &pong,   &snake,
-                     &tetris, &yoga,        &exercise,  &breathe, &gifs,
-                     &spiro,  &mandala,     &rain,      &bounce,  &fire,
-                     &plasma};
+  Scene* scenes[] = {&clock,     &analogClock, &wordClock, &pong,
+                     &snake,     &tetris,      &yoga,      &exercise,
+                     &breathe,   &gifs,        &spiro,     &mandala,
+                     &rain,      &bounce,      &starfield, &life,
+                     &aquarium,  &fire,        &plasma};
   const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
   int current = 0;
   bool inSettings = false;
