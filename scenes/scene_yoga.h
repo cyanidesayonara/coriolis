@@ -67,6 +67,34 @@ static const YogaPose DOWN_DOG = {"DOWN DOG", -1, {
     {0.56f, 0.30f}, {0.66f, 0.57f}, {0.74f, 0.86f}, {0.68f, 0.58f},
     {0.75f, 0.87f}, {0.67f, 0.90f}, {0.69f, 0.91f}}};
 
+// side view, sitting back into an invisible chair, arms up along the ears
+static const YogaPose CHAIR = {"CHAIR", -1, {
+    {0.40f, 0.28f}, {0.44f, 0.36f}, {0.45f, 0.38f}, {0.46f, 0.39f},
+    {0.36f, 0.28f}, {0.29f, 0.20f}, {0.37f, 0.29f}, {0.30f, 0.21f},
+    {0.58f, 0.62f}, {0.46f, 0.72f}, {0.50f, 0.90f}, {0.47f, 0.73f},
+    {0.51f, 0.90f}, {0.44f, 0.92f}, {0.45f, 0.92f}}};
+
+// side view, folded at the hips, hands reaching the floor
+static const YogaPose FOLD = {"FORWARD FOLD", -1, {
+    {0.42f, 0.82f}, {0.43f, 0.74f}, {0.43f, 0.72f}, {0.44f, 0.73f},
+    {0.45f, 0.80f}, {0.44f, 0.89f}, {0.46f, 0.80f}, {0.45f, 0.89f},
+    {0.54f, 0.54f}, {0.52f, 0.72f}, {0.52f, 0.90f}, {0.53f, 0.72f},
+    {0.53f, 0.90f}, {0.46f, 0.92f}, {0.47f, 0.92f}}};
+
+// front view, legs wide, torso tilted — one hand to the shin, one to the sky
+static const YogaPose TRIANGLE = {"TRIANGLE", 0, {
+    {0.33f, 0.30f}, {0.38f, 0.36f}, {0.34f, 0.40f}, {0.42f, 0.32f},
+    {0.33f, 0.52f}, {0.31f, 0.65f}, {0.46f, 0.22f}, {0.50f, 0.12f},
+    {0.50f, 0.55f}, {0.32f, 0.72f}, {0.30f, 0.90f}, {0.68f, 0.72f},
+    {0.70f, 0.90f}, {0.26f, 0.92f}, {0.74f, 0.92f}}};
+
+// side view, kneeling folded over the knees, arms stretched out in front
+static const YogaPose CHILD = {"CHILDS POSE", -1, {
+    {0.33f, 0.82f}, {0.40f, 0.79f}, {0.42f, 0.80f}, {0.43f, 0.81f},
+    {0.33f, 0.86f}, {0.24f, 0.88f}, {0.34f, 0.86f}, {0.25f, 0.88f},
+    {0.66f, 0.76f}, {0.62f, 0.88f}, {0.76f, 0.90f}, {0.63f, 0.88f},
+    {0.77f, 0.90f}, {0.83f, 0.91f}, {0.84f, 0.92f}}};
+
 // side view, lying with the chest lifted — feet pointed, tops on the floor
 static const YogaPose COBRA = {"COBRA", -1, {
     {0.29f, 0.60f}, {0.31f, 0.64f}, {0.32f, 0.66f}, {0.34f, 0.67f},
@@ -84,12 +112,17 @@ class YogaScene : public Scene {
   bool autoplayEligible() const { return false; }
 
   void start(Context& ctx) {
+    // a flow: standing poses first, then floor work, ending in rest
     routine_[0] = &yoga_poses::MOUNTAIN;
     routine_[1] = &yoga_poses::STAR;
     routine_[2] = &yoga_poses::WARRIOR;
-    routine_[3] = &yoga_poses::TREE;
-    routine_[4] = &yoga_poses::DOWN_DOG;
-    routine_[5] = &yoga_poses::COBRA;
+    routine_[3] = &yoga_poses::TRIANGLE;
+    routine_[4] = &yoga_poses::TREE;
+    routine_[5] = &yoga_poses::CHAIR;
+    routine_[6] = &yoga_poses::FOLD;
+    routine_[7] = &yoga_poses::DOWN_DOG;
+    routine_[8] = &yoga_poses::COBRA;
+    routine_[9] = &yoga_poses::CHILD;
     step_ = 0;
     paused_ = false;
     started_ = false;
@@ -184,7 +217,7 @@ class YogaScene : public Scene {
   }
 
  private:
-  static const int STEPS = 6;
+  static const int STEPS = 10;
   static const uint32_t TRANSITION_MS = 1400;
 
   Settings& settings_;

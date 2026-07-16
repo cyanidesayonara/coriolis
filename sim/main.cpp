@@ -13,6 +13,7 @@
 #include "../scenes/scene_clock.h"
 #include "../scenes/scene_analogclock.h"
 #include "../scenes/scene_wordclock.h"
+#include "../scenes/scene_calendar.h"
 #include "../scenes/scene_pong.h"
 #include "../scenes/scene_snake.h"
 #include "../scenes/scene_tetris.h"
@@ -36,6 +37,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cctype>
 #include <ctime>
 #include <cmath>
 
@@ -51,7 +53,47 @@ class SystemTime : public TimeSource {
     tod.hour = lt->tm_hour;
     tod.minute = lt->tm_min;
     tod.second = lt->tm_sec;
+    tod.year = lt->tm_year + 1900;
+    tod.month = lt->tm_mon + 1;
+    tod.day = lt->tm_mday;
     return tod;
+  }
+};
+
+// yearly events from events.txt next to the exe, one per line: "DD.MM LABEL"
+// (on the device: the same file on the SD card)
+class FileEventSource : public EventSource {
+ public:
+  int count() {
+    if (!scanned_) scan();
+    return count_;
+  }
+  const Event& get(int i) {
+    if (!scanned_) scan();
+    return events_[i < 0 ? 0 : (i >= count_ ? count_ - 1 : i)];
+  }
+
+ private:
+  static const int MAXE = 24;
+  Event events_[MAXE];
+  int count_ = 0;
+  bool scanned_ = false;
+
+  void scan() {
+    scanned_ = true;
+    FILE* f = fopen("events.txt", "r");
+    if (!f) return;
+    char line[64];
+    while (count_ < MAXE && fgets(line, sizeof(line), f)) {
+      Event& e = events_[count_];
+      if (sscanf(line, "%d.%d %19[^\r\n]", &e.day, &e.month, e.label) == 3 &&
+          e.month >= 1 && e.month <= 12 && e.day >= 1 && e.day <= 31) {
+        for (char* p = e.label; *p; ++p)
+          *p = char(toupper((unsigned char)*p));
+        count_++;
+      }
+    }
+    fclose(f);
   }
 };
 
@@ -316,6 +358,16 @@ static void shoot(const char* dir, const char* file, Scene* sc,
   printf("wrote %s\n", path);
 }
 
+// fixed demo events so the gallery's calendar shot shows a countdown
+class DemoEvents : public EventSource {
+ public:
+  int count() { return 2; }
+  const Event& get(int i) {
+    static const Event e[2] = {{24, 12, "XMAS"}, {31, 12, "NEW YEAR"}};
+    return e[i == 1 ? 1 : 0];
+  }
+};
+
 // `coriolis_sim --shots <dir>` renders the gallery and exits
 static int renderShots(const char* dir) {
   SetConfigFlags(FLAG_WINDOW_HIDDEN);
@@ -332,6 +384,8 @@ static int renderShots(const char* dir) {
   ClockScene clock;               shoot(dir, "clock.png", &clock, s, time, held, audio, 2, false, 60);
   AnalogClockScene analog;        shoot(dir, "analog.png", &analog, s, time, held, audio, 2, false, 60);
   WordClockScene word;            shoot(dir, "wordclock.png", &word, s, time, held, audio, 3, false, 60);
+  DemoEvents demoEvents;
+  CalendarScene cal(demoEvents);  shoot(dir, "calendar.png", &cal, s, time, held, audio, 0, false, 30);
   SpiroScene spiro;               shoot(dir, "spiro.png", &spiro, s, time, held, audio, 0, false, 900);
   MandalaScene mandala;           shoot(dir, "mandala.png", &mandala, s, time, held, audio, 4, false, 500);
   RainScene rain;                 shoot(dir, "rain.png", &rain, s, time, held, audio, 6, false, 200);
@@ -378,9 +432,12 @@ int main(int argc, char** argv) {
 
   RaylibGifSource gifSource;
 
+  FileEventSource eventSource;
+
   ClockScene clock;
   AnalogClockScene analogClock;
   WordClockScene wordClock;
+  CalendarScene calendar(eventSource);
   PongScene pong(settings);
   SnakeScene snake(settings);
   TetrisScene tetris;
@@ -401,11 +458,11 @@ int main(int argc, char** argv) {
 
   // settings is deliberately NOT in the rotation: it opens on its own key,
   // so it can't be stumbled into or autoplayed through
-  Scene* scenes[] = {&clock,     &analogClock, &wordClock, &pong,
-                     &snake,     &tetris,      &yoga,      &exercise,
-                     &breathe,   &gifs,        &spiro,     &mandala,
-                     &rain,      &bounce,      &starfield, &life,
-                     &aquarium, &fire, &aurora};
+  Scene* scenes[] = {&clock,     &analogClock, &wordClock, &calendar,
+                     &pong,      &snake,       &tetris,    &yoga,
+                     &exercise,  &breathe,     &gifs,      &spiro,
+                     &mandala,   &rain,        &bounce,    &starfield,
+                     &life,      &aquarium,    &fire,      &aurora};
   const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
   int current = 0;
   bool inSettings = false;

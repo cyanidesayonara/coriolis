@@ -42,7 +42,7 @@ from it. See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
 </tr>
 <tr>
 <td align="center"><img src="docs/screenshots/overlay.png" width="200"><br>Clock overlay</td>
-<td></td>
+<td align="center"><img src="docs/screenshots/calendar.png" width="200"><br>Calendar</td>
 <td></td>
 </tr>
 </table>
@@ -129,6 +129,9 @@ remote/gamepad will behave on the device. Scene-specific keys:
 - **Yoga**: `ENTER` pauses, `↑`/`↓` shorten/lengthen the pose hold time.
 - **Gifs**: `↑`/`↓` browse files. Drop `.gif` files into a `gifs/` folder
   next to the exe (`build/gifs/`).
+- **Calendar**: fully offline countdowns — put an `events.txt` next to the
+  exe with one yearly event per line (`24.12 Xmas`). The nearest event gets
+  a big countdown, and fireworks on the day itself.
 - **Settings**: `↑`/`↓` pick a row, `←`/`→` adjust. Values apply live and
   persist to `coriolis_settings.txt` next to the exe (SD/EEPROM on the
   device later). Autoplay cycles scenes, skipping games in progress,

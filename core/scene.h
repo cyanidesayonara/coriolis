@@ -17,6 +17,9 @@ struct TimeOfDay {
   int hour;    // 0-23
   int minute;  // 0-59
   int second;  // 0-59
+  int year;    // e.g. 2026
+  int month;   // 1-12
+  int day;     // 1-31
 };
 
 // backends provide real time (system clock / RTC); scenes just ask

@@ -47,6 +47,24 @@ static const Exercise JACKS = {"JACKS", 0, false,
    {0.22f,0.08f},{0.68f,0.16f},{0.78f,0.08f},{0.50f,0.50f},{0.40f,0.68f},
    {0.30f,0.90f},{0.60f,0.68f},{0.70f,0.90f},{0.25f,0.92f},{0.75f,0.92f}}};
 
+// pushup (side view): a = plank on straight arms, b = chest lowered
+static const Exercise PUSHUP = {"PUSHUP", -1, false,
+  {{0.26f,0.48f},{0.31f,0.55f},{0.32f,0.57f},{0.33f,0.58f},{0.31f,0.72f},
+   {0.30f,0.90f},{0.32f,0.73f},{0.31f,0.90f},{0.52f,0.66f},{0.64f,0.73f},
+   {0.76f,0.81f},{0.65f,0.74f},{0.77f,0.82f},{0.80f,0.90f},{0.81f,0.91f}},
+  {{0.25f,0.70f},{0.30f,0.76f},{0.31f,0.78f},{0.32f,0.79f},{0.38f,0.76f},
+   {0.30f,0.90f},{0.39f,0.77f},{0.31f,0.90f},{0.52f,0.79f},{0.64f,0.81f},
+   {0.76f,0.84f},{0.65f,0.82f},{0.77f,0.85f},{0.80f,0.91f},{0.81f,0.92f}}};
+
+// lunge (side view): a = standing tall, b = deep lunge, back knee dipping
+static const Exercise LUNGE = {"LUNGE", -1, false,
+  {{0.48f,0.24f},{0.50f,0.32f},{0.50f,0.34f},{0.51f,0.35f},{0.50f,0.46f},
+   {0.49f,0.56f},{0.51f,0.46f},{0.50f,0.56f},{0.52f,0.56f},{0.51f,0.72f},
+   {0.50f,0.90f},{0.52f,0.72f},{0.51f,0.90f},{0.44f,0.92f},{0.45f,0.92f}},
+  {{0.48f,0.32f},{0.50f,0.40f},{0.50f,0.42f},{0.51f,0.43f},{0.49f,0.52f},
+   {0.51f,0.60f},{0.52f,0.53f},{0.53f,0.60f},{0.52f,0.68f},{0.38f,0.74f},
+   {0.36f,0.90f},{0.62f,0.84f},{0.70f,0.86f},{0.30f,0.92f},{0.76f,0.91f}}};
+
 // kettlebell swing (side view, facing left): a = gorilla hinge with the
 // bell hanging near the floor between the legs; b = stand tall with the
 // arms swung forward and up, bell arcing outward to head height
@@ -226,8 +244,10 @@ class ExerciseScene : public Scene {
   void buildProgram() {
     if (settings_.exerciseProgram == 0) {
       program_[0] = &exercises::SQUAT;
-      program_[1] = &exercises::JACKS;
-      count_ = 2;
+      program_[1] = &exercises::PUSHUP;
+      program_[2] = &exercises::LUNGE;
+      program_[3] = &exercises::JACKS;
+      count_ = 4;
     } else {
       program_[0] = &exercises::KB_SWING;
       program_[1] = &exercises::KB_GOBLET;
