@@ -136,13 +136,14 @@ class SettingsScene : public Scene {
     uint8_t id;
   };
 
-  static const int ITEM_COUNT = 18;
+  static const int ITEM_COUNT = 19;
   const Item items_[ITEM_COUNT] = {
       {"GENERAL", "BRIGHT", 0},   {"GENERAL", "PALETTE", 1},
       {"GENERAL", "ROTATE", 2},   {"GENERAL", "AUTO", 3},
       {"GENERAL", "SECS", 4},     {"OVERLAY", "CLOCK", 15},
       {"OVERLAY", "POS", 16},     {"OVERLAY", "SIZE", 17},
-      {"YOGA", "BODY", 5},        {"YOGA", "HOLD", 6},
+      {"YOGA", "FLOW", 18},       {"YOGA", "BODY", 5},
+      {"YOGA", "HOLD", 6},
       {"EXERCISE", "PROGRAM", 11}, {"EXERCISE", "REPS", 12},
       {"EXERCISE", "PACE", 13},   {"BREATHE", "STYLE", 7},
       {"BREATHE", "BREATH", 8},   {"PONG", "LEVEL", 9},
@@ -240,6 +241,9 @@ class SettingsScene : public Scene {
         settings_.overlaySize = uint8_t(s < 0 ? 0 : (s > 2 ? 2 : s));
         break;
       }
+      case 18:
+        settings_.yogaProgram = uint8_t((settings_.yogaProgram + dir + 3) % 3);
+        break;
     }
   }
 
@@ -296,6 +300,11 @@ class SettingsScene : public Scene {
                      ? "SML"
                      : (settings_.overlaySize == 1 ? "MED" : "LRG"));
         break;
+      case 18: {
+        static const char* fp[3] = {"SUN", "STAND", "RELAX"};
+        snprintf(out, n, "%s", fp[settings_.yogaProgram > 2 ? 0 : settings_.yogaProgram]);
+        break;
+      }
       default: out[0] = 0;
     }
   }

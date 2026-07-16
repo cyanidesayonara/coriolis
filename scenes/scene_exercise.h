@@ -65,6 +65,25 @@ static const Exercise LUNGE = {"LUNGE", -1, false,
    {0.51f,0.60f},{0.52f,0.53f},{0.53f,0.60f},{0.52f,0.68f},{0.38f,0.74f},
    {0.36f,0.90f},{0.62f,0.84f},{0.70f,0.86f},{0.30f,0.92f},{0.76f,0.91f}}};
 
+// situp (side view): a = lying with the knees bent, b = crunched up toward them
+static const Exercise SITUP = {"SITUP", -1, false,
+  {{0.24f,0.84f},{0.30f,0.85f},{0.32f,0.86f},{0.33f,0.87f},{0.38f,0.82f},
+   {0.44f,0.78f},{0.39f,0.82f},{0.45f,0.78f},{0.52f,0.88f},{0.62f,0.72f},
+   {0.66f,0.88f},{0.63f,0.73f},{0.67f,0.88f},{0.72f,0.90f},{0.73f,0.91f}},
+  {{0.38f,0.60f},{0.41f,0.68f},{0.42f,0.70f},{0.43f,0.71f},{0.48f,0.72f},
+   {0.54f,0.70f},{0.49f,0.73f},{0.55f,0.70f},{0.52f,0.88f},{0.62f,0.72f},
+   {0.66f,0.88f},{0.63f,0.73f},{0.67f,0.88f},{0.72f,0.90f},{0.73f,0.91f}}};
+
+// kettlebell row (side view): hinged flat back; a = bell hanging,
+// b = elbows pulled up past the ribs
+static const Exercise KB_ROW = {"KB ROW", -1, true,
+  {{0.36f,0.46f},{0.41f,0.49f},{0.43f,0.51f},{0.45f,0.52f},{0.44f,0.64f},
+   {0.45f,0.78f},{0.46f,0.64f},{0.47f,0.78f},{0.58f,0.62f},{0.48f,0.72f},
+   {0.50f,0.90f},{0.51f,0.72f},{0.53f,0.90f},{0.45f,0.92f},{0.48f,0.92f}},
+  {{0.36f,0.46f},{0.41f,0.49f},{0.43f,0.51f},{0.45f,0.52f},{0.52f,0.52f},
+   {0.48f,0.62f},{0.54f,0.53f},{0.50f,0.62f},{0.58f,0.62f},{0.48f,0.72f},
+   {0.50f,0.90f},{0.51f,0.72f},{0.53f,0.90f},{0.45f,0.92f},{0.48f,0.92f}}};
+
 // kettlebell swing (side view, facing left): a = gorilla hinge with the
 // bell hanging near the floor between the legs; b = stand tall with the
 // arms swung forward and up, bell arcing outward to head height
@@ -226,7 +245,7 @@ class ExerciseScene : public Scene {
 
  private:
   static const uint32_t REST_MS = 4000;
-  static const int MAX_MOVES = 4;
+  static const int MAX_MOVES = 6;
   // voice-clip index namespaces (see docs/AUDIO.md)
   static const int EX_VOICE_BASE = 100;   // exercise move names
   static const int NUM_VOICE_BASE = 200;  // spoken numbers 1..N
@@ -245,14 +264,16 @@ class ExerciseScene : public Scene {
     if (settings_.exerciseProgram == 0) {
       program_[0] = &exercises::SQUAT;
       program_[1] = &exercises::PUSHUP;
-      program_[2] = &exercises::LUNGE;
-      program_[3] = &exercises::JACKS;
-      count_ = 4;
+      program_[2] = &exercises::SITUP;
+      program_[3] = &exercises::LUNGE;
+      program_[4] = &exercises::JACKS;
+      count_ = 5;
     } else {
       program_[0] = &exercises::KB_SWING;
       program_[1] = &exercises::KB_GOBLET;
-      program_[2] = &exercises::KB_PRESS;
-      count_ = 3;
+      program_[2] = &exercises::KB_ROW;
+      program_[3] = &exercises::KB_PRESS;
+      count_ = 4;
     }
     if (move_ >= count_) move_ = 0;
   }

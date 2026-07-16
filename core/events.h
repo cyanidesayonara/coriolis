@@ -29,6 +29,22 @@ class NoEvents : public EventSource {
   }
 };
 
+// Built-in holidays for Barcelona / Badalona (fixed-date ones; the movable
+// feasts — Setmana Santa, Pasqua Granada — shift yearly and are left to
+// events.txt). Backends append these after the user's own events.
+static const Event BCN_HOLIDAYS[] = {
+    {1, 1, "CAP D'ANY"},      {6, 1, "REIS"},
+    {23, 4, "SANT JORDI"},    {1, 5, "1 DE MAIG"},
+    {11, 5, "SANT ANASTASI"},  // Badalona: Festes de Maig
+    {24, 6, "SANT JOAN"},     {15, 8, "L'ASSUMPCIO"},
+    {11, 9, "LA DIADA"},      {24, 9, "LA MERCE"},
+    {12, 10, "HISPANITAT"},   {1, 11, "TOTS SANTS"},
+    {6, 12, "CONSTITUCIO"},   {8, 12, "IMMACULADA"},
+    {25, 12, "NADAL"},        {26, 12, "SANT ESTEVE"},
+};
+static const int BCN_HOLIDAY_COUNT =
+    int(sizeof(BCN_HOLIDAYS) / sizeof(BCN_HOLIDAYS[0]));
+
 }
 
 #endif

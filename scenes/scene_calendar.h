@@ -94,7 +94,7 @@ class CalendarScene : public Scene {
   }
 
  private:
-  static const int MAXE = 24;
+  static const int MAXE = 48;
   static const int MAXP = 60;
 
   struct Spark { float x, y, vx, vy; int life; uint8_t hue; };

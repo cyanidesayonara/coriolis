@@ -22,6 +22,7 @@ struct Settings {
 
   // per-scene
   uint8_t yogaBody = 0;          // 0 female, 1 male
+  uint8_t yogaProgram = 0;       // 0 sun salutation, 1 standing, 2 wind down
   uint16_t yogaHoldSec = 15;
   uint8_t exerciseProgram = 0;   // 0 bodyweight, 1 kettlebell
   uint8_t exerciseReps = 8;

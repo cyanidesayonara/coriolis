@@ -102,6 +102,45 @@ static const YogaPose COBRA = {"COBRA", -1, {
     {0.55f, 0.87f}, {0.71f, 0.89f}, {0.87f, 0.89f}, {0.72f, 0.90f},
     {0.88f, 0.90f}, {0.94f, 0.92f}, {0.95f, 0.93f}}};
 
+// side view, one straight line from head to heels on straight arms
+static const YogaPose PLANK = {"PLANK", -1, {
+    {0.26f, 0.50f}, {0.31f, 0.56f}, {0.32f, 0.57f}, {0.33f, 0.58f},
+    {0.31f, 0.73f}, {0.30f, 0.90f}, {0.32f, 0.74f}, {0.31f, 0.90f},
+    {0.52f, 0.67f}, {0.64f, 0.74f}, {0.76f, 0.82f}, {0.65f, 0.75f},
+    {0.77f, 0.83f}, {0.80f, 0.90f}, {0.81f, 0.91f}}};
+
+// side view, deep lunge with the arms reaching overhead
+static const YogaPose WARRIOR1 = {"WARRIOR 1", -1, {
+    {0.46f, 0.26f}, {0.48f, 0.34f}, {0.48f, 0.36f}, {0.49f, 0.37f},
+    {0.46f, 0.24f}, {0.45f, 0.12f}, {0.48f, 0.25f}, {0.47f, 0.13f},
+    {0.50f, 0.60f}, {0.38f, 0.72f}, {0.36f, 0.90f}, {0.63f, 0.78f},
+    {0.72f, 0.88f}, {0.30f, 0.92f}, {0.78f, 0.91f}}};
+
+// side view, on the back with the hips lifted, knees bent, feet flat
+static const YogaPose BRIDGE = {"BRIDGE", -1, {
+    {0.24f, 0.88f}, {0.30f, 0.86f}, {0.32f, 0.87f}, {0.33f, 0.88f},
+    {0.40f, 0.89f}, {0.48f, 0.90f}, {0.41f, 0.89f}, {0.49f, 0.90f},
+    {0.52f, 0.70f}, {0.64f, 0.66f}, {0.68f, 0.88f}, {0.65f, 0.67f},
+    {0.69f, 0.88f}, {0.74f, 0.90f}, {0.75f, 0.91f}}};
+
+// side view, flat on the back, arms at the sides — rest
+static const YogaPose SAVASANA = {"SAVASANA", -1, {
+    {0.20f, 0.86f}, {0.26f, 0.87f}, {0.28f, 0.87f}, {0.29f, 0.88f},
+    {0.38f, 0.89f}, {0.46f, 0.90f}, {0.39f, 0.90f}, {0.47f, 0.91f},
+    {0.50f, 0.88f}, {0.64f, 0.88f}, {0.78f, 0.88f}, {0.65f, 0.89f},
+    {0.79f, 0.89f}, {0.81f, 0.84f}, {0.82f, 0.85f}}};
+
+// stable voice-clip index for a pose regardless of which flow it's in
+// (see docs/AUDIO.md, voice range 0..19)
+inline int poseVoice(const YogaPose* p) {
+  static const YogaPose* reg[] = {
+      &MOUNTAIN, &STAR,   &WARRIOR,  &TRIANGLE, &TREE,     &CHAIR, &FOLD,
+      &DOWN_DOG, &COBRA,  &CHILD,    &PLANK,    &WARRIOR1, &BRIDGE, &SAVASANA};
+  for (int i = 0; i < int(sizeof(reg) / sizeof(reg[0])); i++)
+    if (reg[i] == p) return i;
+  return 0;
+}
+
 }
 
 class YogaScene : public Scene {
@@ -112,18 +151,8 @@ class YogaScene : public Scene {
   bool autoplayEligible() const { return false; }
 
   void start(Context& ctx) {
-    // a flow: standing poses first, then floor work, ending in rest
-    routine_[0] = &yoga_poses::MOUNTAIN;
-    routine_[1] = &yoga_poses::STAR;
-    routine_[2] = &yoga_poses::WARRIOR;
-    routine_[3] = &yoga_poses::TRIANGLE;
-    routine_[4] = &yoga_poses::TREE;
-    routine_[5] = &yoga_poses::CHAIR;
-    routine_[6] = &yoga_poses::FOLD;
-    routine_[7] = &yoga_poses::DOWN_DOG;
-    routine_[8] = &yoga_poses::COBRA;
-    routine_[9] = &yoga_poses::CHILD;
     step_ = 0;
+    buildRoutine();
     paused_ = false;
     started_ = false;
     stepStartMs_ = ctx.nowMs;
@@ -135,7 +164,7 @@ class YogaScene : public Scene {
         started_ = true;
         stepStartMs_ = ctx.nowMs;
         ctx.audio.play(Cue::StartBell);
-        ctx.audio.voice(step_);  // speak the first pose name
+        ctx.audio.voice(yoga_poses::poseVoice(routine_[step_]));
         return true;
       }
       if (k == Key::Up || k == Key::Down) {
@@ -160,9 +189,12 @@ class YogaScene : public Scene {
   }
 
   uint32_t draw(Context& ctx) {
+    // reflect a flow change made in settings
+    if (settings_.yogaProgram != lastProgram_) buildRoutine();
+
     if (!started_) {
       char l0[16], l1[16];
-      snprintf(l0, sizeof(l0), "%d POSES", STEPS);
+      snprintf(l0, sizeof(l0), "%s  %d POSES", flowName(), count_);
       snprintf(l1, sizeof(l1), "HOLD %d SEC", settings_.yogaHoldSec);
       const char* lines[] = {l0, l1};
       intro::draw(ctx, "YOGA", lines, 2, guide::titleColor());
@@ -177,16 +209,16 @@ class YogaScene : public Scene {
     if (paused_) {
       stepStartMs_ = ctx.nowMs - elapsed;  // freeze progress
     } else if (elapsed >= holdMs) {
-      step_ = (step_ + 1) % STEPS;
+      step_ = (step_ + 1) % count_;
       stepStartMs_ = ctx.nowMs;
       elapsed = 0;
       // pose change: chime, then speak the new pose name
       ctx.audio.play(Cue::Chime);
-      ctx.audio.voice(step_);
+      ctx.audio.voice(yoga_poses::poseVoice(routine_[step_]));
     }
 
     const YogaPose& pose = *routine_[step_];
-    const YogaPose& prev = *routine_[(step_ + STEPS - 1) % STEPS];
+    const YogaPose& prev = *routine_[(step_ + count_ - 1) % count_];
 
     // tween from the previous pose during the first TRANSITION_MS
     float t = elapsed >= TRANSITION_MS ? 1.0f : elapsed / float(TRANSITION_MS);
@@ -200,7 +232,7 @@ class YogaScene : public Scene {
     guide::drawTopBar(ctx, pose.name);
 
     char counter[8];
-    snprintf(counter, sizeof(counter), "%d.%d", step_ + 1, STEPS);
+    snprintf(counter, sizeof(counter), "%d.%d", step_ + 1, count_);
     font3x5::drawText(ctx.fb, counter, ctx.fb.width() - 16, 2, 1,
                       guide::mutedColor());
 
@@ -217,15 +249,50 @@ class YogaScene : public Scene {
   }
 
  private:
-  static const int STEPS = 10;
+  static const int MAX_STEPS = 8;
   static const uint32_t TRANSITION_MS = 1400;
 
   Settings& settings_;
-  const YogaPose* routine_[STEPS];
-  int step_;
+  const YogaPose* routine_[MAX_STEPS];
+  int count_ = 0;
+  int step_ = 0;
+  uint8_t lastProgram_ = 255;
   bool paused_;
   bool started_;
   uint32_t stepStartMs_;
+
+  const char* flowName() const {
+    static const char* names[3] = {"SUN SALUTE", "STANDING", "WIND DOWN"};
+    return names[settings_.yogaProgram > 2 ? 0 : settings_.yogaProgram];
+  }
+
+  // three flows that make sense as sequences, not a random pose cycle
+  void buildRoutine() {
+    using namespace yoga_poses;
+    lastProgram_ = settings_.yogaProgram;
+    switch (settings_.yogaProgram) {
+      case 1:  // standing strength and balance
+        routine_[0] = &MOUNTAIN; routine_[1] = &CHAIR;
+        routine_[2] = &WARRIOR1; routine_[3] = &WARRIOR;
+        routine_[4] = &TRIANGLE; routine_[5] = &STAR;
+        routine_[6] = &TREE;
+        count_ = 7;
+        break;
+      case 2:  // wind down to rest
+        routine_[0] = &FOLD;   routine_[1] = &DOWN_DOG;
+        routine_[2] = &CHILD;  routine_[3] = &COBRA;
+        routine_[4] = &BRIDGE; routine_[5] = &SAVASANA;
+        count_ = 6;
+        break;
+      default:  // sun salutation: the classic energizing loop
+        routine_[0] = &MOUNTAIN; routine_[1] = &FOLD;
+        routine_[2] = &PLANK;    routine_[3] = &COBRA;
+        routine_[4] = &DOWN_DOG; routine_[5] = &FOLD;
+        count_ = 6;
+        break;
+    }
+    if (step_ >= count_) step_ = 0;
+  }
 };
 
 }

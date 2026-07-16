@@ -74,7 +74,7 @@ class FileEventSource : public EventSource {
   }
 
  private:
-  static const int MAXE = 24;
+  static const int MAXE = 48;
   Event events_[MAXE];
   int count_ = 0;
   bool scanned_ = false;
@@ -82,18 +82,22 @@ class FileEventSource : public EventSource {
   void scan() {
     scanned_ = true;
     FILE* f = fopen("events.txt", "r");
-    if (!f) return;
-    char line[64];
-    while (count_ < MAXE && fgets(line, sizeof(line), f)) {
-      Event& e = events_[count_];
-      if (sscanf(line, "%d.%d %19[^\r\n]", &e.day, &e.month, e.label) == 3 &&
-          e.month >= 1 && e.month <= 12 && e.day >= 1 && e.day <= 31) {
-        for (char* p = e.label; *p; ++p)
-          *p = char(toupper((unsigned char)*p));
-        count_++;
+    if (f) {
+      char line[64];
+      while (count_ < MAXE && fgets(line, sizeof(line), f)) {
+        Event& e = events_[count_];
+        if (sscanf(line, "%d.%d %19[^\r\n]", &e.day, &e.month, e.label) == 3 &&
+            e.month >= 1 && e.month <= 12 && e.day >= 1 && e.day <= 31) {
+          for (char* p = e.label; *p; ++p)
+            *p = char(toupper((unsigned char)*p));
+          count_++;
+        }
       }
+      fclose(f);
     }
-    fclose(f);
+    // the built-in local holidays ride along after the personal events
+    for (int i = 0; i < BCN_HOLIDAY_COUNT && count_ < MAXE; i++)
+      events_[count_++] = BCN_HOLIDAYS[i];
   }
 };
 
@@ -200,6 +204,8 @@ class FileSettingsStore : public SettingsStore {
       else if (strcmp(key, "autoplaySeconds") == 0)
         out.autoplaySeconds = uint16_t(value);
       else if (strcmp(key, "yogaBody") == 0) out.yogaBody = uint8_t(value);
+      else if (strcmp(key, "yogaProgram") == 0)
+        out.yogaProgram = uint8_t(value);
       else if (strcmp(key, "yogaHoldSec") == 0)
         out.yogaHoldSec = uint16_t(value);
       else if (strcmp(key, "exerciseProgram") == 0)
@@ -233,6 +239,7 @@ class FileSettingsStore : public SettingsStore {
     fprintf(f, "autoplay=%d\n", s.autoplay ? 1 : 0);
     fprintf(f, "autoplaySeconds=%d\n", s.autoplaySeconds);
     fprintf(f, "yogaBody=%d\n", s.yogaBody);
+    fprintf(f, "yogaProgram=%d\n", s.yogaProgram);
     fprintf(f, "yogaHoldSec=%d\n", s.yogaHoldSec);
     fprintf(f, "exerciseProgram=%d\n", s.exerciseProgram);
     fprintf(f, "exerciseReps=%d\n", s.exerciseReps);
