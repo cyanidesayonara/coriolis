@@ -1,0 +1,67 @@
+diff --git a/src/MatrixTeensy4Hub75Refresh_Impl.h b/src/MatrixTeensy4Hub75Refresh_Impl.h
+index 8e34f33..d4976bd 100644
+--- a/src/MatrixTeensy4Hub75Refresh_Impl.h
++++ b/src/MatrixTeensy4Hub75Refresh_Impl.h
+@@ -82,8 +82,11 @@ template <int refreshDepth, int matrixWidth, int matrixHeight, unsigned char pan
+ uint16_t SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::rowBitStructBytesToShift;
+ template <int refreshDepth, int matrixWidth, int matrixHeight, unsigned char panelType, uint32_t optionFlags>
+ typename SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::timerpair SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::timerLUT[LATCHES_PER_ROW];
+-template <int refreshDepth, int matrixWidth, int matrixHeight, unsigned char panelType, uint32_t optionFlags>
+-DMAMEM typename SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::timerpair SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::timerPairIdle;
++// Coriolis local patch: template statics in .dmabuffers land in COMDAT
++// groups, which GCC 11+ cannot mix with the allocation macro's plain
++// symbols in the same section. File-scope equivalents avoid that.
++struct __attribute__((packed, aligned(2))) SM_timerpair_fs { uint16_t timer_oe; uint16_t timer_period; };
++static DMAMEM SM_timerpair_fs SM_timerPairIdle;
+ template <int refreshDepth, int matrixWidth, int matrixHeight, unsigned char panelType, uint32_t optionFlags>
+ volatile typename SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::rowDataStruct * SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::matrixUpdateRows;
+ template <int refreshDepth, int matrixWidth, int matrixHeight, unsigned char panelType, uint32_t optionFlags>
+@@ -96,8 +99,7 @@ template <int refreshDepth, int matrixWidth, int matrixHeight, unsigned char pan
+ uint8_t SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::submodule;
+ template <int refreshDepth, int matrixWidth, int matrixHeight, unsigned char panelType, uint32_t optionFlags>
+ int SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::dimmingFactor = dimmingMaximum - (100 * 255) / 100;
+-template <int refreshDepth, int matrixWidth, int matrixHeight, unsigned char panelType, uint32_t optionFlags>
+-volatile uint8_t DMAMEM SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::enablerSourceByte;
++static volatile uint8_t DMAMEM SM_enablerSourceByte;
+ template <int refreshDepth, int matrixWidth, int matrixHeight, unsigned char panelType, uint32_t optionFlags>
+ typename SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::flexPinConfigStruct SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::flexPinConfig;
+ template <int refreshDepth, int matrixWidth, int matrixHeight, unsigned char panelType, uint32_t optionFlags>
+@@ -107,12 +109,12 @@ IMXRT_FLEXIO_t * SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, p
+ 
+ 
+ template <int refreshDepth, int matrixWidth, int matrixHeight, unsigned char panelType, uint32_t optionFlags>
+-FLASHMEM SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::SmartMatrixRefreshT4(uint8_t bufferrows, volatile rowDataStruct * rowDataBuf) {
++SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::SmartMatrixRefreshT4(uint8_t bufferrows, volatile rowDataStruct * rowDataBuf) {
+     dmaBufferNumRows = bufferrows;
+     matrixUpdateRows = rowDataBuf;
+-    timerPairIdle.timer_period = MIN_BLOCK_PERIOD_TICKS;
+-    timerPairIdle.timer_oe = MIN_BLOCK_PERIOD_TICKS + 1;
+-    arm_dcache_flush((void*)&timerPairIdle, sizeof(timerPairIdle));
++    SM_timerPairIdle.timer_period = MIN_BLOCK_PERIOD_TICKS;
++    SM_timerPairIdle.timer_oe = MIN_BLOCK_PERIOD_TICKS + 1;
++    arm_dcache_flush((void*)&SM_timerPairIdle, sizeof(SM_timerPairIdle));
+ 
+     // initialize matrixUpdateRows to all zeros to ensure all padding pixels are blank
+     for (int row = 0; row < dmaBufferNumRows; row++) {
+@@ -701,9 +703,9 @@ FLASHMEM void SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, pane
+     // dmaEnable simply writes a bit to the Set Enable register of dmaClockOutData to enable it so it can respond to its trigger.
+     // dmaClockOutData is normally disabled because the trigger is active almost all the time and we don't want it to transfer data continuously.
+     // We could link dmaClockOutData to dmaEnable but testing shows that this does not make it any faster.
+-    enablerSourceByte = DMA_SERQ_SERQ(dmaClockOutData.channel);
+-    arm_dcache_flush((void*)&enablerSourceByte, sizeof(enablerSourceByte)); // Flush cache because enablerSourceByte is in DMAMEM
+-    dmaEnable.source(enablerSourceByte);
++    SM_enablerSourceByte = DMA_SERQ_SERQ(dmaClockOutData.channel);
++    arm_dcache_flush((void*)&SM_enablerSourceByte, sizeof(SM_enablerSourceByte)); // Flush cache because SM_enablerSourceByte is in DMAMEM
++    dmaEnable.source(SM_enablerSourceByte);
+     dmaEnable.destination(DMA_SERQ);
+     dmaEnable.transferCount(LATCHES_PER_ROW); // keep an iteration count to track which bitplane we are dealing with
+     dmaEnable.triggerAtCompletionOf(dmaUpdateTimer); // Link dmaEnable to dmaUpdateTimer
+@@ -780,7 +782,7 @@ FASTRUN void rowShiftCompleteISR(void) {
+ 
+         if (cbIsEmpty(&SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::dmaBuffer)) { // underrun
+             // point dmaUpdateTimer to repeatedly load from values that set mod to MIN_BLOCK_PERIOD_TICKS and disable OE
+-            dmaUpdateTimer.TCD->SADDR = &SmartMatrixRefreshT4<refreshDepth, matrixWidth, matrixHeight, panelType, optionFlags>::timerPairIdle;
++            dmaUpdateTimer.TCD->SADDR = &SM_timerPairIdle;
+             // set timer increment to repeat timerPairIdle
+             dmaUpdateTimer.TCD->SLAST = -TIMER_REGISTERS_TO_UPDATE * sizeof(uint16_t);
+             // disable channel-to-channel linking - don't link dmaClockOutData until buffer is ready

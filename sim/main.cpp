@@ -25,6 +25,7 @@
 #include "../scenes/scene_fire.h"
 #include "../scenes/scene_spiro.h"
 #include "../scenes/scene_mandala.h"
+#include "../scenes/scene_coriolis.h"
 #include "../scenes/scene_rain.h"
 #include "../scenes/scene_bounce.h"
 #include "../scenes/scene_starfield.h"
@@ -395,6 +396,7 @@ static int renderShots(const char* dir) {
   CalendarScene cal(demoEvents);  shoot(dir, "calendar.png", &cal, s, time, held, audio, 0, false, 30);
   SpiroScene spiro;               shoot(dir, "spiro.png", &spiro, s, time, held, audio, 0, false, 900);
   MandalaScene mandala;           shoot(dir, "mandala.png", &mandala, s, time, held, audio, 4, false, 500);
+  CoriolisScene corio;            shoot(dir, "coriolis.png", &corio, s, time, held, audio, 0, false, 420);
   RainScene rain;                 shoot(dir, "rain.png", &rain, s, time, held, audio, 6, false, 200);
   FireScene fire(s);              shoot(dir, "fireplace.png", &fire, s, time, held, audio, 0, false, 300);
   AuroraScene auroraShot;         shoot(dir, "aurora.png", &auroraShot, s, time, held, audio, 3, false, 220);
@@ -454,6 +456,7 @@ int main(int argc, char** argv) {
   GifScene gifs(gifSource);
   SpiroScene spiro;
   MandalaScene mandala;
+  CoriolisScene coriolisScene;
   RainScene rain;
   BounceScene bounce;
   StarfieldScene starfield;
@@ -468,8 +471,9 @@ int main(int argc, char** argv) {
   Scene* scenes[] = {&clock,     &analogClock, &wordClock, &calendar,
                      &pong,      &snake,       &tetris,    &yoga,
                      &exercise,  &breathe,     &gifs,      &spiro,
-                     &mandala,   &rain,        &bounce,    &starfield,
-                     &life,      &aquarium,    &fire,      &aurora};
+                     &mandala,   &coriolisScene, &rain,    &bounce,
+                     &starfield, &life,        &aquarium,  &fire,
+                     &aurora};
   const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
   int current = 0;
   bool inSettings = false;

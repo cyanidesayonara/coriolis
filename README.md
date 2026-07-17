@@ -18,12 +18,12 @@ from it. See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
 <tr>
 <td align="center"><img src="docs/screenshots/spiro.png" width="200"><br>Spiro</td>
 <td align="center"><img src="docs/screenshots/mandala.png" width="200"><br>Mandala</td>
-<td align="center"><img src="docs/screenshots/rain.png" width="200"><br>Digital rain</td>
+<td align="center"><img src="docs/screenshots/coriolis.png" width="200"><br>Coriolis</td>
 </tr>
 <tr>
+<td align="center"><img src="docs/screenshots/rain.png" width="200"><br>Digital rain</td>
 <td align="center"><img src="docs/screenshots/fireplace.png" width="200"><br>Fireplace</td>
 <td align="center"><img src="docs/screenshots/aurora.png" width="200"><br>Aurora</td>
-<td align="center"><img src="docs/screenshots/bounce.png" width="200"><br>Bouncing clock</td>
 </tr>
 <tr>
 <td align="center"><img src="docs/screenshots/yoga.png" width="200"><br>Yoga</td>
@@ -43,7 +43,7 @@ from it. See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
 <tr>
 <td align="center"><img src="docs/screenshots/overlay.png" width="200"><br>Clock overlay</td>
 <td align="center"><img src="docs/screenshots/calendar.png" width="200"><br>Calendar</td>
-<td></td>
+<td align="center"><img src="docs/screenshots/bounce.png" width="200"><br>Bouncing clock</td>
 </tr>
 </table>
 
@@ -58,9 +58,9 @@ output:
 
 ```
 core/     framebuffer, color, 8-bit wave math, palettes, bitmap font, Scene API
-scenes/   everything visible: clock, spiro, fire, plasma, ...
+scenes/   everything visible: clocks, guides, games, ambient art
 sim/      desktop backend: raylib window, system clock, keyboard input
-firmware/ (later) hardware backend for the chosen platform
+firmware/ hardware backend: Teensy 4.1 + SmartLED Shield V5 + SmartMatrix 4
 ```
 
 The simulator is not a side tool — it's the primary development environment.
@@ -136,6 +136,28 @@ remote/gamepad will behave on the device. Scene-specific keys:
   persist to `coriolis_settings.txt` next to the exe (SD/EEPROM on the
   device later). Autoplay cycles scenes, skipping games in progress,
   activities, and the settings screen itself.
+
+## Firmware (Teensy 4.1)
+
+The device firmware in [`firmware/coriolis/`](firmware/coriolis/) runs the
+same `core/` and `scenes/` unchanged, with device backends: the Teensy RTC
+for time, EEPROM for settings, serial characters for bench input (IR remote
+later), built-in holidays (SD later). It compiles today — no hardware needed
+to keep it healthy:
+
+```sh
+# one-time toolchain (arduino-cli + Teensy platform + patched SmartMatrix 4):
+winget install ArduinoSA.CLI
+powershell -File firmware/setup.ps1
+
+# build:
+arduino-cli compile --fqbn teensy:avr:teensy41 firmware/coriolis
+```
+
+SmartMatrix 4.0.3 needs three tiny patches for the GCC 11 toolchain in
+Teensyduino 1.62+ (COMDAT section conflicts and a FLASHMEM constructor
+alias) — `setup.ps1` applies [`smartmatrix-gcc11.patch`](firmware/smartmatrix-gcc11.patch)
+automatically. Flashing waits for the actual board and shield.
 
 ## Adding a scene
 
