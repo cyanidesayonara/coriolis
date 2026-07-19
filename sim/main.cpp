@@ -20,6 +20,8 @@
 #include "../scenes/scene_yoga.h"
 #include "../scenes/scene_exercise.h"
 #include "../scenes/scene_breathe.h"
+#include "../scenes/scene_focus.h"
+#include "../scenes/scene_weather.h"
 #include "../scenes/scene_gifs.h"
 #include "../scenes/scene_aurora.h"
 #include "../scenes/scene_fire.h"
@@ -99,6 +101,45 @@ class FileEventSource : public EventSource {
     // the built-in local holidays ride along after the personal events
     for (int i = 0; i < BCN_HOLIDAY_COUNT && count_ < MAXE; i++)
       events_[count_++] = BCN_HOLIDAYS[i];
+  }
+};
+
+// weather from weather.txt next to the exe: one line "COND TEMP", e.g.
+// "rain 14" or "clear 27". Absent/malformed file -> the scene waits. On the
+// device a tiny UART feeder module pushes the same two fields (or nothing).
+class FileWeatherProvider : public WeatherProvider {
+ public:
+  WeatherInfo now() {
+    WeatherInfo w;
+    w.condition = Wx::Unknown;
+    w.tempC = 0;
+    w.valid = false;
+    FILE* f = fopen("weather.txt", "r");
+    if (!f) return w;
+    char cond[16];
+    int temp;
+    if (fscanf(f, "%15s %d", cond, &temp) == 2) {
+      w.condition = parse(cond);
+      w.tempC = temp;
+      w.valid = w.condition != Wx::Unknown;
+    }
+    fclose(f);
+    return w;
+  }
+
+ private:
+  static Wx parse(const char* s) {
+    if (ieq(s, "clear") || ieq(s, "sun")) return Wx::Clear;
+    if (ieq(s, "clouds") || ieq(s, "cloudy")) return Wx::Clouds;
+    if (ieq(s, "rain")) return Wx::Rain;
+    if (ieq(s, "snow")) return Wx::Snow;
+    if (ieq(s, "storm")) return Wx::Storm;
+    return Wx::Unknown;
+  }
+  static bool ieq(const char* a, const char* b) {
+    for (; *a && *b; ++a, ++b)
+      if (tolower((unsigned char)*a) != tolower((unsigned char)*b)) return false;
+    return *a == *b;
   }
 };
 
@@ -226,6 +267,9 @@ class FileSettingsStore : public SettingsStore {
       else if (strcmp(key, "overlaySize") == 0)
         out.overlaySize = uint8_t(value);
       else if (strcmp(key, "fireSparks") == 0) out.fireSparks = value != 0;
+      else if (strcmp(key, "snakeHigh") == 0) out.snakeHigh = uint16_t(value);
+      else if (strcmp(key, "tetrisHigh") == 0)
+        out.tetrisHigh = uint32_t(value);
     }
     fclose(f);
     return true;
@@ -253,6 +297,8 @@ class FileSettingsStore : public SettingsStore {
     fprintf(f, "overlayPos=%d\n", s.overlayPos);
     fprintf(f, "overlaySize=%d\n", s.overlaySize);
     fprintf(f, "fireSparks=%d\n", s.fireSparks ? 1 : 0);
+    fprintf(f, "snakeHigh=%d\n", s.snakeHigh);
+    fprintf(f, "tetrisHigh=%d\n", int(s.tetrisHigh));
     fclose(f);
   }
 
@@ -376,6 +422,12 @@ class DemoEvents : public EventSource {
   }
 };
 
+// a fixed sunny 27C so the gallery's weather shot has something to show
+class DemoWeather : public WeatherProvider {
+ public:
+  WeatherInfo now() { return {Wx::Clear, 27, true}; }
+};
+
 // `coriolis_sim --shots <dir>` renders the gallery and exits
 static int renderShots(const char* dir) {
   SetConfigFlags(FLAG_WINDOW_HIDDEN);
@@ -406,7 +458,10 @@ static int renderShots(const char* dir) {
   BreatheScene breathe(s);        shoot(dir, "breathe.png", &breathe, s, time, held, audio, 0, true, 60);
   PongScene pong(s);              shoot(dir, "pong.png", &pong, s, time, held, audio, 0, true, 120);
   SnakeScene snake(s);            shoot(dir, "snake.png", &snake, s, time, held, audio, 0, true, 200);
-  TetrisScene tetris;             shoot(dir, "tetris.png", &tetris, s, time, held, audio, 0, true, 500);
+  TetrisScene tetris(s);          shoot(dir, "tetris.png", &tetris, s, time, held, audio, 0, true, 500);
+  FocusScene focus;               shoot(dir, "focus.png", &focus, s, time, held, audio, 0, true, 60);
+  DemoWeather demoWx;
+  WeatherScene weather(demoWx);   shoot(dir, "weather.png", &weather, s, time, held, audio, 0, false, 120);
   BounceScene bounce;             shoot(dir, "bounce.png", &bounce, s, time, held, audio, 4, false, 260);
   StarfieldScene starfield;       shoot(dir, "starfield.png", &starfield, s, time, held, audio, 6, false, 200);
   LifeScene life;                 shoot(dir, "life.png", &life, s, time, held, audio, 3, false, 120);
@@ -442,6 +497,7 @@ int main(int argc, char** argv) {
   RaylibGifSource gifSource;
 
   FileEventSource eventSource;
+  FileWeatherProvider weatherProvider;
 
   ClockScene clock;
   AnalogClockScene analogClock;
@@ -449,10 +505,12 @@ int main(int argc, char** argv) {
   CalendarScene calendar(eventSource);
   PongScene pong(settings);
   SnakeScene snake(settings);
-  TetrisScene tetris;
+  TetrisScene tetris(settings);
   YogaScene yoga(settings);
   ExerciseScene exercise(settings);
   BreatheScene breathe(settings);
+  FocusScene focus;
+  WeatherScene weather(weatherProvider);
   GifScene gifs(gifSource);
   SpiroScene spiro;
   MandalaScene mandala;
@@ -468,12 +526,12 @@ int main(int argc, char** argv) {
 
   // settings is deliberately NOT in the rotation: it opens on its own key,
   // so it can't be stumbled into or autoplayed through
-  Scene* scenes[] = {&clock,     &analogClock, &wordClock, &calendar,
-                     &pong,      &snake,       &tetris,    &yoga,
-                     &exercise,  &breathe,     &gifs,      &spiro,
-                     &mandala,   &coriolisScene, &rain,    &bounce,
-                     &starfield, &life,        &aquarium,  &fire,
-                     &aurora};
+  Scene* scenes[] = {&clock,     &analogClock, &wordClock, &weather,
+                     &calendar,  &pong,        &snake,     &tetris,
+                     &yoga,      &exercise,    &breathe,   &focus,
+                     &gifs,      &spiro,       &mandala,   &coriolisScene,
+                     &rain,      &bounce,      &starfield, &life,
+                     &aquarium,  &fire,        &aurora};
   const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
   int current = 0;
   bool inSettings = false;

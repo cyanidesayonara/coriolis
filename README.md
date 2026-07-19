@@ -16,6 +16,11 @@ from it. See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
 <td align="center"><img src="docs/screenshots/wordclock.png" width="200"><br>Word clock</td>
 </tr>
 <tr>
+<td align="center"><img src="docs/screenshots/weather.png" width="200"><br>Weather</td>
+<td align="center"><img src="docs/screenshots/calendar.png" width="200"><br>Calendar</td>
+<td align="center"><img src="docs/screenshots/bounce.png" width="200"><br>Bouncing clock</td>
+</tr>
+<tr>
 <td align="center"><img src="docs/screenshots/spiro.png" width="200"><br>Spiro</td>
 <td align="center"><img src="docs/screenshots/mandala.png" width="200"><br>Mandala</td>
 <td align="center"><img src="docs/screenshots/coriolis.png" width="200"><br>Coriolis</td>
@@ -31,19 +36,18 @@ from it. See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
 <td align="center"><img src="docs/screenshots/breathe.png" width="200"><br>Breathe</td>
 </tr>
 <tr>
+<td align="center"><img src="docs/screenshots/focus.png" width="200"><br>Focus timer</td>
 <td align="center"><img src="docs/screenshots/pong.png" width="200"><br>Pong</td>
 <td align="center"><img src="docs/screenshots/snake.png" width="200"><br>Snake</td>
-<td align="center"><img src="docs/screenshots/tetris.png" width="200"><br>Tetris</td>
 </tr>
 <tr>
+<td align="center"><img src="docs/screenshots/tetris.png" width="200"><br>Tetris</td>
 <td align="center"><img src="docs/screenshots/starfield.png" width="200"><br>Starfield</td>
 <td align="center"><img src="docs/screenshots/life.png" width="200"><br>Game of Life</td>
-<td align="center"><img src="docs/screenshots/aquarium.png" width="200"><br>Aquarium</td>
 </tr>
 <tr>
+<td align="center"><img src="docs/screenshots/aquarium.png" width="200"><br>Aquarium</td>
 <td align="center"><img src="docs/screenshots/overlay.png" width="200"><br>Clock overlay</td>
-<td align="center"><img src="docs/screenshots/calendar.png" width="200"><br>Calendar</td>
-<td align="center"><img src="docs/screenshots/bounce.png" width="200"><br>Bouncing clock</td>
 </tr>
 </table>
 
@@ -116,6 +120,9 @@ palette; guides and the fireplace keep their own fixed look.
 Guide scenes (`↑`/`↓` set the pace, `ENTER` pauses):
 - **Yoga** holds poses; **Exercise** animates reps with a bodyweight or
   kettlebell program (settings); **Breathe** is box or 4-7-8.
+- **Focus** is a Pomodoro timer: `↑`/`↓` set the work length, `ENTER` starts
+  and pauses. Work and break phases count down big, with a draining ring and
+  a tomato per finished session; every fourth break runs long.
 
 Arrow keys are offered to the active scene first, matching how a
 remote/gamepad will behave on the device. Scene-specific keys:
@@ -123,15 +130,18 @@ remote/gamepad will behave on the device. Scene-specific keys:
 - **Pong**: `↑`/`↓` grab the left paddle (AI-vs-AI until you interfere),
   `ENTER` restarts the match.
 - **Snake**: arrows steer; walls and your own tail are fatal; `ENTER`
-  retries after game over.
+  retries after game over. Your best length is kept and shown on the card.
 - **Tetris**: `←`/`→` move, `↑` rotate, `↓` soft-drop, `ENTER` hard-drop;
-  a landing shadow shows where the piece will fall.
+  a landing shadow shows where the piece will fall. High score persists.
 - **Yoga**: `ENTER` pauses, `↑`/`↓` shorten/lengthen the pose hold time.
 - **Gifs**: `↑`/`↓` browse files. Drop `.gif` files into a `gifs/` folder
   next to the exe (`build/gifs/`).
 - **Calendar**: fully offline countdowns — put an `events.txt` next to the
   exe with one yearly event per line (`24.12 Xmas`). The nearest event gets
   a big countdown, and fireworks on the day itself.
+- **Weather**: an animated sky (sun, clouds, rain, snow, storm) with the
+  temperature. Stays offline — drop a `weather.txt` next to the exe with one
+  line (`clear 27`, `rain 14`) to feed it; without it, the scene waits.
 - **Settings**: `↑`/`↓` pick a row, `←`/`→` adjust. Values apply live and
   persist to `coriolis_settings.txt` next to the exe (SD/EEPROM on the
   device later). Autoplay cycles scenes, skipping games in progress,
@@ -142,8 +152,8 @@ remote/gamepad will behave on the device. Scene-specific keys:
 The device firmware in [`firmware/coriolis/`](firmware/coriolis/) runs the
 same `core/` and `scenes/` unchanged, with device backends: the Teensy RTC
 for time, EEPROM for settings, serial characters for bench input (IR remote
-later), built-in holidays (SD later). It compiles today — no hardware needed
-to keep it healthy:
+later), built-in holidays (SD later), and no weather until a UART feeder
+pushes it. It compiles today — no hardware needed to keep it healthy:
 
 ```sh
 # one-time toolchain (arduino-cli + Teensy platform + patched SmartMatrix 4):

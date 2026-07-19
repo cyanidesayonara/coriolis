@@ -138,17 +138,20 @@ Settings settings;
 EepromStore store;
 NullGifSource gifSource;
 BuiltinEvents eventSource;
+NoWeather weatherProvider;  // a UART weather feeder can replace this later
 
 ClockScene clockScene;
 AnalogClockScene analogClock;
 WordClockScene wordClock;
 CalendarScene calendarScene(eventSource);
+WeatherScene weather(weatherProvider);
 PongScene pong(settings);
 SnakeScene snake(settings);
-TetrisScene tetris;
+TetrisScene tetris(settings);
 YogaScene yoga(settings);
 ExerciseScene exercise(settings);
 BreatheScene breathe(settings);
+FocusScene focus;
 GifScene gifs(gifSource);
 SpiroScene spiro;
 MandalaScene mandala;
@@ -162,12 +165,12 @@ FireScene fire(settings);
 AuroraScene aurora;
 SettingsScene settingsScene(settings, store);
 
-Scene* scenes[] = {&clockScene, &analogClock, &wordClock,    &calendarScene,
-                   &pong,       &snake,       &tetris,       &yoga,
-                   &exercise,   &breathe,     &gifs,         &spiro,
-                   &mandala,    &coriolisScene, &rain,       &bounce,
-                   &starfield,  &life,        &aquarium,     &fire,
-                   &aurora};
+Scene* scenes[] = {&clockScene, &analogClock, &wordClock,    &weather,
+                   &calendarScene, &pong,     &snake,        &tetris,
+                   &yoga,       &exercise,    &breathe,      &focus,
+                   &gifs,       &spiro,       &mandala,      &coriolisScene,
+                   &rain,       &bounce,      &starfield,    &life,
+                   &aquarium,   &fire,        &aurora};
 const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
 
 Context ctx = {fb, timeSource, input, audio, &palettes::byIndex(0), 0};

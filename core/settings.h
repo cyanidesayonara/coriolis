@@ -32,6 +32,10 @@ struct Settings {
   uint8_t pongLevel = 1;         // 0 easy, 1 normal, 2 hard
   uint8_t snakeSpeed = 1;        // 0 slow, 1 normal, 2 fast
   bool fireSparks = true;
+
+  // high scores
+  uint16_t snakeHigh = 0;
+  uint32_t tetrisHigh = 0;
 };
 
 class SettingsStore {

@@ -11,6 +11,7 @@
 #include "../core/scene.h"
 #include "../core/font.h"
 #include "../core/math8.h"
+#include "../core/settings.h"
 #include "intro.h"
 
 namespace coriolis {
@@ -35,6 +36,8 @@ static const int8_t TETROMINO[7][4][4][2] = {
 
 class TetrisScene : public Scene {
  public:
+  explicit TetrisScene(Settings& settings) : settings_(settings) {}
+
   const char* name() const { return "Tetris"; }
   bool autoplayEligible() const { return false; }
 
@@ -91,9 +94,10 @@ class TetrisScene : public Scene {
 
   uint32_t draw(Context& ctx) {
     if (!started_) {
-      char l0[16];
+      char l0[16], l1[16];
       snprintf(l0, sizeof(l0), "START LEVEL %d", startLevel_);
-      const char* lines[] = {l0, "ARROWS  OK DROP"};
+      snprintf(l1, sizeof(l1), "BEST %d", settings_.tetrisHigh);
+      const char* lines[] = {l0, l1};
       intro::draw(ctx, "TETRIS", lines, 2, RGB(90, 210, 230));
       return 60;
     }
@@ -115,10 +119,11 @@ class TetrisScene : public Scene {
   // classic Tetris is 10 wide x 20 tall; bigger cells fill the tall display
   static const int GW = 10, GH = 20, CELL = 6;
 
+  Settings& settings_;
   uint8_t grid_[GW][GH];  // 0 empty, else colorIndex 1..7
   int type_, rot_, px_, py_, next_;
   int score_, lines_, startLevel_ = 0;
-  bool started_ = false, dead_ = false;
+  bool started_ = false, dead_ = false, newHigh_ = false;
   uint8_t bag_[7];
   int bagIdx_ = 7;
   uint32_t lastFall_ = 0;
@@ -150,6 +155,8 @@ class TetrisScene : public Scene {
     py_ = 0;
     if (!fits(type_, rot_, px_, py_)) {  // top-out
       dead_ = true;
+      newHigh_ = uint32_t(score_) > settings_.tetrisHigh;
+      if (newHigh_) settings_.tetrisHigh = uint32_t(score_);
       ctx.audio.play(Cue::Die);
     }
   }
@@ -279,6 +286,9 @@ class TetrisScene : public Scene {
                         RGB(230, 80, 80));
       font3x5::drawText(ctx.fb, ov, bx + 6, by + GH * CELL / 2 + 2, 2,
                         RGB(230, 80, 80));
+      if (newHigh_ && (ctx.nowMs / 300) % 2)
+        font3x5::drawText(ctx.fb, "BEST!", bx + 6, by + GH * CELL / 2 + 18, 1,
+                          RGB(240, 220, 60));
     }
   }
 };

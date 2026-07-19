@@ -81,7 +81,9 @@ class SnakeScene : public Scene {
   uint32_t draw(Context& ctx) {
     if (!started_) {
       static const char* sp[3] = {"SLOW", "NORMAL", "FAST"};
-      const char* lines[] = {sp[settings_.snakeSpeed], "ARROWS TO TURN"};
+      char hi[16];
+      snprintf(hi, sizeof(hi), "BEST %d", settings_.snakeHigh);
+      const char* lines[] = {sp[settings_.snakeSpeed], hi};
       intro::draw(ctx, "SNAKE", lines, 2, RGB(90, 230, 90));
       return 60;
     }
@@ -112,6 +114,7 @@ class SnakeScene : public Scene {
   int dir_, pendingDir_;
   Cell food_;
   bool dead_;
+  bool newHigh_ = false;
   int score_;
   uint32_t lastStepMs_ = 0;
 
@@ -133,6 +136,17 @@ class SnakeScene : public Scene {
     }
   }
 
+  void die(Context& ctx) {
+    dead_ = true;
+    if (score_ > settings_.snakeHigh) {
+      settings_.snakeHigh = uint16_t(score_);
+      newHigh_ = true;
+    } else {
+      newHigh_ = false;
+    }
+    ctx.audio.play(Cue::Die);
+  }
+
   void advance(Context& ctx) {
     dir_ = pendingDir_;
     Cell h = at(0);
@@ -140,8 +154,7 @@ class SnakeScene : public Scene {
     int ny = h.y + (dir_ == 2) - (dir_ == 0);
 
     if (nx < 0 || ny < 0 || nx >= gw_ || ny >= gh_) {
-      dead_ = true;
-      ctx.audio.play(Cue::Die);
+      die(ctx);
       return;
     }
 
@@ -149,8 +162,7 @@ class SnakeScene : public Scene {
     bool growing = (nx == food_.x && ny == food_.y);
     // hitting the body kills, except the tail cell which is about to vacate
     if (occ_[nx][ny] && !(nx == tail.x && ny == tail.y && !growing)) {
-      dead_ = true;
-      ctx.audio.play(Cue::Die);
+      die(ctx);
       return;
     }
 
@@ -199,10 +211,17 @@ class SnakeScene : public Scene {
       int w = font3x5::textWidth(go, 2);
       font3x5::drawText(ctx.fb, go, (ctx.fb.width() - w) / 2,
                         ctx.fb.height() / 2 - 8, 2, RGB(230, 80, 80));
-      const char* again = "OK TO RETRY";
-      int aw = font3x5::textWidth(again, 1);
-      font3x5::drawText(ctx.fb, again, (ctx.fb.width() - aw) / 2,
-                        ctx.fb.height() / 2 + 6, 1, RGB(150, 150, 150));
+      if (newHigh_ && (ctx.nowMs / 300) % 2) {
+        const char* nb = "NEW BEST!";
+        int nw = font3x5::textWidth(nb, 1);
+        font3x5::drawText(ctx.fb, nb, (ctx.fb.width() - nw) / 2,
+                          ctx.fb.height() / 2 + 4, 1, RGB(240, 220, 60));
+      } else {
+        const char* again = "OK TO RETRY";
+        int aw = font3x5::textWidth(again, 1);
+        font3x5::drawText(ctx.fb, again, (ctx.fb.width() - aw) / 2,
+                          ctx.fb.height() / 2 + 6, 1, RGB(150, 150, 150));
+      }
     }
   }
 };
