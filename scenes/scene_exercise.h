@@ -209,6 +209,7 @@ class ExerciseScene : public Scene {
     // count the reps aloud, like a coach
     if (!paused_ && rep != lastRep_) {
       lastRep_ = rep;
+      repFlashMs_ = ctx.nowMs;  // and flash a ring for visible feedback
       ctx.audio.voice(NUM_VOICE_BASE + rep + 1);
     }
 
@@ -222,6 +223,17 @@ class ExerciseScene : public Scene {
 
     guide::drawFigure(ctx, j, ex.face, settings_.yogaBody);
     if (ex.kettlebell) guide::drawKettlebell(ctx, j);
+
+    // a ring pops outward from the body on each completed rep — a beat of
+    // visible "one done" to go with the coach's count
+    uint32_t sinceRep = ctx.nowMs - repFlashMs_;
+    if (sinceRep < 240) {
+      int cx = ctx.fb.width() / 2, cy = ctx.fb.height() / 2;
+      int r = 6 + int(sinceRep / 12);
+      RGB ring = guide::titleColor();
+      ring.dim(uint8_t(220 - sinceRep));
+      ctx.fb.circle(cx, cy, r, ring);
+    }
 
     guide::drawTopBar(ctx, ex.name);
 
@@ -255,6 +267,7 @@ class ExerciseScene : public Scene {
   int count_ = 0;
   int move_ = 0;
   int lastRep_ = -1;
+  uint32_t repFlashMs_ = 0;
   bool resting_ = false;
   bool paused_ = false;
   bool started_ = false;

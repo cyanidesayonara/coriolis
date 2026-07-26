@@ -227,6 +227,20 @@ class YogaScene : public Scene {
     float j[15][2];
     guide::tweenPose(prev.j, pose.j, t, j);
 
+    // once settled in the pose, breathe: the chest and head lift a hair on
+    // the inhale (~4s cycle) and the shoulders open, so a held pose isn't a
+    // frozen mannequin. Skipped mid-transition and while paused.
+    if (t >= 1.0f && !paused_) {
+      float breath = sinf(ctx.nowMs * 0.0016f);
+      const float a = 0.006f;
+      j[0][1] -= breath * a;          // head
+      j[1][1] -= breath * a * 0.7f;   // neck
+      j[2][1] -= breath * a * 0.5f;   // shoulders lift
+      j[3][1] -= breath * a * 0.5f;
+      j[2][0] -= breath * a * 0.4f;   // and open
+      j[3][0] += breath * a * 0.4f;
+    }
+
     guide::drawFigure(ctx, j, pose.face, settings_.yogaBody);
 
     guide::drawTopBar(ctx, pose.name);

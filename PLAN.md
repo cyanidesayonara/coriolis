@@ -91,7 +91,7 @@ starfield, bouncing-DVD-logo, pixel-art photo frames from SD.
 - **Habit tracker wall**: GitHub-contributions-style dot grid; press a
   button when you did the thing. Offline, surprisingly motivating.
 - **Countdown calendar (offline)**: events/birthdays in a file on SD;
-  "12 days to X", fireworks animation on the day itself.
+  "12 days to X", fireworks animation on the day itself. *(Built — Calendar.)*
 - **Kitchen/multi-timer**: named countdowns, glanceable from the stove.
 - **Metronome**: visual beat + DFPlayer click, for music practice.
 
@@ -178,24 +178,63 @@ Rough total: ~€280-330 for the full 128x128 build.
 
 ## Software status (July 2026)
 
-The desktop-first software is well underway — 15 scenes running in the
-simulator (see the README gallery):
+The desktop-first software is mature — 25 scenes running in the simulator
+*and* compiling to Teensy 4.1 firmware (185 KB RAM1 free), all before the
+hardware ships (see the README gallery):
 
-- **Clocks**: digital, analog, word — plus a movable/resizable clock overlay
-  that rides on top of any other scene.
-- **Ambient art**: Spiro, Mandala (kaleidoscopic Spiro), digital rain,
-  fireplace, plasma.
-- **Guided fitness**: yoga (skeleton poses), exercise (bodyweight +
-  kettlebell reps), breathe (box / 4-7-8) — a shared figure renderer and a
-  common intro/settings frame.
-- **Games**: Pong, Snake — with intro cards and per-scene settings.
+- **Clocks & info**: digital, analog, word, weather (offline-fed), calendar
+  (offline countdowns + Barcelona/Badalona holidays), bouncing clock — plus
+  a movable/resizable clock overlay that rides on top of any other scene.
+- **Ambient art**: Labyrinth (first-person raycaster maze), Lava (metaballs),
+  Coriolis (rotating-frame particles), Spiro, Mandala, Aurora, digital rain,
+  fireplace, aquarium, starfield, Game of Life.
+- **Guided fitness**: yoga (14 skeleton poses, 3 flows, now with breathing),
+  exercise (bodyweight + kettlebell, rep-flash feedback), breathe, and Focus
+  (a Pomodoro timer) — a shared figure renderer and a common intro frame.
+- **Games**: Pong, Snake, Tetris — intro cards, per-scene settings, and
+  persistent high scores.
 - **Infrastructure**: sectioned settings menu persisted to a file, autoplay,
-  7 palettes (incl. Matrix green), rotation, GIF slideshow, a `--shots`
-  screenshot generator. Audio (DFPlayer) hooks are stubbed in place.
+  7 palettes (incl. Matrix green), software rotation, GIF slideshow, a
+  `--shots` screenshot generator, and a full Teensy 4.1 firmware target with
+  device backends (RTC, EEPROM, serial input, holidays). Audio (DFPlayer)
+  hooks are stubbed in place.
 
-Still to come in software: DFPlayer audio design, Tetris, more
-poses/exercises, GIF frame timing, weather/calendar providers, and the
-hardware backend once the platform is chosen.
+Still to come in software: DFPlayer audio design, audio-reactive scenes, and
+the hardware-side backends (IR remote, DFPlayer, SD events/GIFs/weather feed)
+that only make sense once the board and shield are on the bench.
+
+## Next level (post-Opus-5 roadmap)
+
+The catalog is broad; the next gains are depth and interactivity. In rough
+priority:
+
+1. **Audio-reactive core.** The one capability the wall still lacks. A mic
+   (MAX9814 / INMP441) on the Teensy, an FFT band-split behind an
+   `AudioSource` interface, and a family of reactive scenes: a spectrum
+   visualizer, a pulsing version of Lava/Aurora, a VU-meter clock. The
+   interface lands first (sim fakes bands from a sine sweep), scenes follow.
+2. **Deeper Labyrinth.** Collectible gems, a timer/score, sprite enemies
+   (billboarded), textured walls — it already proves the raycaster works.
+3. **A second raycaster-class showpiece.** Either a starfield "warp tunnel"
+   or a Mode-7-style floor (racing/agar look). The 3D column renderer is now
+   a reusable trick.
+4. **View-by-view polish pass.** Each scene gets a once-over: grounding,
+   easing, palette-awareness, small motion. Yoga breathing and the exercise
+   rep-flash are the first two; clocks, aquarium, and starfield are next.
+5. **Scoreboard + kitchen/multi-timer.** Trivial to build, genuinely useful,
+   remote-driven — good "the wall earns its keep" scenes.
+
+## Idea backlog (left-field, unvetted — pick favorites later)
+
+- **Falling-sand sandbox**: powder-toy physics (sand, water, fire, plants)
+  you paint with the remote. Mesmerizing ambient *and* interactive.
+- **Fireworks show**: launch-and-burst particle scene, auto on New Year's.
+- **Fluid/smoke sim**: advected dye field, drifts with the palette.
+- **Maze-runner ambient**: the Labyrinth auto-walk as a standalone screensaver.
+- **Conway zoo**: Life variants (WireWorld, Brian's Brain, Langton's ant).
+- **Pixel-art slideshow**: hand-drawn frames with crossfades, SD-served.
+- **Now-playing / VU clock**: audio-reactive time display.
+- **Dice / decision spinner**: remote-triggered, for game nights.
 
 ## Phases
 

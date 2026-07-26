@@ -156,6 +156,8 @@ GifScene gifs(gifSource);
 SpiroScene spiro;
 MandalaScene mandala;
 CoriolisScene coriolisScene;
+LabyrinthScene labyrinth;
+LavaScene lava;
 RainScene rain;
 BounceScene bounce;
 StarfieldScene starfield;
@@ -167,10 +169,11 @@ SettingsScene settingsScene(settings, store);
 
 Scene* scenes[] = {&clockScene, &analogClock, &wordClock,    &weather,
                    &calendarScene, &pong,     &snake,        &tetris,
-                   &yoga,       &exercise,    &breathe,      &focus,
-                   &gifs,       &spiro,       &mandala,      &coriolisScene,
-                   &rain,       &bounce,      &starfield,    &life,
-                   &aquarium,   &fire,        &aurora};
+                   &labyrinth,  &yoga,        &exercise,     &breathe,
+                   &focus,      &gifs,        &spiro,        &mandala,
+                   &coriolisScene, &lava,     &rain,         &bounce,
+                   &starfield,  &life,        &aquarium,     &fire,
+                   &aurora};
 const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
 
 Context ctx = {fb, timeSource, input, audio, &palettes::byIndex(0), 0};

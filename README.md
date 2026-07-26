@@ -21,14 +21,24 @@ from it. See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
 <td align="center"><img src="docs/screenshots/bounce.png" width="200"><br>Bouncing clock</td>
 </tr>
 <tr>
+<td align="center"><img src="docs/screenshots/labyrinth.png" width="200"><br>Labyrinth (raycaster)</td>
+<td align="center"><img src="docs/screenshots/lava.png" width="200"><br>Lava (metaballs)</td>
+<td align="center"><img src="docs/screenshots/coriolis.png" width="200"><br>Coriolis</td>
+</tr>
+<tr>
 <td align="center"><img src="docs/screenshots/spiro.png" width="200"><br>Spiro</td>
 <td align="center"><img src="docs/screenshots/mandala.png" width="200"><br>Mandala</td>
-<td align="center"><img src="docs/screenshots/coriolis.png" width="200"><br>Coriolis</td>
+<td align="center"><img src="docs/screenshots/aurora.png" width="200"><br>Aurora</td>
 </tr>
 <tr>
 <td align="center"><img src="docs/screenshots/rain.png" width="200"><br>Digital rain</td>
 <td align="center"><img src="docs/screenshots/fireplace.png" width="200"><br>Fireplace</td>
-<td align="center"><img src="docs/screenshots/aurora.png" width="200"><br>Aurora</td>
+<td align="center"><img src="docs/screenshots/aquarium.png" width="200"><br>Aquarium</td>
+</tr>
+<tr>
+<td align="center"><img src="docs/screenshots/starfield.png" width="200"><br>Starfield</td>
+<td align="center"><img src="docs/screenshots/life.png" width="200"><br>Game of Life</td>
+<td align="center"><img src="docs/screenshots/bounce.png" width="200"><br>Bouncing clock</td>
 </tr>
 <tr>
 <td align="center"><img src="docs/screenshots/yoga.png" width="200"><br>Yoga</td>
@@ -42,11 +52,6 @@ from it. See [PLAN.md](PLAN.md) for the hardware plan and the platform decision.
 </tr>
 <tr>
 <td align="center"><img src="docs/screenshots/tetris.png" width="200"><br>Tetris</td>
-<td align="center"><img src="docs/screenshots/starfield.png" width="200"><br>Starfield</td>
-<td align="center"><img src="docs/screenshots/life.png" width="200"><br>Game of Life</td>
-</tr>
-<tr>
-<td align="center"><img src="docs/screenshots/aquarium.png" width="200"><br>Aquarium</td>
 <td align="center"><img src="docs/screenshots/overlay.png" width="200"><br>Clock overlay</td>
 </tr>
 </table>
@@ -133,6 +138,9 @@ remote/gamepad will behave on the device. Scene-specific keys:
   retries after game over. Your best length is kept and shown on the card.
 - **Tetris**: `←`/`→` move, `↑` rotate, `↓` soft-drop, `ENTER` hard-drop;
   a landing shadow shows where the piece will fall. High score persists.
+- **Labyrinth**: a first-person raycaster maze. `↑`/`↓` walk, `←`/`→` turn;
+  reach the glowing pillar to descend into a fresh maze (the minimap keeps
+  you oriented). Left alone, it wanders the corridors on its own.
 - **Yoga**: `ENTER` pauses, `↑`/`↓` shorten/lengthen the pose hold time.
 - **Gifs**: `↑`/`↓` browse files. Drop `.gif` files into a `gifs/` folder
   next to the exe (`build/gifs/`).
