@@ -5,6 +5,10 @@ All notable changes to Coriolis will be documented in this file, newest first.
 ## [Unreleased] - 2026-10-23
 
 ### Added
+- **DFPlayer Mini Voice Pack Generator**:
+  - Created `tools/generate_voice_pack.py` to synthesize the complete offline audio suite (sound cues, yoga pose names, exercise movements, spoken counts 1..30, and guidance prompts) for the hardware DFPlayer Mini MP3 module.
+  - Supports Microsoft Edge Neural TTS (`en-US-AriaNeural`) with an offline Windows SAPI fallback, alongside pure mathematical 16-bit 44.1kHz PCM synthesis for chimes, bells, and ticks.
+  - Updated `docs/AUDIO.md` with complete track index tables, FAT32 microSD folder layout (`01/` and `02/`), and Teensy 4.1 hardware wiring schematics.
 - **Smooth Scene-to-Scene Transition Engine**:
   - Implemented hardware-agnostic `TransitionEngine` in `core/transition.h` supporting directional horizontal slides (`SlideLeft`, `SlideRight`), vertical slides (`SlideUp`, `SlideDown`), smooth crossfades (`CrossFade`), and curtain wipes (`WipeLeft`, `WipeRight`) with zero per-frame heap allocations.
   - Smoothstep easing ($3t^2 - 2t^3$) ensures physical, buttery acceleration and deceleration across all transitions.

@@ -2,3 +2,4 @@ build/
 build-*/
 coriolis_settings.txt
 firmware/arduino/
+audio_pack/
