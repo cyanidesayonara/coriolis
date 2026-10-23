@@ -33,9 +33,31 @@ struct Settings {
   uint8_t snakeSpeed = 1;        // 0 slow, 1 normal, 2 fast
   bool fireSparks = true;
 
+  // night mode schedule
+  bool nightMode = true;         // auto-dim during sleep hours
+  uint8_t nightStartHour = 23;   // 23:00 (11 PM)
+  uint8_t nightEndHour = 7;      // 07:00 (7 AM)
+  uint8_t nightBrightness = 16;  // lowest comfortable level
+
   // high scores
   uint16_t snakeHigh = 0;
   uint32_t tetrisHigh = 0;
+
+  bool isNightTime(int currentHour) const {
+    if (!nightMode) return false;
+    if (nightStartHour > nightEndHour) {
+      return currentHour >= nightStartHour || currentHour < nightEndHour;
+    } else {
+      return currentHour >= nightStartHour && currentHour < nightEndHour;
+    }
+  }
+
+  uint8_t effectiveBrightness(int currentHour) const {
+    if (isNightTime(currentHour)) {
+      return nightBrightness < brightness ? nightBrightness : brightness;
+    }
+    return brightness;
+  }
 };
 
 class SettingsStore {

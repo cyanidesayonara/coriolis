@@ -414,7 +414,8 @@ void loop() {
     if (!inSettings && !launcher.isActive()) overlay::draw(ctx, settings);
     if (launcher.isActive()) launcher.draw(ctx);
     toast.draw(ctx);
-    matrix.setBrightness(settings.brightness);
+    TimeOfDay now = timeSource.now();
+    matrix.setBrightness(settings.effectiveBrightness(now.hour));
     blit();
     nextFrameMs = ctx.nowMs + requestedDelay;
   }

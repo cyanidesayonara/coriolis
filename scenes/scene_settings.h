@@ -136,11 +136,13 @@ class SettingsScene : public Scene {
     uint8_t id;
   };
 
-  static const int ITEM_COUNT = 19;
+  static const int ITEM_COUNT = 23;
   const Item items_[ITEM_COUNT] = {
       {"GENERAL", "BRIGHT", 0},   {"GENERAL", "PALETTE", 1},
       {"GENERAL", "ROTATE", 2},   {"GENERAL", "AUTO", 3},
-      {"GENERAL", "SECS", 4},     {"OVERLAY", "CLOCK", 15},
+      {"GENERAL", "SECS", 4},     {"NIGHT", "AUTO", 19},
+      {"NIGHT", "START", 20},     {"NIGHT", "END", 21},
+      {"NIGHT", "BRIGHT", 22},    {"OVERLAY", "CLOCK", 15},
       {"OVERLAY", "POS", 16},     {"OVERLAY", "SIZE", 17},
       {"YOGA", "FLOW", 18},       {"YOGA", "BODY", 5},
       {"YOGA", "HOLD", 6},
@@ -242,8 +244,26 @@ class SettingsScene : public Scene {
         break;
       }
       case 18:
-        settings_.yogaProgram = uint8_t((settings_.yogaProgram + dir + 3) % 3);
+        settings_.yogaProgram = uint8_t((settings_.yogaProgram + dir + 5) % 5);
         break;
+      case 19:
+        settings_.nightMode = !settings_.nightMode;
+        break;
+      case 20: {
+        int h = (settings_.nightStartHour + dir + 24) % 24;
+        settings_.nightStartHour = uint8_t(h);
+        break;
+      }
+      case 21: {
+        int h = (settings_.nightEndHour + dir + 24) % 24;
+        settings_.nightEndHour = uint8_t(h);
+        break;
+      }
+      case 22: {
+        int b = settings_.nightBrightness + dir * 8;
+        settings_.nightBrightness = uint8_t(b < 8 ? 8 : (b > 128 ? 128 : b));
+        break;
+      }
     }
   }
 
@@ -301,10 +321,14 @@ class SettingsScene : public Scene {
                      : (settings_.overlaySize == 1 ? "MED" : "LRG"));
         break;
       case 18: {
-        static const char* fp[3] = {"SUN", "STAND", "RELAX"};
-        snprintf(out, n, "%s", fp[settings_.yogaProgram > 2 ? 0 : settings_.yogaProgram]);
+        static const char* fp[5] = {"WAKE", "SUN", "STAND", "HIPS", "BED"};
+        snprintf(out, n, "%s", fp[settings_.yogaProgram >= 5 ? 0 : settings_.yogaProgram]);
         break;
       }
+      case 19: snprintf(out, n, "%s", settings_.nightMode ? "ON" : "OFF"); break;
+      case 20: snprintf(out, n, "%02d:00", settings_.nightStartHour); break;
+      case 21: snprintf(out, n, "%02d:00", settings_.nightEndHour); break;
+      case 22: snprintf(out, n, "%d", settings_.nightBrightness); break;
       default: out[0] = 0;
     }
   }

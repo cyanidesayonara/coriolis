@@ -5,6 +5,10 @@ All notable changes to Coriolis will be documented in this file, newest first.
 ## [Unreleased] - 2026-10-23
 
 ### Added
+- **Night Mode & Sleep Auto-Dimming**:
+  - Added schedule-based automatic dimming in `core/settings.h` (`nightMode`, `nightStartHour`, `nightEndHour`, `nightBrightness`).
+  - Added dedicated `NIGHT` section to `scenes/scene_settings.h` allowing custom start/end hour and sleep brightness configuration.
+  - Applied effective brightness automatically in both desktop simulator and Teensy 4.1 hardware firmware.
 - **Hardware NEC & Apple IR Remote Driver**:
   - Added interrupt-driven 38kHz NEC pulse decoder in `firmware/coriolis/coriolis.ino` on Pin 2 supporting Apple A1294 aluminum remote and standard universal NEC remotes.
   - Added `docs/REMOTE.md` guide with full wiring schematics, TSOP38238 pinout, command codes, and bench bring-up steps.

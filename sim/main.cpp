@@ -272,6 +272,10 @@ class FileSettingsStore : public SettingsStore {
       else if (strcmp(key, "overlaySize") == 0)
         out.overlaySize = uint8_t(value);
       else if (strcmp(key, "fireSparks") == 0) out.fireSparks = value != 0;
+      else if (strcmp(key, "nightMode") == 0) out.nightMode = value != 0;
+      else if (strcmp(key, "nightStartHour") == 0) out.nightStartHour = uint8_t(value);
+      else if (strcmp(key, "nightEndHour") == 0) out.nightEndHour = uint8_t(value);
+      else if (strcmp(key, "nightBrightness") == 0) out.nightBrightness = uint8_t(value);
       else if (strcmp(key, "snakeHigh") == 0) out.snakeHigh = uint16_t(value);
       else if (strcmp(key, "tetrisHigh") == 0)
         out.tetrisHigh = uint32_t(value);
@@ -302,6 +306,10 @@ class FileSettingsStore : public SettingsStore {
     fprintf(f, "overlayPos=%d\n", s.overlayPos);
     fprintf(f, "overlaySize=%d\n", s.overlaySize);
     fprintf(f, "fireSparks=%d\n", s.fireSparks ? 1 : 0);
+    fprintf(f, "nightMode=%d\n", s.nightMode ? 1 : 0);
+    fprintf(f, "nightStartHour=%d\n", s.nightStartHour);
+    fprintf(f, "nightEndHour=%d\n", s.nightEndHour);
+    fprintf(f, "nightBrightness=%d\n", s.nightBrightness);
     fprintf(f, "snakeHigh=%d\n", s.snakeHigh);
     fprintf(f, "tetrisHigh=%d\n", int(s.tetrisHigh));
     fclose(f);
@@ -696,10 +704,12 @@ int main(int argc, char** argv) {
 
     BeginDrawing();
     ClearBackground(BLACK);
+    TimeOfDay now = timeSource.now();
+    uint8_t effectiveBright = settings.effectiveBrightness(now.hour);
     for (int y = 0; y < HEIGHT; y++) {
       for (int x = 0; x < WIDTH; x++) {
         RGB c = fb.at(x, y);
-        c.dim(settings.brightness);
+        c.dim(effectiveBright);
         if (transScale < 255) c.dim(transScale);
         int dx = x, dy = y;
         switch (settings.rotation) {
