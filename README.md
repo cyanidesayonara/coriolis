@@ -104,10 +104,11 @@ cmake --build build-wide
 |-----|--------|
 | `SPACE` / `→` | next scene |
 | `←` | previous scene |
+| `M` | open scene launcher (categorized quick-jump) |
 | `↑` / `↓` | cycle palette (when the scene doesn't use them) |
 | `S` | open/close settings — jumps to the current scene's section |
 | `C` | cycle the clock overlay (off / digital / analog / word) |
-| `BACKSPACE` | back: closes settings, otherwise home to the clock |
+| `BACKSPACE` | back: closes menu/launcher, otherwise home to the clock |
 | `R` | rotate the display 90° |
 | `ESC` | quit (saves settings) |
 

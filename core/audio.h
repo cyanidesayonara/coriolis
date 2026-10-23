@@ -14,6 +14,8 @@ enum class Cue {
   Chime,       // pose / step / rep change
   StartBell,   // a session begins
   FinishBell,  // a session ends
+  Halfway,     // halfway through a pose hold or set
+  Tick,        // 3-2-1 countdown tick
   BreatheIn,
   BreatheHold,
   BreatheOut,
