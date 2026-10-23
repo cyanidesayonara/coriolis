@@ -14,6 +14,7 @@ struct Settings {
   uint8_t rotation = 0;          // quarter turns
   bool autoplay = false;         // cycle scenes automatically
   uint16_t autoplaySeconds = 30;
+  uint8_t transitionMode = 0;    // 0 auto (slide on arrows, fade on jump), 1 slide, 2 fade, 3 cut
 
   // clock overlay, shown on top of any scene (its own button toggles type)
   uint8_t overlayType = 0;       // 0 off, 1 digital, 2 analog, 3 word

@@ -8,6 +8,7 @@
 
 #include "../core/config.h"
 #include "../core/display.h"
+#include "../core/transition.h"
 #include "../core/scene.h"
 #include "../core/settings.h"
 #include "../scenes/scene_clock.h"
@@ -250,6 +251,8 @@ class FileSettingsStore : public SettingsStore {
       else if (strcmp(key, "autoplay") == 0) out.autoplay = value != 0;
       else if (strcmp(key, "autoplaySeconds") == 0)
         out.autoplaySeconds = uint16_t(value);
+      else if (strcmp(key, "transitionMode") == 0)
+        out.transitionMode = uint8_t(value);
       else if (strcmp(key, "yogaBody") == 0) out.yogaBody = uint8_t(value);
       else if (strcmp(key, "yogaProgram") == 0)
         out.yogaProgram = uint8_t(value);
@@ -292,6 +295,7 @@ class FileSettingsStore : public SettingsStore {
     fprintf(f, "rotation=%d\n", s.rotation);
     fprintf(f, "autoplay=%d\n", s.autoplay ? 1 : 0);
     fprintf(f, "autoplaySeconds=%d\n", s.autoplaySeconds);
+    fprintf(f, "transitionMode=%d\n", s.transitionMode);
     fprintf(f, "yogaBody=%d\n", s.yogaBody);
     fprintf(f, "yogaProgram=%d\n", s.yogaProgram);
     fprintf(f, "yogaHoldSec=%d\n", s.yogaHoldSec);
@@ -555,6 +559,9 @@ int main(int argc, char** argv) {
   int current = 0;
   bool inSettings = false;
 
+  FrameBuffer displayFb;
+  TransitionEngine transition;
+
   Context ctx = {fb, timeSource, heldKeys, audio,
                  &palettes::byIndex(settings.paletteIndex), 0};
 
@@ -564,8 +571,6 @@ int main(int argc, char** argv) {
   uint32_t lastSwitchMs = 0;
 
   Toast toast;
-  uint32_t transStartMs = 0;  // scene-change fade-in start
-  const uint32_t TRANS_MS = 220;
 
   while (!WindowShouldClose()) {
     ctx.nowMs = uint32_t(GetTime() * 1000.0);
@@ -618,10 +623,12 @@ int main(int argc, char** argv) {
     }
 
     int switchTo = -1;
+    TransitionType switchTrans = TransitionType::CrossFade;
     if (!consumed && launcher.isActive() && pressed != Key::None) {
       int chosen = launcher.handleInput(pressed);
       if (chosen >= 0) {
         switchTo = chosen;
+        switchTrans = TransitionType::CrossFade;
       }
       consumed = true;
       nextFrameMs = 0;
@@ -632,19 +639,23 @@ int main(int argc, char** argv) {
         nextFrameMs = 0;
       }
     } else if (!consumed) {
-      if (pressed == Key::Right || IsKeyPressed(KEY_SPACE))
+      if (pressed == Key::Right || IsKeyPressed(KEY_SPACE)) {
         switchTo = (current + 1) % sceneCount;
-      else if (pressed == Key::Left)
+        switchTrans = TransitionType::SlideLeft;
+      } else if (pressed == Key::Left) {
         switchTo = (current + sceneCount - 1) % sceneCount;
-      else if (pressed == Key::Up) {
+        switchTrans = TransitionType::SlideRight;
+      } else if (pressed == Key::Up) {
         settings.paletteIndex = (settings.paletteIndex + 1) % palettes::COUNT;
         toast.show(palettes::byIndex(settings.paletteIndex).name, ctx.nowMs);
       } else if (pressed == Key::Down) {
         settings.paletteIndex =
             (settings.paletteIndex + palettes::COUNT - 1) % palettes::COUNT;
         toast.show(palettes::byIndex(settings.paletteIndex).name, ctx.nowMs);
-      } else if (pressed == Key::Back)
+      } else if (pressed == Key::Back) {
         switchTo = 0;  // home to the clock from anywhere
+        switchTrans = TransitionType::CrossFade;
+      }
     }
 
     if (IsKeyPressed(KEY_R) && WIDTH == HEIGHT) {
@@ -673,15 +684,22 @@ int main(int argc, char** argv) {
       switchTo = (current + 1) % sceneCount;
       while (!scenes[switchTo]->autoplayEligible())
         switchTo = (switchTo + 1) % sceneCount;
+      switchTrans = TransitionType::SlideLeft;
     }
 
     if (switchTo >= 0) {
+      TransitionType resolved = resolveTransition(settings.transitionMode, switchTrans);
+      if (resolved != TransitionType::Cut) {
+        transition.start(transition.isActive(ctx.nowMs) ? displayFb : fb,
+                         resolved, ctx.nowMs, 240);
+      } else {
+        transition.cancel();
+      }
       scenes[current]->stop(ctx);
       current = switchTo;
       scenes[current]->start(ctx);
       nextFrameMs = 0;
       lastSwitchMs = ctx.nowMs;
-      transStartMs = ctx.nowMs;  // fade the new scene in
       toast.show(scenes[current]->name(), ctx.nowMs);
     }
 
@@ -693,14 +711,19 @@ int main(int argc, char** argv) {
       // the clock overlay rides on top of whatever just drew (not settings or launcher)
       if (!inSettings && !launcher.isActive()) overlay::draw(ctx, settings);
       if (launcher.isActive()) launcher.draw(ctx);
-      toast.draw(ctx);  // action confirmations, over everything
+
+      if (transition.isActive(ctx.nowMs)) {
+        transition.composite(displayFb, fb, ctx.nowMs);
+        Context dispCtx = {displayFb, timeSource, heldKeys, audio, ctx.palette, ctx.nowMs};
+        toast.draw(dispCtx);
+        if (requestedDelay > 16) requestedDelay = 16;
+      } else {
+        toast.draw(ctx);  // action confirmations, over everything
+      }
       nextFrameMs = ctx.nowMs + requestedDelay;
     }
 
-    // a brief fade-in when the scene changes, for a smooth cut
-    uint8_t transScale = 255;
-    if (ctx.nowMs - transStartMs < TRANS_MS)
-      transScale = uint8_t((ctx.nowMs - transStartMs) * 255 / TRANS_MS);
+    const FrameBuffer& renderFb = transition.isActive(ctx.nowMs) ? displayFb : fb;
 
     BeginDrawing();
     ClearBackground(BLACK);
@@ -708,9 +731,8 @@ int main(int argc, char** argv) {
     uint8_t effectiveBright = settings.effectiveBrightness(now.hour);
     for (int y = 0; y < HEIGHT; y++) {
       for (int x = 0; x < WIDTH; x++) {
-        RGB c = fb.at(x, y);
+        RGB c = renderFb.at(x, y);
         c.dim(effectiveBright);
-        if (transScale < 255) c.dim(transScale);
         int dx = x, dy = y;
         switch (settings.rotation) {
           case 1: dx = HEIGHT - 1 - y; dy = x; break;

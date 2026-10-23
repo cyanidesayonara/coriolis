@@ -219,6 +219,8 @@ class BuiltinEvents : public EventSource {
 
 // ---- wiring -----------------------------------------------------------------
 FrameBuffer fb;
+FrameBuffer displayFb;
+TransitionEngine transition;
 RtcTime timeSource;
 DeviceInput input;
 SilentAudio audio;  // DFPlayer backend comes with the hardware
@@ -290,7 +292,14 @@ void setup() {
   scenes[current]->start(ctx);
 }
 
-void switchScene(int to) {
+void switchScene(int to, TransitionType type = TransitionType::CrossFade) {
+  TransitionType resolved = resolveTransition(settings.transitionMode, type);
+  if (resolved != TransitionType::Cut) {
+    transition.start(transition.isActive(ctx.nowMs) ? displayFb : fb,
+                     resolved, ctx.nowMs, 240);
+  } else {
+    transition.cancel();
+  }
   scenes[current]->stop(ctx);
   current = to;
   scenes[current]->start(ctx);
@@ -299,14 +308,14 @@ void switchScene(int to) {
   toast.show(scenes[current]->name(), ctx.nowMs);
 }
 
-void blit() {
+void blit(const FrameBuffer& sourceFb) {
   // copy the shared framebuffer to the panel, applying rotation; brightness
   // is handled globally by the matrix driver
   rgb24* out = backgroundLayer.backBuffer();
-  const int W = fb.width(), H = fb.height();
+  const int W = sourceFb.width(), H = sourceFb.height();
   for (int y = 0; y < H; y++) {
     for (int x = 0; x < W; x++) {
-      const RGB& c = fb.at(x, y);
+      const RGB& c = sourceFb.at(x, y);
       int dx = x, dy = y;
       switch (settings.rotation) {
         case 1: dx = H - 1 - y; dy = x; break;
@@ -369,10 +378,12 @@ void loop() {
   }
 
   int switchTo = -1;
+  TransitionType switchTrans = TransitionType::CrossFade;
   if (!consumed && launcher.isActive() && pressed != Key::None) {
     int chosen = launcher.handleInput(pressed);
     if (chosen >= 0) {
       switchTo = chosen;
+      switchTrans = TransitionType::CrossFade;
     }
     consumed = true;
     nextFrameMs = 0;
@@ -383,17 +394,21 @@ void loop() {
       nextFrameMs = 0;
     }
   } else if (!consumed) {
-    if (pressed == Key::Right || input.nextKey)
+    if (pressed == Key::Right || input.nextKey) {
       switchTo = (current + 1) % sceneCount;
-    else if (pressed == Key::Left)
+      switchTrans = TransitionType::SlideLeft;
+    } else if (pressed == Key::Left) {
       switchTo = (current + sceneCount - 1) % sceneCount;
-    else if (pressed == Key::Up)
+      switchTrans = TransitionType::SlideRight;
+    } else if (pressed == Key::Up) {
       settings.paletteIndex = (settings.paletteIndex + 1) % palettes::COUNT;
-    else if (pressed == Key::Down)
+    } else if (pressed == Key::Down) {
       settings.paletteIndex =
           (settings.paletteIndex + palettes::COUNT - 1) % palettes::COUNT;
-    else if (pressed == Key::Back)
+    } else if (pressed == Key::Back) {
       switchTo = 0;
+      switchTrans = TransitionType::CrossFade;
+    }
   }
   input.nextKey = false;
 
@@ -403,9 +418,10 @@ void loop() {
     switchTo = (current + 1) % sceneCount;
     while (!scenes[switchTo]->autoplayEligible())
       switchTo = (switchTo + 1) % sceneCount;
+    switchTrans = TransitionType::SlideLeft;
   }
 
-  if (switchTo >= 0) switchScene(switchTo);
+  if (switchTo >= 0) switchScene(switchTo, switchTrans);
 
   if (ctx.nowMs >= nextFrameMs) {
     Scene* drawScene =
@@ -413,10 +429,21 @@ void loop() {
     uint32_t requestedDelay = drawScene->draw(ctx);
     if (!inSettings && !launcher.isActive()) overlay::draw(ctx, settings);
     if (launcher.isActive()) launcher.draw(ctx);
-    toast.draw(ctx);
+
+    const FrameBuffer* toBlit = &fb;
+    if (transition.isActive(ctx.nowMs)) {
+      transition.composite(displayFb, fb, ctx.nowMs);
+      Context dispCtx = {displayFb, timeSource, input, audio, ctx.palette, ctx.nowMs};
+      toast.draw(dispCtx);
+      toBlit = &displayFb;
+      if (requestedDelay > 16) requestedDelay = 16;
+    } else {
+      toast.draw(ctx);
+    }
+
     TimeOfDay now = timeSource.now();
     matrix.setBrightness(settings.effectiveBrightness(now.hour));
-    blit();
+    blit(*toBlit);
     nextFrameMs = ctx.nowMs + requestedDelay;
   }
 }

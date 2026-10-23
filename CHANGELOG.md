@@ -5,6 +5,13 @@ All notable changes to Coriolis will be documented in this file, newest first.
 ## [Unreleased] - 2026-10-23
 
 ### Added
+- **Smooth Scene-to-Scene Transition Engine**:
+  - Implemented hardware-agnostic `TransitionEngine` in `core/transition.h` supporting directional horizontal slides (`SlideLeft`, `SlideRight`), vertical slides (`SlideUp`, `SlideDown`), smooth crossfades (`CrossFade`), and curtain wipes (`WipeLeft`, `WipeRight`) with zero per-frame heap allocations.
+  - Smoothstep easing ($3t^2 - 2t^3$) ensures physical, buttery acceleration and deceleration across all transitions.
+  - Next/Previous arrow navigation automatically triggers physical slide transitions (`SlideLeft` on next, `SlideRight` on prev), while direct launcher selection and home jumps trigger smooth cross-dissolves.
+  - Stationary HUD compositing ensures action confirmations (Toasts) and clock overlays remain crisply pinned while scenes slide smoothly underneath.
+  - Added configurable `TRANSIT` option in `GENERAL` settings (`AUTO`, `SLIDE`, `FADE`, `CUT`) persisted across sessions.
+  - Synchronized transition pipeline across both desktop simulator (`sim/main.cpp`) and Teensy 4.1 hardware firmware (`firmware/coriolis/coriolis.ino`).
 - **Night Mode & Sleep Auto-Dimming**:
   - Added schedule-based automatic dimming in `core/settings.h` (`nightMode`, `nightStartHour`, `nightEndHour`, `nightBrightness`).
   - Added dedicated `NIGHT` section to `scenes/scene_settings.h` allowing custom start/end hour and sleep brightness configuration.
