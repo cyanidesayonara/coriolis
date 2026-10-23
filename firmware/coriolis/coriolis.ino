@@ -51,16 +51,103 @@ class RtcTime : public TimeSource {
   bool available() { return timeStatus() != timeNotSet; }
 };
 
-// bench input over USB serial until the IR receiver is wired:
-//   u/d/l/r = arrows, k = OK, b = back, s = settings, c = clock overlay,
-//   n = next scene. A key stays "held" briefly after each press so games
-//   are steerable.
-class SerialInput : public InputState {
+// TSOP38238 / TSOP4838 38kHz IR Receiver Pin on Teensy 4.1
+const int kIrPin = 2;
+
+// Lightweight zero-dependency NEC & Apple A1294 pulse-distance decoder
+class IrReceiver {
+ public:
+  static void init(int pin) {
+    pin_ = pin;
+    pinMode(pin_, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(pin_), isr, FALLING);
+  }
+
+  static bool poll(Key& outKey, bool& outLauncher, bool& outSettings) {
+    if (!hasNewCode_) return false;
+    uint32_t code = lastCode_;
+    hasNewCode_ = false;
+
+    // Apple A1294 remote: 0xEE87 vendor ID in lower or upper word
+    uint8_t cmd = 0;
+    if ((code & 0xFFFF) == 0x87EE || ((code >> 16) & 0xFFFF) == 0x87EE) {
+      cmd = (code >> 8) & 0xFF;
+    } else {
+      cmd = (code >> 16) & 0xFF;
+      if (cmd == 0) cmd = code & 0xFF;
+    }
+
+    switch (cmd) {
+      case 0x0B: case 0x50: case 0x18: case 0x40: outKey = Key::Up; return true;
+      case 0x0D: case 0x30: case 0x52: case 0x19: outKey = Key::Down; return true;
+      case 0x08: case 0x90: case 0x07:           outKey = Key::Left; return true;
+      case 0x07: case 0x60: case 0x5A: case 0x09: outKey = Key::Right; return true;
+      case 0x04: case 0x5C: case 0x1C: case 0x15: outKey = Key::Select; return true;
+      case 0x01: case 0x5E: case 0x46: case 0x47: outKey = Key::Select; return true;  // Play/Pause
+      case 0x02: case 0xC0: case 0x45: case 0x44: outLauncher = true; return true;     // Menu -> Launcher
+      default: break;
+    }
+    return false;
+  }
+
+ private:
+  static int pin_;
+  static volatile uint32_t lastCode_;
+  static volatile bool hasNewCode_;
+  static volatile uint32_t lastEdgeMicros_;
+  static volatile uint32_t bitBuffer_;
+  static volatile int bitCount_;
+
+  static void isr() {
+    uint32_t now = micros();
+    uint32_t delta = now - lastEdgeMicros_;
+    lastEdgeMicros_ = now;
+
+    if (delta > 8000) {  // Lead pulse ~13.5ms
+      bitBuffer_ = 0;
+      bitCount_ = 0;
+    } else if (bitCount_ >= 0 && bitCount_ < 32) {
+      bitBuffer_ >>= 1;
+      if (delta > 1600) {
+        bitBuffer_ |= 0x80000000;
+      }
+      bitCount_++;
+      if (bitCount_ == 32) {
+        lastCode_ = bitBuffer_;
+        hasNewCode_ = true;
+      }
+    }
+  }
+};
+
+int IrReceiver::pin_ = kIrPin;
+volatile uint32_t IrReceiver::lastCode_ = 0;
+volatile bool IrReceiver::hasNewCode_ = false;
+volatile uint32_t IrReceiver::lastEdgeMicros_ = 0;
+volatile uint32_t IrReceiver::bitBuffer_ = 0;
+volatile int IrReceiver::bitCount_ = -1;
+
+// Device input: combines physical 38kHz IR remote + USB serial for bench testing
+class DeviceInput : public InputState {
  public:
   Key pendingEvent = Key::None;
   bool settingsKey = false, launcherKey = false, overlayKey = false, nextKey = false;
 
   void poll(uint32_t nowMs) {
+    // 1. Check physical IR receiver
+    Key irKey = Key::None;
+    bool irLauncher = false, irSettings = false;
+    if (IrReceiver::poll(irKey, irLauncher, irSettings)) {
+      if (irKey != Key::None) {
+        pendingEvent = irKey;
+        heldKey_ = irKey;
+        heldUntilMs_ = nowMs + 220;
+      }
+      if (irLauncher) launcherKey = true;
+      if (irSettings) settingsKey = true;
+    }
+
+    // 2. Check USB serial
     while (Serial.available() > 0) {
       int c = Serial.read();
       Key k = Key::None;
@@ -133,7 +220,7 @@ class BuiltinEvents : public EventSource {
 // ---- wiring -----------------------------------------------------------------
 FrameBuffer fb;
 RtcTime timeSource;
-SerialInput input;
+DeviceInput input;
 SilentAudio audio;  // DFPlayer backend comes with the hardware
 Settings settings;
 EepromStore store;
@@ -191,6 +278,7 @@ time_t getRtcTime() { return Teensy3Clock.get(); }
 void setup() {
   Serial.begin(115200);
   setSyncProvider(getRtcTime);  // TimeLib follows the hardware RTC
+  IrReceiver::init(kIrPin);
 
   store.load(settings);
 
