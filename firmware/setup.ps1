@@ -56,6 +56,7 @@ if (-not (Test-Path "$shared\src\scenes")) {
 
 #include "core/config.h"
 #include "core/display.h"
+#include "core/transition.h"
 #include "core/scene.h"
 #include "core/settings.h"
 #include "core/events.h"

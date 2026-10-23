@@ -136,11 +136,11 @@ class SettingsScene : public Scene {
     uint8_t id;
   };
 
-  static const int ITEM_COUNT = 23;
+  static const int ITEM_COUNT = 24;
   const Item items_[ITEM_COUNT] = {
       {"GENERAL", "BRIGHT", 0},   {"GENERAL", "PALETTE", 1},
-      {"GENERAL", "ROTATE", 2},   {"GENERAL", "AUTO", 3},
-      {"GENERAL", "SECS", 4},     {"NIGHT", "AUTO", 19},
+      {"GENERAL", "TRANSIT", 23}, {"GENERAL", "ROTATE", 2},
+      {"GENERAL", "AUTO", 3},     {"GENERAL", "SECS", 4},     {"NIGHT", "AUTO", 19},
       {"NIGHT", "START", 20},     {"NIGHT", "END", 21},
       {"NIGHT", "BRIGHT", 22},    {"OVERLAY", "CLOCK", 15},
       {"OVERLAY", "POS", 16},     {"OVERLAY", "SIZE", 17},
@@ -264,6 +264,9 @@ class SettingsScene : public Scene {
         settings_.nightBrightness = uint8_t(b < 8 ? 8 : (b > 128 ? 128 : b));
         break;
       }
+      case 23:
+        settings_.transitionMode = uint8_t((settings_.transitionMode + dir + 4) % 4);
+        break;
     }
   }
 
@@ -329,6 +332,11 @@ class SettingsScene : public Scene {
       case 20: snprintf(out, n, "%02d:00", settings_.nightStartHour); break;
       case 21: snprintf(out, n, "%02d:00", settings_.nightEndHour); break;
       case 22: snprintf(out, n, "%d", settings_.nightBrightness); break;
+      case 23: {
+        static const char* tr[4] = {"AUTO", "SLIDE", "FADE", "CUT"};
+        snprintf(out, n, "%s", tr[settings_.transitionMode >= 4 ? 0 : settings_.transitionMode]);
+        break;
+      }
       default: out[0] = 0;
     }
   }
