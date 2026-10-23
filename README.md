@@ -102,26 +102,30 @@ cmake --build build-wide
 
 | Key | Action |
 |-----|--------|
-| `SPACE` / `→` | next scene |
-| `←` | previous scene |
+| `SPACE` / `→` | next scene (with smooth slide transition) |
+| `←` | previous scene (with smooth slide transition) |
 | `M` | open scene launcher (categorized quick-jump) |
 | `↑` / `↓` | cycle palette (when the scene doesn't use them) |
 | `S` | open/close settings — jumps to the current scene's section |
 | `C` | cycle the clock overlay (off / digital / analog / word) |
+| `A` | toggle simulated audio / beeps |
 | `BACKSPACE` | back: closes menu/launcher, otherwise home to the clock |
 | `R` | rotate the display 90° |
 | `ESC` | quit (saves settings) |
 
 Each control maps to a button on the device's IR remote (`S` = menu, `C` =
-the overlay button, arrows + OK + back). A USB gamepad is the optional
-better input for the games.
+the overlay button, arrows + OK + back). See [docs/REMOTE.md](docs/REMOTE.md)
+for hardware receiver pinouts, wiring diagrams, and Apple A1294 remote mapping.
+See [docs/AUDIO.md](docs/AUDIO.md) for the DFPlayer Mini sound pack generator
+and microSD setup.
 
 Settings is not part of the scene rotation — only `S` reaches it (the
 remote's menu button on the device). It is one scrolling list with
-sections: GENERAL (brightness, palette, rotation, autoplay), OVERLAY (clock
-type, position, size), then one per scene (yoga, exercise, breathe, pong,
-snake, fireplace). Games are never themed; clocks and patterns follow the
-palette; guides and the fireplace keep their own fixed look.
+sections: GENERAL (brightness, palette, transition mode, rotation, autoplay),
+NIGHT (scheduled auto-dimming start/end hours and sleep brightness),
+OVERLAY (clock type, position, size), then one per scene (yoga, exercise,
+breathe, pong, snake, fireplace). Games are never themed; clocks and patterns
+follow the palette; guides and the fireplace keep their own fixed look.
 
 Guide scenes (`↑`/`↓` set the pace, `ENTER` pauses):
 - **Yoga** holds poses; **Exercise** animates reps with a bodyweight or

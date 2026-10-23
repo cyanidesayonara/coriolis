@@ -85,6 +85,10 @@ Rough total: ~€280–330.
 ## Current Software Status
 
 - **25 scenes running in simulator and firmware** with 100% test coverage via `--shots docs/screenshots`.
-- **Guided Fitness Suite**: Bilateral flows, 5 yoga routines, 4 exercise programs, halfway & countdown chimes, next-pose HUD previews, completion cards.
-- **Scene Launcher**: Direct categorized switcher (`M` key).
-- **Firmware sync**: `CoriolisShared.h` umbrella header fully synced with all 25 scenes.
+- **Guided Fitness Suite**: Bilateral flows, 5 yoga routines, 4 exercise programs, halfway & countdown chimes, next-pose HUD previews, celebratory completion cards.
+- **Smooth Scene Transitions**: Hardware-agnostic `TransitionEngine` with directional horizontal slides (`SlideLeft`, `SlideRight`), smoothstep easing, and stationary HUD compositing.
+- **Scene Launcher**: Direct categorized switcher (`M` key / Remote Menu).
+- **Scheduled Night Mode**: Automatic sleep dimming schedule (default 23:00 to 07:00, 16 brightness) with dedicated `NIGHT` settings section.
+- **Hardware Remote Driver**: Interrupt-driven 38kHz NEC decoder on Teensy 4.1 Pin 2 supporting Apple A1294 and standard NEC remotes (`docs/REMOTE.md`).
+- **DFPlayer Mini Voice Pack**: Turnkey generator script (`tools/generate_voice_pack.py`) producing complete 14-cue PCM library and 54 spoken voice clips (`docs/AUDIO.md`).
+- **Firmware sync**: `CoriolisShared.h` umbrella header fully synced with all 25 scenes, transition engine, and settings.
