@@ -38,6 +38,7 @@
 #include "../scenes/scene_settings.h"
 #include "../scenes/clock_overlay.h"
 #include "../scenes/toast.h"
+#include "../scenes/scene_launcher.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -173,6 +174,8 @@ class SimAudio : public AudioSink {
     make(Cue::Chime, 880, 90, false);
     make(Cue::StartBell, 660, 170, false);
     make(Cue::FinishBell, 523, 240, false);
+    make(Cue::Halfway, 988, 110, false);
+    make(Cue::Tick, 1175, 35, true);
     make(Cue::BreatheIn, 523, 220, false);
     make(Cue::BreatheHold, 440, 90, false);
     make(Cue::BreatheOut, 392, 280, false);
@@ -197,7 +200,7 @@ class SimAudio : public AudioSink {
   void loop(Cue) {}  // the ambient crackle bed isn't modeled in the sim
 
  private:
-  static const int NCUE = 16;
+  static const int NCUE = 20;
   Sound snd_[NCUE];
   bool loaded_[NCUE] = {false};
   Sound voice_;
@@ -456,9 +459,9 @@ static int renderShots(const char* dir) {
   RainScene rain;                 shoot(dir, "rain.png", &rain, s, time, held, audio, 6, false, 200);
   FireScene fire(s);              shoot(dir, "fireplace.png", &fire, s, time, held, audio, 0, false, 300);
   AuroraScene auroraShot;         shoot(dir, "aurora.png", &auroraShot, s, time, held, audio, 3, false, 220);
-  YogaScene yoga(s);              shoot(dir, "yoga.png", &yoga, s, time, held, audio, 0, true, 120);
+  YogaScene yoga(s);              shoot(dir, "yoga.png", &yoga, s, time, held, audio, 0, true, 300);
   Settings kb = s; kb.exerciseProgram = 1;
-  ExerciseScene ex(kb);           shoot(dir, "exercise.png", &ex, kb, time, held, audio, 0, true, 90);
+  ExerciseScene ex(kb);           shoot(dir, "exercise.png", &ex, kb, time, held, audio, 0, true, 260);
   BreatheScene breathe(s);        shoot(dir, "breathe.png", &breathe, s, time, held, audio, 0, true, 60);
   PongScene pong(s);              shoot(dir, "pong.png", &pong, s, time, held, audio, 0, true, 120);
   SnakeScene snake(s);            shoot(dir, "snake.png", &snake, s, time, held, audio, 0, true, 200);
@@ -529,6 +532,7 @@ int main(int argc, char** argv) {
   FireScene fire(settings);
   AuroraScene aurora;
   SettingsScene settingsScene(settings, store);
+  SceneLauncher launcher;
 
   // settings is deliberately NOT in the rotation: it opens on its own key,
   // so it can't be stumbled into or autoplayed through
@@ -582,6 +586,7 @@ int main(int argc, char** argv) {
         settingsScene.stop(ctx);  // persists any changes
         inSettings = false;
       } else {
+        if (launcher.isActive()) launcher.close();
         settingsScene.openSection(scenes[current]->name());
         inSettings = true;
       }
@@ -589,8 +594,30 @@ int main(int argc, char** argv) {
       consumed = true;
     }
 
+    // M toggles the quick Scene Launcher categorized picker
+    if (IsKeyPressed(KEY_M)) {
+      if (launcher.isActive()) {
+        launcher.close();
+      } else {
+        if (inSettings) {
+          settingsScene.stop(ctx);
+          inSettings = false;
+        }
+        launcher.open(current);
+      }
+      nextFrameMs = 0;
+      consumed = true;
+    }
+
     int switchTo = -1;
-    if (!consumed && inSettings) {
+    if (!consumed && launcher.isActive() && pressed != Key::None) {
+      int chosen = launcher.handleInput(pressed);
+      if (chosen >= 0) {
+        switchTo = chosen;
+      }
+      consumed = true;
+      nextFrameMs = 0;
+    } else if (!consumed && inSettings) {
       if (pressed == Key::Back) {  // back also closes the menu
         settingsScene.stop(ctx);
         inSettings = false;
@@ -655,8 +682,9 @@ int main(int argc, char** argv) {
       Scene* drawScene =
           inSettings ? static_cast<Scene*>(&settingsScene) : scenes[current];
       uint32_t requestedDelay = drawScene->draw(ctx);
-      // the clock overlay rides on top of whatever just drew (not settings)
-      if (!inSettings) overlay::draw(ctx, settings);
+      // the clock overlay rides on top of whatever just drew (not settings or launcher)
+      if (!inSettings && !launcher.isActive()) overlay::draw(ctx, settings);
+      if (launcher.isActive()) launcher.draw(ctx);
       toast.draw(ctx);  // action confirmations, over everything
       nextFrameMs = ctx.nowMs + requestedDelay;
     }
@@ -684,8 +712,11 @@ int main(int argc, char** argv) {
       }
     }
     // debug labels at the bottom, clear of the matrix's own top bar
-    DrawText(inSettings ? settingsScene.name() : scenes[current]->name(), 8,
-             HEIGHT * scale - 42, 20, RAYWHITE);
+    const char* activeLabel = launcher.isActive()
+                                  ? "Launcher [M]"
+                                  : (inSettings ? settingsScene.name()
+                                                : scenes[current]->name());
+    DrawText(activeLabel, 8, HEIGHT * scale - 42, 20, RAYWHITE);
     DrawText(ctx.palette->name, 8, HEIGHT * scale - 20, 14, GRAY);
     const char* astat = !audio.ready() ? "audio: n/a"
                                         : (audio.enabled() ? "audio: ON [A]"

@@ -58,7 +58,7 @@ class RtcTime : public TimeSource {
 class SerialInput : public InputState {
  public:
   Key pendingEvent = Key::None;
-  bool settingsKey = false, overlayKey = false, nextKey = false;
+  bool settingsKey = false, launcherKey = false, overlayKey = false, nextKey = false;
 
   void poll(uint32_t nowMs) {
     while (Serial.available() > 0) {
@@ -72,6 +72,7 @@ class SerialInput : public InputState {
         case 'k': k = Key::Select; break;
         case 'b': k = Key::Back; break;
         case 's': settingsKey = true; break;
+        case 'm': launcherKey = true; break;
         case 'c': overlayKey = true; break;
         case 'n': nextKey = true; break;
         default: break;
@@ -166,6 +167,7 @@ AquariumScene aquarium;
 FireScene fire(settings);
 AuroraScene aurora;
 SettingsScene settingsScene(settings, store);
+SceneLauncher launcher;
 
 Scene* scenes[] = {&clockScene, &analogClock, &wordClock,    &weather,
                    &calendarScene, &pong,     &snake,        &tetris,
@@ -252,8 +254,23 @@ void loop() {
       settingsScene.stop(ctx);
       inSettings = false;
     } else {
+      if (launcher.isActive()) launcher.close();
       settingsScene.openSection(scenes[current]->name());
       inSettings = true;
+    }
+    nextFrameMs = 0;
+    consumed = true;
+  }
+  if (input.launcherKey) {
+    input.launcherKey = false;
+    if (launcher.isActive()) {
+      launcher.close();
+    } else {
+      if (inSettings) {
+        settingsScene.stop(ctx);
+        inSettings = false;
+      }
+      launcher.open(current);
     }
     nextFrameMs = 0;
     consumed = true;
@@ -264,7 +281,14 @@ void loop() {
   }
 
   int switchTo = -1;
-  if (!consumed && inSettings) {
+  if (!consumed && launcher.isActive() && pressed != Key::None) {
+    int chosen = launcher.handleInput(pressed);
+    if (chosen >= 0) {
+      switchTo = chosen;
+    }
+    consumed = true;
+    nextFrameMs = 0;
+  } else if (!consumed && inSettings) {
     if (pressed == Key::Back) {
       settingsScene.stop(ctx);
       inSettings = false;
@@ -299,7 +323,8 @@ void loop() {
     Scene* drawScene =
         inSettings ? static_cast<Scene*>(&settingsScene) : scenes[current];
     uint32_t requestedDelay = drawScene->draw(ctx);
-    if (!inSettings) overlay::draw(ctx, settings);
+    if (!inSettings && !launcher.isActive()) overlay::draw(ctx, settings);
+    if (launcher.isActive()) launcher.draw(ctx);
     toast.draw(ctx);
     matrix.setBrightness(settings.brightness);
     blit();
