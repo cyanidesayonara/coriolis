@@ -32,7 +32,8 @@ Canonical documents:
 ```
 coriolis/
   core/           # Platform-agnostic core engine (framebuffer, 8-bit math, palettes, audio, settings, fonts)
-  scenes/         # 25+ visual scenes: clocks, guided fitness suite, retro games, ambient generative art
+  scenes/         # 25+ visual scenes, plus shell.h: the navigation/menus/transitions both backends share
+  tests/          # headless checks (coriolis_tests): time zones, color math, navigation, workout audio
   sim/            # Desktop simulator backend (raylib window, system clock, keyboard input)
   firmware/       # Hardware firmware for Teensy 4.1 (SmartMatrix allocation, RTC time, EEPROM storage)
   docs/           # Screenshots, guides, and hardware documentation
@@ -60,4 +61,6 @@ coriolis/
 3. **Coding Standards**:
    - Zero dynamic allocation inside per-frame scene loops (`draw()` calls must be deterministic and heap-free).
    - Keep scenes platform-agnostic: scenes draw strictly into `FrameBuffer` through `Context& ctx` and never touch hardware directly.
+   - Navigation, menus and transitions live in scenes/shell.h, used verbatim by sim and firmware; backends only map inputs and copy shell.frame().
+   - After touching shared code: run build\Release\coriolis_tests.exe, and compile the firmware (docs/BUILD.md section 6).
    - Maintain documentation integrity: preserve docstrings and architectural comments across edits.

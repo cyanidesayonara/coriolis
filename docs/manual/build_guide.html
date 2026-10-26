@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Coriolis — Build Guide</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  @page { size: A4; margin: 15mm 15mm 13mm; }
+  @page cover { margin: 0; }
+  body { font-size: 9.4pt; }
+  .page { height: 269mm; overflow: hidden; }
+  .cover { page: cover; height: 297mm; width: 210mm; background: var(--night); color: #fff; padding: 26mm 20mm; display: flex; flex-direction: column; }
+  .cover .brand { font-size: 9pt; letter-spacing: 0.3em; text-transform: uppercase; color: #8f8fa6; }
+  .cover h1 { font-size: 40pt; font-weight: 300; margin-top: 6mm; }
+  .cover h1 b { font-weight: 600; color: #6fe3d0; }
+  .cover .sub { color: #b9b9cc; font-size: 12pt; margin-top: 3mm; max-width: 140mm; }
+  .cover .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; width: 120mm; margin: 18mm auto 0; padding: 6px; background: #1b1b26; border-radius: 6px; }
+  .cover .hero img { width: 100%; display: block; image-rendering: pixelated; }
+  .cover .bottom { margin-top: auto; display: flex; justify-content: space-between; color: #8f8fa6; font-size: 9pt; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12pt; }
+  td.price { white-space: nowrap; text-align: right; }
+  .big-warn { font-size: 9.5pt; }
+  svg text { font-family: "Segoe UI", sans-serif; }
+</style>
+</head>
+<body>
+
+<section class="page cover">
+  <div class="brand">Coriolis · hardware</div>
+  <h1>Build <b>Guide</b></h1>
+  <div class="sub">Parts, sourcing, wiring, assembly and bring-up for the 128 × 128 LED wall display — Teensy 4.1, SmartLED Shield V5 and four 64 × 64 HUB75 panels.</div>
+  <div class="hero">
+    <img src="../screenshots/clock.png" alt=""><img src="../screenshots/yoga.png" alt="">
+    <img src="../screenshots/fireplace.png" alt=""><img src="../screenshots/launcher.png" alt="">
+  </div>
+  <div class="bottom"><span>Prices checked October 2026 (EUR, indicative).<br>Items marked <i>est.</i> are estimates.</span><span>Revision 2<br>supersedes the October 23 hardware manual</span></div>
+</section>
+
+<!-- ======================= 1 SIZE + PANELS ======================= -->
+<section class="page">
+  <div class="chapter-tag">Step 1</div>
+  <h1>Choose the panels</h1>
+  <div class="rule"></div>
+  <p class="lede">Four 64 × 64 HUB75 panels in a 2 × 2 square make the 128 × 128 display. The pixel pitch sets the size; the firmware is the same for all of them.</p>
+  <table>
+    <tr><th>Pitch</th><th>One panel</th><th>Display</th><th>Availability</th></tr>
+    <tr><td class="k">P2.5</td><td>160 mm</td><td>320 mm</td><td>Waveshare, common. Small for a wall.</td></tr>
+    <tr><td class="k">P3</td><td>192 mm</td><td><b>384 mm</b></td><td>Waveshare 64×64 P3 (RobotShop EU ≈ €33), Adafruit #4732. Easiest to source.</td></tr>
+    <tr><td class="k">P4</td><td>256 mm</td><td><b>512 mm</b></td><td>HackSpark (FR) ≈ €35, AliExpress. The planned size — <b>verify the scan rate</b>.</td></tr>
+    <tr><td class="k">P5</td><td>320 mm</td><td>640 mm</td><td>64×64 P5 panels are rare (most P5 panels are 64×32). Not recommended.</td></tr>
+  </table>
+  <p><b>Recommendation:</b> P4 when the seller confirms the checklist below; otherwise P3.</p>
+  <h3>Compatibility checklist — ask before paying</h3>
+  <ul>
+    <li><b>64 × 64, 1/32 scan, HUB75E</b> (address lines A–E; E on HUB75 pin 8). The SmartLED Shield V5 drives E natively.</li>
+    <li><b>Driver chips:</b> ICN2028, FM6124, DP5220 and similar are fine. <b>FM6126A</b> works with one firmware option (page 7). <b>ICN2038S, ICN2053, GS6238S</b> and “AB” panels (only A/B address lines) do <b>not</b> work with SmartMatrix.</li>
+    <li>Ask for a photo of the back showing the chips, and order <b>all four in one batch</b> so colour and wiring match.</li>
+    <li>HackSpark's P4 listing says “1:16 scan” — ask. A true 1/16-scan 64×64 needs a different panel type and can't use C-shape stacking.</li>
+  </ul>
+  <div class="warn big-warn"><b>Buy the SmartLED Shield V5 first.</b> It is discontinued at Crowd Supply, SparkFun and Adafruit; Smart Prototyping still lists it (ships from China). The design is open source: the Gerbers and BOM in the SmartMatrix repository can be fabricated and assembled (e.g. JLCPCB) as a fallback.</div>
+  <div class="footer"><span>Coriolis Build Guide</span><span>2</span></div>
+</section>
+
+<!-- ======================= 2 SHOPPING LIST ======================= -->
+<section class="page">
+  <div class="chapter-tag">Step 2</div>
+  <h1>Shopping list</h1>
+  <div class="rule"></div>
+  <table>
+    <tr><th>Item</th><th>Qty</th><th>Recommended part / where</th><th style="text-align:right">≈ EUR</th></tr>
+    <tr><td class="k">SmartLED Shield for Teensy 4 (V5)</td><td>1</td><td>smart-prototyping.com (or fabricate from the SmartMatrix repo)</td><td class="price">20–25 + VAT</td></tr>
+    <tr><td class="k">Teensy 4.1, with headers</td><td>1</td><td>SparkFun DEV-16771 via BerryBase (DE), The Pi Hut, Electrokit, PL shops</td><td class="price">32–49</td></tr>
+    <tr><td class="k">64×64 HUB75E panels, 1/32</td><td>4</td><td>HackSpark P4 · Waveshare P3 · AliExpress (<i>est.</i> €18–30)</td><td class="price">120–140</td></tr>
+    <tr><td class="k">5 V power supply</td><td>1</td><td><b>Mean Well LRS-200-5</b> (5 V 40 A, fanless) · LRS-150F-5 (22 A) with a brightness cap</td><td class="price">28–40 <i>est.</i></td></tr>
+    <tr><td class="k">IEC inlet, switch + fuse</td><td>1</td><td>C14 inlet with switch and fuse holder, T3.15 A slow-blow, 3-core lead</td><td class="price">8–12 <i>est.</i></td></tr>
+    <tr><td class="k">DC wiring</td><td>1 lot</td><td>1.5 mm² red/black, ferrules, lever connectors, 2 × 1000–2200 µF 10 V caps</td><td class="price">15–25 <i>est.</i></td></tr>
+    <tr><td class="k">DFPlayer Mini</td><td>1</td><td>genuine DFRobot DFR0299 — RobotShop EU, Arduino Store</td><td class="price">7</td></tr>
+    <tr><td class="k">microSD card</td><td>1</td><td>8–32 GB, FAT32</td><td class="price">5</td></tr>
+    <tr><td class="k">Speaker</td><td>1</td><td>40 mm, 3 W, 4 Ω</td><td class="price">3–5</td></tr>
+    <tr><td class="k">IR receiver kit</td><td>1</td><td>Vishay TSOP38438 (or TSOP38238), 100 Ω, 10 µF</td><td class="price">2</td></tr>
+    <tr><td class="k">Remote</td><td>1</td><td>Apple Remote (A1294 aluminium / A1156), or 17-key NEC kit remote</td><td class="price">2–12</td></tr>
+    <tr><td class="k">RTC battery</td><td>1</td><td>CR2032 + holder</td><td class="price">3</td></tr>
+    <tr><td class="k">Small parts</td><td>1 lot</td><td>1 kΩ resistor, hook-up wire, Dupont / JST leads</td><td class="price">3</td></tr>
+    <tr><td class="k">Frame</td><td>1</td><td>2020 extrusion + corner brackets + M5 T-nuts, or plywood shadow box</td><td class="price">30–45</td></tr>
+    <tr><td class="k">Panel mounts</td><td>~16</td><td>12 mm M3 magnetic mounts + galvanised steel strip</td><td class="price">12–20</td></tr>
+    <tr><td class="k">Diffuser</td><td>1</td><td>3 mm smoked / “black LED” cast acrylic, cut to size (metacrilato a medida)</td><td class="price">20–45 <i>est.</i></td></tr>
+    <tr><td colspan="3" style="text-align:right;font-weight:600">Total</td><td class="price" style="font-weight:700">≈ 330–450</td></tr>
+    <tr><th colspan="4">Optional — reserved for future firmware features</th></tr>
+    <tr><td class="k">Light sensor TSL2591</td><td>1</td><td>Adafruit #1980 — auto-brightness (night dimming is schedule-based today)</td><td class="price">7–8</td></tr>
+    <tr><td class="k">ESP32-C3 board</td><td>1</td><td>Weather feed over UART (the Weather scene waits for it)</td><td class="price">3–12</td></tr>
+    <tr><td class="k">PSRAM APS6404L</td><td>1</td><td>Not needed at 128 × 128</td><td class="price">2.50</td></tr>
+  </table>
+  <div class="footer"><span>Coriolis Build Guide</span><span>3</span></div>
+</section>
+
+<!-- ======================= 3 WIRING ======================= -->
+<section class="page">
+  <div class="chapter-tag">Step 3</div>
+  <h1>Wiring</h1>
+  <div class="rule"></div>
+  <svg width="100%" viewBox="0 0 640 330" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="#1d1d24"/></marker></defs>
+    <!-- mains -->
+    <rect x="10" y="20" width="90" height="50" rx="6" fill="#fff1e6" stroke="#d9480f"/>
+    <text x="55" y="40" font-size="10" text-anchor="middle" font-weight="600">230 V inlet</text>
+    <text x="55" y="55" font-size="8" text-anchor="middle">switch + T3.15A fuse</text>
+    <rect x="140" y="15" width="120" height="60" rx="6" fill="#f5f4fa" stroke="#1d1d24"/>
+    <text x="200" y="38" font-size="10" text-anchor="middle" font-weight="600">Mean Well</text>
+    <text x="200" y="52" font-size="9" text-anchor="middle">LRS-200-5</text>
+    <text x="200" y="65" font-size="8" text-anchor="middle" fill="#5d5d6b">5 V · 40 A</text>
+    <path d="M100 45 H140" stroke="#d9480f" stroke-width="2"/><text x="120" y="40" font-size="7" text-anchor="middle" fill="#d9480f">L N PE</text>
+    <!-- 5V rail -->
+    <path d="M260 45 H620" stroke="#d62828" stroke-width="3"/><text x="600" y="38" font-size="9" fill="#d62828" font-weight="600">+5 V</text>
+    <path d="M260 60 H620" stroke="#1d1d24" stroke-width="3"/><text x="600" y="74" font-size="9" font-weight="600">GND</text>
+    <!-- panels -->
+    <g font-size="9" text-anchor="middle">
+      <rect x="300" y="110" width="70" height="70" fill="#222" rx="3"/><text x="335" y="150" fill="#fff">Panel 1</text>
+      <rect x="380" y="110" width="70" height="70" fill="#222" rx="3"/><text x="415" y="150" fill="#fff">Panel 2</text>
+      <rect x="460" y="110" width="70" height="70" fill="#222" rx="3"/><text x="495" y="150" fill="#fff">Panel 3</text>
+      <rect x="540" y="110" width="70" height="70" fill="#222" rx="3"/><text x="575" y="150" fill="#fff">Panel 4</text>
+    </g>
+    <g stroke="#d62828" stroke-width="1.5"><path d="M330 45 V110"/><path d="M410 45 V110"/><path d="M490 45 V110"/><path d="M570 45 V110"/></g>
+    <g stroke="#1d1d24" stroke-width="1.5"><path d="M340 60 V110"/><path d="M420 60 V110"/><path d="M500 60 V110"/><path d="M580 60 V110"/></g>
+    <g stroke="#7b5cff" stroke-width="2.5" fill="none"><path d="M250 205 H335 V180"/><path d="M350 180 V195 H415 V180"/><path d="M430 180 V195 H495 V180"/><path d="M510 180 V195 H575 V180"/></g>
+    <text x="430" y="218" font-size="8" fill="#7b5cff" text-anchor="middle">HUB75 ribbon: OUT of each panel → IN of the next</text>
+    <!-- controller -->
+    <rect x="110" y="160" width="140" height="110" rx="6" fill="#e6f6f3" stroke="#00a896"/>
+    <text x="180" y="180" font-size="10" text-anchor="middle" font-weight="600">SmartLED Shield V5</text>
+    <text x="180" y="194" font-size="9" text-anchor="middle">+ Teensy 4.1</text>
+    <text x="180" y="210" font-size="7.5" text-anchor="middle" fill="#5d5d6b">cut VUSB–VIN pads</text>
+    <text x="180" y="222" font-size="7.5" text-anchor="middle" fill="#5d5d6b">CR2032 on VBAT</text>
+    <path d="M150 160 V120 H275 V45" stroke="#d62828" stroke-width="1.5" fill="none"/>
+    <path d="M160 160 V128 H285 V60" stroke="#1d1d24" stroke-width="1.5" fill="none"/>
+    <text x="205" y="115" font-size="7.5">JST VEXT / GND</text>
+    <!-- IR -->
+    <rect x="10" y="150" width="70" height="40" rx="5" fill="#f0edff" stroke="#7b5cff"/>
+    <text x="45" y="167" font-size="9" text-anchor="middle" font-weight="600">TSOP38438</text>
+    <text x="45" y="180" font-size="7.5" text-anchor="middle">3.3 V · 100Ω · 10µF</text>
+    <path d="M80 170 H110" stroke="#7b5cff" stroke-width="1.5" marker-end="url(#ar)"/><text x="95" y="164" font-size="7.5" text-anchor="middle">pin 16</text>
+    <!-- DFPlayer -->
+    <rect x="10" y="230" width="70" height="44" rx="5" fill="#f5f4fa" stroke="#1d1d24"/>
+    <text x="45" y="248" font-size="9" text-anchor="middle" font-weight="600">DFPlayer</text>
+    <text x="45" y="261" font-size="7.5" text-anchor="middle">+ microSD</text>
+    <path d="M110 245 H80" stroke="#1d1d24" stroke-width="1.5" marker-end="url(#ar)"/><text x="95" y="240" font-size="7">1 → 1k → RX</text>
+    <path d="M80 262 H110" stroke="#1d1d24" stroke-width="1.5" marker-end="url(#ar)"/><text x="95" y="274" font-size="7">TX → 0</text>
+    <circle cx="45" cy="305" r="13" fill="#fff" stroke="#1d1d24"/><text x="45" y="308" font-size="7.5" text-anchor="middle">3W 4Ω</text>
+    <path d="M45 274 V292" stroke="#1d1d24"/>
+    <path d="M20 230 V95 H265 V45" stroke="#d62828" stroke-width="1" fill="none" stroke-dasharray="3 2"/>
+    <text x="24" y="104" font-size="7" fill="#d62828">5 V direct from the rail</text>
+  </svg>
+  <div class="cols">
+    <div>
+      <h3>Teensy pins used by the shield</h3>
+      <p>2 (OE), 3 (LAT), 6, 7 (CLK), 9–13 (panel data), and 4, 5, 22 reserved for its APA102 output. Pin 13 is panel data, so the Teensy's LED flickers — normal.</p>
+      <div class="warn">The previous hardware manual put the IR receiver on <b>pin 2</b>. That is the panels' OE line — use <b>pin 16</b>.</div>
+    </div>
+    <div>
+      <h3>Coriolis connections</h3>
+      <table>
+        <tr><td class="k">IR receiver OUT</td><td>pin 16 (TSOP on 3.3 V)</td></tr>
+        <tr><td class="k">DFPlayer TX</td><td>pin 0 (RX1)</td></tr>
+        <tr><td class="k">DFPlayer RX</td><td>pin 1 (TX1) via 1 kΩ</td></tr>
+        <tr><td class="k">RTC battery</td><td>VBAT / GND</td></tr>
+        <tr><td class="k">Future: light sensor</td><td>18 SDA / 19 SCL</td></tr>
+        <tr><td class="k">Future: ESP32</td><td>14 TX3 / 15 RX3</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="footer"><span>Coriolis Build Guide</span><span>4</span></div>
+</section>
+
+<!-- ======================= 4 POWER ======================= -->
+<section class="page">
+  <h2>Power</h2>
+  <ul>
+    <li>Four 64 × 64 panels draw <b>4–5 A each at full white</b> (16–20 A in total). The LRS-200-5 (40 A) has plenty of headroom. With the 22 A LRS-150F-5, cap brightness at compile time: <code>-DCORIOLIS_MAX_BRIGHTNESS=180</code>. Showing the clock, Coriolis uses a few amps.</li>
+    <li>Run each panel's power pigtail straight to the PSU terminals, or one 1.5 mm² pair per two panels (2.5 mm² for a single trunk). Ferrule every end. Fit a 1000–2200 µF capacitor across each pair at the panels.</li>
+    <li>The shield feeds the Teensy from its JST input through a 0.5 A diode. <b>Cut the VUSB–VIN pad bridge</b> on the underside of the Teensy so USB and the 5 V rail never fight. Afterwards the Teensy only runs with the PSU on — flash it with the PSU on.</li>
+    <li>Power the DFPlayer (and later the ESP32) from the 5 V rail, not through the Teensy.</li>
+    <li>The TSOP must run from <b>3.3 V</b>: Teensy 4.1 pins are not 5 V tolerant.</li>
+  </ul>
+  <div class="warn"><b>Mains safety.</b> Earth the PSU's ⏚ terminal and any metal frame. Keep the mains terminals covered. Use the fused, switched IEC inlet and strain-relieve the mains lead. If you are not comfortable wiring mains, have an electrician do this part.</div>
+
+  <div class="chapter-tag" style="margin-top:14pt">Step 4</div>
+  <h1>Assembly</h1>
+  <div class="rule"></div>
+  <ol class="steps">
+    <li><b>Teensy.</b> Solder headers if needed. Cut the VUSB–VIN pads. Solder the CR2032 holder to VBAT and GND.</li>
+    <li><b>Shield.</b> Plug the Teensy into the shield (the shield covers the 4.0 footprint; snap off its perforated tab to reach pins 24–41 if ever needed). Fit the JST power pigtail.</li>
+    <li><b>IR receiver.</b> TSOP pins, lens facing you: OUT · GND · Vs. Vs → 100 Ω → 3.3 V, 10 µF from Vs to GND at the sensor, OUT → pin 16. Mount it behind a small hole at the frame edge.</li>
+    <li><b>DFPlayer.</b> VCC → 5 V rail, GND → common ground, TX → pin 0, RX ← 1 kΩ ← pin 1, SPK1/SPK2 → speaker (neither side to ground).</li>
+    <li><b>Bench-test with one panel</b> before building the frame (Step 6).</li>
+    <li><b>Frame.</b> For P4: 2020 rails sized so the 512 mm panel square sits inside with ~2 mm play (≈ 550 mm outside), plus 2–3 cross-members behind the panel seams carrying steel strip for the magnetic mounts. Butt the panels seam-to-seam before tightening. A wooden box: 70–90 mm deep sides, MDF or ACM back with steel strips, French cleat (≈ 5–6 kg total).</li>
+    <li><b>Chain the panels</b> (Step 5). Mount the electronics plate on a cross-member and the PSU low in the frame with space around it. Cut ventilation slots top and bottom.</li>
+    <li><b>Diffuser.</b> Smoked acrylic directly on the panels gives crisp, high-contrast pixels; a grid louver (walls ≤ 1 mm at P4) under a tinted sheet gives square pixels.</li>
+  </ol>
+  <div class="footer"><span>Coriolis Build Guide</span><span>5</span></div>
+</section>
+
+<!-- ======================= 5 LAYOUT ======================= -->
+<section class="page">
+  <div class="chapter-tag">Step 5</div>
+  <h1>Panel layout</h1>
+  <div class="rule"></div>
+  <p>The firmware drives one chain of four panels as 128 × 128. How they're chained is set by <code>CORIOLIS_PANEL_OPTIONS</code> at the top of <code>firmware/coriolis/coriolis.ino</code>.</p>
+  <svg width="100%" viewBox="0 0 640 210" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="#7b5cff"/></marker></defs>
+    <g font-size="9" text-anchor="middle">
+      <text x="140" y="14" font-weight="600">Default (no options) — all upright</text>
+      <rect x="60" y="25" width="75" height="75" fill="#2a2a36"/><rect x="140" y="25" width="75" height="75" fill="#2a2a36"/>
+      <rect x="60" y="105" width="75" height="75" fill="#2a2a36"/><rect x="140" y="105" width="75" height="75" fill="#2a2a36"/>
+      <text x="97" y="66" fill="#fff">first</text><text x="177" y="66" fill="#fff">2</text><text x="97" y="146" fill="#fff">3</text><text x="177" y="146" fill="#fff">last</text>
+      <text x="97" y="35" fill="#9a9ab0" font-size="7">▲ up</text><text x="177" y="35" fill="#9a9ab0" font-size="7">▲ up</text><text x="97" y="115" fill="#9a9ab0" font-size="7">▲ up</text><text x="177" y="115" fill="#9a9ab0" font-size="7">▲ up</text>
+      <text x="140" y="198" fill="#5d5d6b">top row first, long cable back across to the bottom row</text>
+      <text x="470" y="14" font-weight="600">C_SHAPE_STACKING — snaking chain</text>
+      <rect x="390" y="25" width="75" height="75" fill="#2a2a36"/><rect x="470" y="25" width="75" height="75" fill="#2a2a36"/>
+      <rect x="390" y="105" width="75" height="75" fill="#3a2a40"/><rect x="470" y="105" width="75" height="75" fill="#3a2a40"/>
+      <text x="427" y="66" fill="#fff">first</text><text x="507" y="66" fill="#fff">2</text><text x="507" y="146" fill="#fff">3</text><text x="427" y="146" fill="#fff">last</text>
+      <text x="427" y="35" fill="#9a9ab0" font-size="7">▲ up</text><text x="507" y="35" fill="#9a9ab0" font-size="7">▲ up</text><text x="427" y="175" fill="#ffb0d0" font-size="7">▼ upside down</text><text x="507" y="175" fill="#ffb0d0" font-size="7">▼ upside down</text>
+      <text x="470" y="198" fill="#5d5d6b">bottom row mounted upside-down, shortest cables</text>
+    </g>
+    <path d="M565 62 C600 62 600 142 565 142" stroke="#7b5cff" stroke-width="2" fill="none" marker-end="url(#a2)"/>
+  </svg>
+  <p>Data order within a row depends on the panels' IN/OUT direction — so <b>don't guess: use the test pattern</b>. Over USB serial (115 200 baud) type <code>t</code>: four numbered, coloured quadrants appear with an arrow in the top-left corner. When 1-2 / 3-4 read in order and the arrow points at the top-left, the layout is right. If the whole picture is merely rotated, use <b>Settings → Rotate</b> instead. <code>SM_HUB75_OPTIONS_BOTTOM_TO_TOP_STACKING</code> starts the chain from the bottom row; combine options with <code>|</code>.</p>
+
+  <div class="chapter-tag" style="margin-top:12pt">Step 6</div>
+  <h1>Firmware and bring-up</h1>
+  <div class="rule"></div>
+  <h3>Toolchain (Windows)</h3>
+<pre style="background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:7pt;font-size:8.4pt;font-family:Consolas,monospace;margin:0 0 6pt">winget install ArduinoSA.CLI
+powershell -File firmware/setup.ps1     # Teensy core, SmartMatrix 4 + patch, shared code
+arduino-cli compile --fqbn teensy:avr:teensy41 firmware/coriolis
+arduino-cli upload  --fqbn teensy:avr:teensy41 firmware/coriolis</pre>
+  <p class="small">If your Windows user name has non-ASCII letters (e.g. “Nykänen”), GCC can't find its own headers: map the folders to a drive letter first (<code>subst X: C:\path</code>) and build from there. Options such as <code>CORIOLIS_PANEL_OPTIONS</code> and <code>CORIOLIS_MAX_BRIGHTNESS</code> are defines at the top of the sketch.</p>
+  <div class="footer"><span>Coriolis Build Guide</span><span>6</span></div>
+</section>
+
+<!-- ======================= 6 BRING-UP ======================= -->
+<section class="page">
+  <h2>Bring-up, one stage at a time</h2>
+  <ol class="steps">
+    <li><b>Teensy alone over USB</b> (before cutting VUSB–VIN, or with the PSU on). Flash, open a serial monitor at 115 200 baud, type <code>i</code>: it prints the time and the active scene.</li>
+    <li><b>One panel</b> as panel 1, powered. Type <code>t</code>: red quadrant 1 appears. Blank or noise → wrong panel type, or FM6126A chips: set <code>SM_HUB75_OPTIONS_FM6126A_RESET_AT_START</code>.</li>
+    <li><b>All four panels.</b> Test pattern again; fix the chain option (Step 5). <code>t</code> again leaves it.</li>
+    <li><b>Remote.</b> Each button prints <code>[IR] 0x........ -&gt; n</code>. <code>n</code> = 0 means the code isn't mapped yet — add it in <code>RemoteMap::decode()</code>.</li>
+    <li><b>Sound.</b> Generate the card (<code>python tools/generate_voice_pack.py</code>), copy <code>01</code>, <code>02</code> and <code>ADVERT</code> to a FAT32 microSD, insert it in the DFPlayer. Start a Yoga session: countdown ticks, then the pose name.</li>
+    <li><b>Time.</b> The Teensy Loader sets the RTC to your PC's local time on upload; the first boot of each new build converts it to UTC (the RTC keeps UTC and the display applies the zone and EU summer time). Check it; fix it in <b>Settings → Clock</b>, or send <code>T&lt;unix seconds UTC&gt;</code> over serial — in PowerShell: <code>"T$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"</code>.</li>
+  </ol>
+  <h3>Serial bench commands</h3>
+  <table>
+    <tr><td class="k">u d l r</td><td>arrows</td><td class="k">k</td><td>OK</td><td class="k">b</td><td>back</td></tr>
+    <tr><td class="k">m</td><td>menu</td><td class="k">s</td><td>settings</td><td class="k">c</td><td>clock overlay</td></tr>
+    <tr><td class="k">n</td><td>next scene</td><td class="k">h</td><td>home</td><td class="k">t</td><td>test pattern</td></tr>
+    <tr><td class="k">i</td><td>info</td><td class="k">T&lt;unix&gt;</td><td colspan="3">set the clock (UTC seconds)</td></tr>
+  </table>
+
+  <div class="chapter-tag" style="margin-top:12pt">Reference</div>
+  <h2>Troubleshooting</h2>
+  <table>
+    <tr><th>Symptom</th><th>Likely cause / fix</th></tr>
+    <tr><td class="k">Panels dark, Teensy LED flickers</td><td>No panel power; ribbon on a panel's OUT side; FM6126A panels (Step 6).</td></tr>
+    <tr><td class="k">Random pixels / garbage rows</td><td>1/16 vs 1/32 scan mismatch; incompatible driver chips; long or poor ribbons.</td></tr>
+    <tr><td class="k">Quadrants in the wrong place</td><td>Chain option (Step 5). Whole picture rotated → Settings → Rotate.</td></tr>
+    <tr><td class="k">Red and blue swapped</td><td>Some panels are RBG/BGR: swap the channels in <code>blit()</code>.</td></tr>
+    <tr><td class="k">Clock 1–2 h off after flashing</td><td>Check Zone / Summer in Settings → Clock, then the hour.</td></tr>
+    <tr><td class="k">Clock lost after power cut</td><td>CR2032 missing or flat on VBAT.</td></tr>
+    <tr><td class="k">Remote ignored</td><td>Receiver on 3.3 V and pin 16? Watch for <code>[IR]</code> lines; map unknown codes.</td></tr>
+    <tr><td class="k">No sound</td><td>FAT32 card with <code>01</code>, <code>02</code>, <code>ADVERT</code>; volume in Settings; 1 kΩ on DFPlayer RX.</td></tr>
+  </table>
+  <div class="footer"><span>Coriolis Build Guide</span><span>7</span></div>
+</section>
+
+</body>
+</html>

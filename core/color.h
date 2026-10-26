@@ -23,7 +23,10 @@ inline uint8_t qsub8(uint8_t a, uint8_t b) {
 }
 
 inline uint8_t lerp8(uint8_t a, uint8_t b, uint8_t frac) {
-  return a + scale8(uint8_t(b - a), frac);  // wraps correctly for b < a
+  // scale the magnitude of the step, then apply it in the right direction
+  // (scaling a wrapped b - a, as this once did, overshoots when b < a)
+  return b >= a ? uint8_t(a + scale8(uint8_t(b - a), frac))
+                : uint8_t(a - scale8(uint8_t(a - b), frac));
 }
 
 struct RGB {

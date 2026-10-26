@@ -39,7 +39,7 @@
 #include "../scenes/scene_settings.h"
 #include "../scenes/clock_overlay.h"
 #include "../scenes/toast.h"
-#include "../scenes/scene_launcher.h"
+#include "../scenes/shell.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -199,6 +199,9 @@ class SimAudio : public AudioSink {
   }
   void voice(int) { if (ready_ && enabled_ && voiceReady_) PlaySound(voice_); }
   void loop(Cue) {}  // the ambient crackle bed isn't modeled in the sim
+  void setVolume(uint8_t v) {
+    if (ready_) SetMasterVolume(v / 30.0f);
+  }
 
  private:
   static const int NCUE = 20;
@@ -253,6 +256,9 @@ class FileSettingsStore : public SettingsStore {
         out.autoplaySeconds = uint16_t(value);
       else if (strcmp(key, "transitionMode") == 0)
         out.transitionMode = uint8_t(value);
+      else if (strcmp(key, "volume") == 0) out.volume = uint8_t(value);
+      else if (strcmp(key, "zoneHours") == 0) out.zoneHours = int8_t(value);
+      else if (strcmp(key, "euDst") == 0) out.euDst = value != 0;
       else if (strcmp(key, "yogaBody") == 0) out.yogaBody = uint8_t(value);
       else if (strcmp(key, "yogaProgram") == 0)
         out.yogaProgram = uint8_t(value);
@@ -296,6 +302,9 @@ class FileSettingsStore : public SettingsStore {
     fprintf(f, "autoplay=%d\n", s.autoplay ? 1 : 0);
     fprintf(f, "autoplaySeconds=%d\n", s.autoplaySeconds);
     fprintf(f, "transitionMode=%d\n", s.transitionMode);
+    fprintf(f, "volume=%d\n", s.volume);
+    fprintf(f, "zoneHours=%d\n", s.zoneHours);
+    fprintf(f, "euDst=%d\n", s.euDst ? 1 : 0);
     fprintf(f, "yogaBody=%d\n", s.yogaBody);
     fprintf(f, "yogaProgram=%d\n", s.yogaProgram);
     fprintf(f, "yogaHoldSec=%d\n", s.yogaHoldSec);
@@ -390,7 +399,7 @@ class RaylibGifSource : public GifSource {
 
 // write the framebuffer to a PNG, scaled up with chunky pixels and a thin
 // grid, so it reads like the real panel in the README
-static void exportShot(FrameBuffer& fb, const char* path, int scale) {
+static void exportShot(const FrameBuffer& fb, const char* path, int scale) {
   int W = fb.width() * scale, H = fb.height() * scale;
   unsigned char* buf = (unsigned char*)malloc(size_t(W) * H * 3);
   for (int y = 0; y < H; y++) {
@@ -407,26 +416,36 @@ static void exportShot(FrameBuffer& fb, const char* path, int scale) {
   free(buf);
 }
 
-// render one scene to a PNG: pick a palette, optionally press OK to start a
-// guide/game, let it settle, and stamp on the overlay if asked
+static void writeShot(const char* dir, const char* file, const FrameBuffer& fb) {
+  char path[256];
+  snprintf(path, sizeof(path), "%s/%s", dir, file);
+  exportShot(fb, path, 5);
+  printf("wrote %s\n", path);
+}
+
+// render one scene to a PNG: pick a palette, press a few keys (OK starts a
+// guide/game, arrows skip ahead), let it run, and stamp on the overlay if
+// asked. Time is simulated at 60 fps.
 static void shoot(const char* dir, const char* file, Scene* sc,
                   Settings settings, TimeSource& time, InputState& held,
-                  AudioSink& audio, int paletteIdx, bool startIt, int frames) {
+                  AudioSink& audio, int paletteIdx, bool startIt, int frames,
+                  const Key* keys = nullptr, int keyCount = 0,
+                  int keyEvery = 0) {
   FrameBuffer fb;
   settings.paletteIndex = paletteIdx;
   Context ctx = {fb, time, held, audio, &palettes::byIndex(paletteIdx), 0};
   sc->start(ctx);
   if (startIt) sc->input(ctx, Key::Select);
+  int k = 0;
   for (int f = 0; f < frames; f++) {
     ctx.nowMs = uint32_t(f * 16);
     ctx.palette = &palettes::byIndex(paletteIdx);
+    if (keys && k < keyCount && keyEvery > 0 && f > 0 && f % keyEvery == 0)
+      sc->input(ctx, keys[k++]);
     sc->draw(ctx);
     if (settings.overlayType) overlay::draw(ctx, settings);
   }
-  char path[256];
-  snprintf(path, sizeof(path), "%s/%s", dir, file);
-  exportShot(fb, path, 5);
-  printf("wrote %s\n", path);
+  writeShot(dir, file, fb);
 }
 
 // fixed demo events so the gallery's calendar shot shows a countdown
@@ -444,6 +463,65 @@ class DemoWeather : public WeatherProvider {
  public:
   WeatherInfo now() { return {Wx::Clear, 27, true}; }
 };
+
+// a settings store that never touches disk, for the gallery
+class NullStore : public SettingsStore {
+ public:
+  bool load(Settings&) { return false; }
+  void save(const Settings&) {}
+};
+
+// the PC clock, but claiming to be settable like the device RTC, so the
+// settings shot shows real values in its Clock section
+class DemoDeviceTime : public SystemTime {
+ public:
+  bool settable() const { return true; }
+};
+
+// shots of the shell itself (splash, launcher, settings): drive a real
+// Shell with simulated time and keys
+static void shootShell(const char* dir, TimeSource& time, InputState& held,
+                       AudioSink& audio) {
+  Settings s;
+  NullStore store;
+  FrameBuffer fb;
+  ClockScene clock;
+  YogaScene yoga(s);
+  FireScene fire(s);
+  AuroraScene aurora;
+  SettingsScene settingsScene(s, store);
+  Scene* list[] = {&clock, &yoga, &aurora, &fire};
+  Context ctx = {fb, time, held, audio, &palettes::byIndex(0), 0};
+
+  {  // the splash, mid-resolve
+    Shell shell(list, 4, s, settingsScene);
+    shell.begin(ctx, true);
+    for (int f = 0; f < 120; f++) { ctx.nowMs = uint32_t(f * 16); shell.tick(ctx); }
+    writeShot(dir, "splash.png", shell.frame());
+  }
+  {  // the launcher over a dimmed aurora, browsing ambient art
+    Shell shell(list, 4, s, settingsScene);
+    ctx.nowMs = 0;
+    shell.begin(ctx, false);
+    shell.show(ctx, 2);
+    for (int f = 0; f < 200; f++) { ctx.nowMs = uint32_t(f * 16); shell.tick(ctx); }
+    shell.command(ctx, Command::Menu);
+    shell.key(ctx, Key::Down);
+    for (int f = 200; f < 240; f++) { ctx.nowMs = uint32_t(f * 16); shell.tick(ctx); }
+    writeShot(dir, "launcher.png", shell.frame());
+  }
+  {  // settings, opened from the clock (its CLOCK section)
+    DemoDeviceTime deviceTime;
+    Context dctx = {fb, deviceTime, held, audio, &palettes::byIndex(0), 0};
+    Context& ctx = dctx;
+    Shell shell(list, 4, s, settingsScene);
+    ctx.nowMs = 0;
+    shell.begin(ctx, false);
+    shell.command(ctx, Command::Settings);
+    for (int f = 0; f < 20; f++) { ctx.nowMs = uint32_t(f * 16); shell.tick(ctx); }
+    writeShot(dir, "settings.png", shell.frame());
+  }
+}
 
 // `coriolis_sim --shots <dir>` renders the gallery and exits
 static int renderShots(const char* dir) {
@@ -471,12 +549,29 @@ static int renderShots(const char* dir) {
   RainScene rain;                 shoot(dir, "rain.png", &rain, s, time, held, audio, 6, false, 200);
   FireScene fire(s);              shoot(dir, "fireplace.png", &fire, s, time, held, audio, 0, false, 300);
   AuroraScene auroraShot;         shoot(dir, "aurora.png", &auroraShot, s, time, held, audio, 3, false, 220);
-  YogaScene yoga(s);              shoot(dir, "yoga.png", &yoga, s, time, held, audio, 0, true, 300);
+
+  // yoga: the standing flow, skipped ahead to warrior 1 on the LEFT side
+  Settings ys = s; ys.yogaProgram = 2;
+  const Key skip2[] = {Key::Right, Key::Right};
+  YogaScene yoga(ys);             shoot(dir, "yoga.png", &yoga, ys, time, held, audio, 0, true, 420, skip2, 2, 200);
+  YogaScene yogaCard(ys);         shoot(dir, "yoga_setup.png", &yogaCard, ys, time, held, audio, 0, false, 40);
+  // the Namaste card: skip through every step
+  Key skipAll[20];
+  for (int i = 0; i < 20; i++) skipAll[i] = Key::Right;
+  YogaScene yogaDone(ys);         shoot(dir, "yoga_done.png", &yogaDone, ys, time, held, audio, 0, true, 900, skipAll, 20, 40);
+
   Settings kb = s; kb.exerciseProgram = 1;
-  ExerciseScene ex(kb);           shoot(dir, "exercise.png", &ex, kb, time, held, audio, 0, true, 260);
+  ExerciseScene ex(kb);           shoot(dir, "exercise.png", &ex, kb, time, held, audio, 0, true, 300);
+  // the rest screen between moves, previewing the goblet squat
+  const Key oneSkip[] = {Key::Right};
+  ExerciseScene exRest(kb);       shoot(dir, "exercise_rest.png", &exRest, kb, time, held, audio, 0, true, 300, oneSkip, 1, 230);
+  Settings tb = s; tb.exerciseProgram = 2;
+  ExerciseScene tabata(tb);       shoot(dir, "tabata.png", &tabata, tb, time, held, audio, 0, true, 420);
+  ExerciseScene countdown(tb);    shoot(dir, "countdown.png", &countdown, tb, time, held, audio, 0, true, 40);
+
   BreatheScene breathe(s);        shoot(dir, "breathe.png", &breathe, s, time, held, audio, 0, true, 60);
   PongScene pong(s);              shoot(dir, "pong.png", &pong, s, time, held, audio, 0, true, 120);
-  SnakeScene snake(s);            shoot(dir, "snake.png", &snake, s, time, held, audio, 0, true, 200);
+  SnakeScene snake(s);            shoot(dir, "snake.png", &snake, s, time, held, audio, 0, true, 110);
   TetrisScene tetris(s);          shoot(dir, "tetris.png", &tetris, s, time, held, audio, 0, true, 500);
   FocusScene focus;               shoot(dir, "focus.png", &focus, s, time, held, audio, 0, true, 60);
   DemoWeather demoWx;
@@ -487,6 +582,57 @@ static int renderShots(const char* dir) {
   AquariumScene aquarium;         shoot(dir, "aquarium.png", &aquarium, s, time, held, audio, 2, false, 200);
   SpiroScene spiro2;              shoot(dir, "overlay.png", &spiro2, ov, time, held, audio, 0, false, 900);
 
+  shootShell(dir, time, held, audio);
+
+  CloseWindow();
+  return 0;
+}
+
+// `coriolis_sim --poses <dir>`: every step of every yoga flow and exercise
+// program, settled, for checking figure work at a glance
+static int renderPoses(const char* dir) {
+  SetConfigFlags(FLAG_WINDOW_HIDDEN);
+  InitWindow(64, 64, "poses");
+  SystemTime time;
+  KeyboardInput held;
+  SilentAudio audio;
+  FrameBuffer fb;
+  char name[64];
+  for (int p = 0; p < YogaScene::FLOW_COUNT; p++) {
+    Settings s;
+    s.yogaProgram = uint8_t(p);
+    s.yogaHoldSec = 60;
+    YogaScene yoga(s);
+    Context ctx = {fb, time, held, audio, &palettes::byIndex(0), 0};
+    yoga.start(ctx);
+    yoga.input(ctx, Key::Select);
+    uint32_t t = 0;
+    for (; t < 3300; t += 16) { ctx.nowMs = t; yoga.draw(ctx); }
+    for (int step = 0; step < 16; step++) {
+      for (uint32_t e = 0; e < 1600; e += 16) { ctx.nowMs = t += 16; yoga.draw(ctx); }
+      snprintf(name, sizeof(name), "yoga%d_%02d.png", p, step);
+      writeShot(dir, name, fb);
+      yoga.input(ctx, Key::Right);
+      ctx.nowMs = t += 16;
+      yoga.draw(ctx);
+    }
+  }
+  for (int p = 0; p < ExerciseScene::PROGRAM_COUNT; p++) {
+    Settings s;
+    s.exerciseProgram = uint8_t(p);
+    ExerciseScene ex(s);
+    Context ctx = {fb, time, held, audio, &palettes::byIndex(0), 0};
+    ex.start(ctx);
+    ex.input(ctx, Key::Select);
+    uint32_t t = 0;
+    for (; t < 3300; t += 16) { ctx.nowMs = t; ex.draw(ctx); }
+    for (int step = 0; step < 18; step++) {
+      for (uint32_t e = 0; e < 1450; e += 16) { ctx.nowMs = t += 16; ex.draw(ctx); }
+      snprintf(name, sizeof(name), "ex%d_%02d.png", p, step);
+      writeShot(dir, name, fb);
+      ex.input(ctx, Key::Right);
+    }
+  }
   CloseWindow();
   return 0;
 }
@@ -494,6 +640,9 @@ static int renderShots(const char* dir) {
 int main(int argc, char** argv) {
   if (argc >= 3 && strcmp(argv[1], "--shots") == 0)
     return renderShots(argv[2]);
+  if (argc >= 3 && strcmp(argv[1], "--poses") == 0)
+    return renderPoses(argv[2]);
+  bool splash = !(argc >= 2 && strcmp(argv[1], "--no-splash") == 0);
 
   // chunky pixels, the whole point — but keep the window on a 1080p screen
   int scale = 8;
@@ -544,7 +693,6 @@ int main(int argc, char** argv) {
   FireScene fire(settings);
   AuroraScene aurora;
   SettingsScene settingsScene(settings, store);
-  SceneLauncher launcher;
 
   // settings is deliberately NOT in the rotation: it opens on its own key,
   // so it can't be stumbled into or autoplayed through
@@ -556,183 +704,50 @@ int main(int argc, char** argv) {
                      &starfield, &life,        &aquarium,    &fire,
                      &aurora};
   const int sceneCount = sizeof(scenes) / sizeof(scenes[0]);
-  int current = 0;
-  bool inSettings = false;
-
-  FrameBuffer displayFb;
-  TransitionEngine transition;
 
   Context ctx = {fb, timeSource, heldKeys, audio,
                  &palettes::byIndex(settings.paletteIndex), 0};
-
-  scenes[current]->start(ctx);
-
-  uint32_t nextFrameMs = 0;
-  uint32_t lastSwitchMs = 0;
-
-  Toast toast;
+  Shell shell(scenes, sceneCount, settings, settingsScene);
+  shell.begin(ctx, splash);
 
   while (!WindowShouldClose()) {
     ctx.nowMs = uint32_t(GetTime() * 1000.0);
-    ctx.palette = &palettes::byIndex(settings.paletteIndex);
 
-    // keyboard stands in for the remote/gamepad; scenes get first refusal
-    Key pressed = Key::None;
-    if (IsKeyPressed(KEY_UP)) pressed = Key::Up;
-    if (IsKeyPressed(KEY_DOWN)) pressed = Key::Down;
-    if (IsKeyPressed(KEY_LEFT)) pressed = Key::Left;
-    if (IsKeyPressed(KEY_RIGHT)) pressed = Key::Right;
-    if (IsKeyPressed(KEY_ENTER)) pressed = Key::Select;
-    if (IsKeyPressed(KEY_BACKSPACE)) pressed = Key::Back;
-
-    Scene* active =
-        inSettings ? static_cast<Scene*>(&settingsScene) : scenes[current];
-
-    bool consumed = false;
-    if (pressed != Key::None) consumed = active->input(ctx, pressed);
-
-    // the settings key toggles the menu from anywhere and jumps to the
-    // section of the scene it was opened from (device: the remote's menu
-    // button)
-    if (IsKeyPressed(KEY_S)) {
-      if (inSettings) {
-        settingsScene.stop(ctx);  // persists any changes
-        inSettings = false;
-      } else {
-        if (launcher.isActive()) launcher.close();
-        settingsScene.openSection(scenes[current]->name());
-        inSettings = true;
-      }
-      nextFrameMs = 0;
-      consumed = true;
-    }
-
-    // M toggles the quick Scene Launcher categorized picker
-    if (IsKeyPressed(KEY_M)) {
-      if (launcher.isActive()) {
-        launcher.close();
-      } else {
-        if (inSettings) {
-          settingsScene.stop(ctx);
-          inSettings = false;
-        }
-        launcher.open(current);
-      }
-      nextFrameMs = 0;
-      consumed = true;
-    }
-
-    int switchTo = -1;
-    TransitionType switchTrans = TransitionType::CrossFade;
-    if (!consumed && launcher.isActive() && pressed != Key::None) {
-      int chosen = launcher.handleInput(pressed);
-      if (chosen >= 0) {
-        switchTo = chosen;
-        switchTrans = TransitionType::CrossFade;
-      }
-      consumed = true;
-      nextFrameMs = 0;
-    } else if (!consumed && inSettings) {
-      if (pressed == Key::Back) {  // back also closes the menu
-        settingsScene.stop(ctx);
-        inSettings = false;
-        nextFrameMs = 0;
-      }
-    } else if (!consumed) {
-      if (pressed == Key::Right || IsKeyPressed(KEY_SPACE)) {
-        switchTo = (current + 1) % sceneCount;
-        switchTrans = TransitionType::SlideLeft;
-      } else if (pressed == Key::Left) {
-        switchTo = (current + sceneCount - 1) % sceneCount;
-        switchTrans = TransitionType::SlideRight;
-      } else if (pressed == Key::Up) {
-        settings.paletteIndex = (settings.paletteIndex + 1) % palettes::COUNT;
-        toast.show(palettes::byIndex(settings.paletteIndex).name, ctx.nowMs);
-      } else if (pressed == Key::Down) {
-        settings.paletteIndex =
-            (settings.paletteIndex + palettes::COUNT - 1) % palettes::COUNT;
-        toast.show(palettes::byIndex(settings.paletteIndex).name, ctx.nowMs);
-      } else if (pressed == Key::Back) {
-        switchTo = 0;  // home to the clock from anywhere
-        switchTrans = TransitionType::CrossFade;
-      }
-    }
+    // keyboard stands in for the remote: arrows/enter/backspace are the
+    // navigation keys, the letters are the remote's extra buttons
+    if (IsKeyPressed(KEY_UP)) shell.key(ctx, Key::Up);
+    if (IsKeyPressed(KEY_DOWN)) shell.key(ctx, Key::Down);
+    if (IsKeyPressed(KEY_LEFT)) shell.key(ctx, Key::Left);
+    if (IsKeyPressed(KEY_RIGHT)) shell.key(ctx, Key::Right);
+    if (IsKeyPressed(KEY_ENTER)) shell.key(ctx, Key::Select);
+    if (IsKeyPressed(KEY_BACKSPACE)) shell.key(ctx, Key::Back);
+    if (IsKeyPressed(KEY_M)) shell.command(ctx, Command::Menu);
+    if (IsKeyPressed(KEY_S)) shell.command(ctx, Command::Settings);
+    if (IsKeyPressed(KEY_C)) shell.command(ctx, Command::Overlay);
+    if (IsKeyPressed(KEY_SPACE)) shell.command(ctx, Command::Next);
+    if (IsKeyPressed(KEY_H)) shell.command(ctx, Command::Home);
 
     if (IsKeyPressed(KEY_R) && WIDTH == HEIGHT) {
       settings.rotation = uint8_t((settings.rotation + 1) % 4);
-      toast.show("ROTATED", ctx.nowMs);
-    }
-
-    // the clock-overlay button: cycle off -> digital -> analog -> word
-    if (IsKeyPressed(KEY_C)) {
-      settings.overlayType = uint8_t((settings.overlayType + 1) % 4);
-      char m[20];
-      snprintf(m, sizeof(m), "CLOCK %s", overlay::typeName(settings.overlayType));
-      toast.show(m, ctx.nowMs);
+      shell.toast().show("Rotated", ctx.nowMs);
     }
 
     // A toggles the simulator's beep audio (off by default)
     if (IsKeyPressed(KEY_A)) {
       audio.setEnabled(!audio.enabled());
-      toast.show(audio.enabled() ? "AUDIO ON" : "AUDIO OFF", ctx.nowMs);
+      shell.toast().show(audio.enabled() ? "Audio on" : "Audio off", ctx.nowMs);
     }
 
-    // autoplay cycles eligible scenes; paused while the menu is open
-    if (!inSettings && settings.autoplay && switchTo < 0 &&
-        scenes[current]->autoplayEligible() &&
-        ctx.nowMs - lastSwitchMs >= uint32_t(settings.autoplaySeconds) * 1000) {
-      switchTo = (current + 1) % sceneCount;
-      while (!scenes[switchTo]->autoplayEligible())
-        switchTo = (switchTo + 1) % sceneCount;
-      switchTrans = TransitionType::SlideLeft;
-    }
-
-    if (switchTo >= 0) {
-      TransitionType resolved = resolveTransition(settings.transitionMode, switchTrans);
-      if (resolved != TransitionType::Cut) {
-        transition.start(transition.isActive(ctx.nowMs) ? displayFb : fb,
-                         resolved, ctx.nowMs, 240);
-      } else {
-        transition.cancel();
-      }
-      scenes[current]->stop(ctx);
-      current = switchTo;
-      scenes[current]->start(ctx);
-      nextFrameMs = 0;
-      lastSwitchMs = ctx.nowMs;
-      toast.show(scenes[current]->name(), ctx.nowMs);
-    }
-
-    // honor each scene's requested frame delay, like the device loop will
-    if (ctx.nowMs >= nextFrameMs) {
-      Scene* drawScene =
-          inSettings ? static_cast<Scene*>(&settingsScene) : scenes[current];
-      uint32_t requestedDelay = drawScene->draw(ctx);
-      // the clock overlay rides on top of whatever just drew (not settings or launcher)
-      if (!inSettings && !launcher.isActive()) overlay::draw(ctx, settings);
-      if (launcher.isActive()) launcher.draw(ctx);
-
-      if (transition.isActive(ctx.nowMs)) {
-        transition.composite(displayFb, fb, ctx.nowMs);
-        Context dispCtx = {displayFb, timeSource, heldKeys, audio, ctx.palette, ctx.nowMs};
-        toast.draw(dispCtx);
-        if (requestedDelay > 16) requestedDelay = 16;
-      } else {
-        toast.draw(ctx);  // action confirmations, over everything
-      }
-      nextFrameMs = ctx.nowMs + requestedDelay;
-    }
-
-    const FrameBuffer& renderFb = transition.isActive(ctx.nowMs) ? displayFb : fb;
+    shell.tick(ctx);
 
     BeginDrawing();
     ClearBackground(BLACK);
-    TimeOfDay now = timeSource.now();
-    uint8_t effectiveBright = settings.effectiveBrightness(now.hour);
+    const FrameBuffer& out = shell.frame();
+    uint8_t bright = shell.brightness(ctx);
     for (int y = 0; y < HEIGHT; y++) {
       for (int x = 0; x < WIDTH; x++) {
-        RGB c = renderFb.at(x, y);
-        c.dim(effectiveBright);
+        RGB c = out.at(x, y);
+        c.dim(bright);
         int dx = x, dy = y;
         switch (settings.rotation) {
           case 1: dx = HEIGHT - 1 - y; dy = x; break;
@@ -744,11 +759,7 @@ int main(int argc, char** argv) {
       }
     }
     // debug labels at the bottom, clear of the matrix's own top bar
-    const char* activeLabel = launcher.isActive()
-                                  ? "Launcher [M]"
-                                  : (inSettings ? settingsScene.name()
-                                                : scenes[current]->name());
-    DrawText(activeLabel, 8, HEIGHT * scale - 42, 20, RAYWHITE);
+    DrawText(shell.activeName(), 8, HEIGHT * scale - 42, 20, RAYWHITE);
     DrawText(ctx.palette->name, 8, HEIGHT * scale - 20, 14, GRAY);
     const char* astat = !audio.ready() ? "audio: n/a"
                                         : (audio.enabled() ? "audio: ON [A]"

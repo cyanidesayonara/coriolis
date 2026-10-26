@@ -14,6 +14,8 @@
 #include "../core/font.h"
 #include "../core/settings.h"
 #include "../core/palette.h"
+#include "../core/font5x7.h"
+#include "../core/timeutil.h"
 
 namespace coriolis {
 
@@ -41,7 +43,7 @@ class SettingsScene : public Scene {
     dirty_ = false;
   }
 
-  bool input(Context&, Key k) {
+  bool input(Context& ctx, Key k) {
     if (k == Key::Up) { row_ = (row_ + ITEM_COUNT - 1) % ITEM_COUNT; return true; }
     if (k == Key::Down) { row_ = (row_ + 1) % ITEM_COUNT; return true; }
 
@@ -49,7 +51,7 @@ class SettingsScene : public Scene {
     if (dir == 0) return false;
 
     dirty_ = true;
-    adjust(items_[row_].id, dir);
+    adjust(ctx, items_[row_].id, dir);
     return true;
   }
 
@@ -57,12 +59,12 @@ class SettingsScene : public Scene {
     ctx.fb.clear();
 
     RGB titleColor = ctx.palette->lookupBright(0);
-    font3x5::drawText(ctx.fb, "SETTINGS", 4, 2, 1, titleColor);
-    ctx.fb.hLine(0, ctx.fb.width() - 1, 9, RGB(50, 50, 50));
+    font5x7::drawText(ctx.fb, "Settings", 4, 2, 1, titleColor);
+    ctx.fb.hLine(0, ctx.fb.width() - 1, 11, RGB(50, 50, 50));
 
     // build the visible window: headers take a row of their own
     const int rowH = 8;
-    const int top = 12;
+    const int top = 14;
     int maxRows = (ctx.fb.height() - top - 2) / rowH;
 
     // flatten items + headers into display rows, remembering where the
@@ -108,7 +110,7 @@ class SettingsScene : public Scene {
         font3x5::drawText(ctx.fb, items_[r.item].label, 6, y, 1, color);
 
         char value[16];
-        valueText(items_[r.item].id, value, sizeof(value));
+        valueText(ctx, items_[r.item].id, value, sizeof(value));
         for (char* p = value; *p; ++p) *p = char(toupper((unsigned char)*p));
         int vw = font3x5::textWidth(value, 1);
         RGB vcol = selected ? ctx.palette->lookupBright(0) : RGB(150, 150, 150);
@@ -136,11 +138,16 @@ class SettingsScene : public Scene {
     uint8_t id;
   };
 
-  static const int ITEM_COUNT = 24;
+  static const int ITEM_COUNT = 32;
   const Item items_[ITEM_COUNT] = {
-      {"GENERAL", "BRIGHT", 0},   {"GENERAL", "PALETTE", 1},
+      {"GENERAL", "BRIGHT", 0},   {"GENERAL", "VOLUME", 24},
+      {"GENERAL", "PALETTE", 1},
       {"GENERAL", "TRANSIT", 23}, {"GENERAL", "ROTATE", 2},
-      {"GENERAL", "AUTO", 3},     {"GENERAL", "SECS", 4},     {"NIGHT", "AUTO", 19},
+      {"GENERAL", "AUTO", 3},     {"GENERAL", "SECS", 4},
+      {"CLOCK", "HOUR", 25},      {"CLOCK", "MINUTE", 26},
+      {"CLOCK", "DAY", 27},       {"CLOCK", "MONTH", 28},
+      {"CLOCK", "YEAR", 29},      {"CLOCK", "ZONE", 30},
+      {"CLOCK", "SUMMER", 31},    {"NIGHT", "AUTO", 19},
       {"NIGHT", "START", 20},     {"NIGHT", "END", 21},
       {"NIGHT", "BRIGHT", 22},    {"OVERLAY", "CLOCK", 15},
       {"OVERLAY", "POS", 16},     {"OVERLAY", "SIZE", 17},
@@ -168,7 +175,27 @@ class SettingsScene : public Scene {
     return true;
   }
 
-  void adjust(uint8_t id, int dir) {
+  // nudge one field of the local date/time on a settable clock (device RTC)
+  static void adjustTime(Context& ctx, int field, int dir) {
+    if (!ctx.time.settable()) return;
+    TimeOfDay t = ctx.time.now();
+    switch (field) {
+      case 0: t.hour = (t.hour + dir + 24) % 24; break;
+      case 1: t.minute = (t.minute + dir + 60) % 60; t.second = 0; break;
+      case 2: {
+        int n = timeutil::daysInMonth(t.year, t.month);
+        t.day = (t.day - 1 + dir + n) % n + 1;
+        break;
+      }
+      case 3: t.month = (t.month - 1 + dir + 12) % 12 + 1; break;
+      case 4: t.year += dir; if (t.year < 2024) t.year = 2024; break;
+    }
+    int n = timeutil::daysInMonth(t.year, t.month);
+    if (t.day > n) t.day = n;
+    ctx.time.setLocal(t);
+  }
+
+  void adjust(Context& ctx, uint8_t id, int dir) {
     switch (id) {
       case 0: {
         int b = settings_.brightness + dir * 32;
@@ -215,7 +242,7 @@ class SettingsScene : public Scene {
         settings_.fireSparks = !settings_.fireSparks;
         break;
       case 11:
-        settings_.exerciseProgram = uint8_t(1 - settings_.exerciseProgram);
+        settings_.exerciseProgram = uint8_t((settings_.exerciseProgram + dir + 4) % 4);
         break;
       case 12: {
         int r = settings_.exerciseReps + dir * 2;
@@ -267,10 +294,31 @@ class SettingsScene : public Scene {
       case 23:
         settings_.transitionMode = uint8_t((settings_.transitionMode + dir + 4) % 4);
         break;
+      case 24: {
+        int v = settings_.volume + dir * 3;
+        settings_.volume = uint8_t(v < 0 ? 0 : (v > 30 ? 30 : v));
+        break;
+      }
+      case 25: case 26: case 27: case 28: case 29:
+        adjustTime(ctx, id - 25, dir);
+        break;
+      case 30: {
+        int z = settings_.zoneHours + dir;
+        settings_.zoneHours = int8_t(z < -12 ? -12 : (z > 14 ? 14 : z));
+        break;
+      }
+      case 31:
+        settings_.euDst = !settings_.euDst;
+        break;
     }
   }
 
-  void valueText(uint8_t id, char* out, int n) {
+  void valueText(Context& ctx, uint8_t id, char* out, int n) {
+    if (id >= 25 && id <= 29 && !ctx.time.settable()) {
+      snprintf(out, n, "PC");  // the simulator follows the computer's clock
+      return;
+    }
+    TimeOfDay t = ctx.time.now();
     switch (id) {
       case 0: snprintf(out, n, "%d", settings_.brightness); break;
       case 1:
@@ -294,10 +342,11 @@ class SettingsScene : public Scene {
                      : (settings_.pongLevel == 1 ? "NORM" : "HARD"));
         break;
       case 10: snprintf(out, n, "%s", settings_.fireSparks ? "ON" : "OFF"); break;
-      case 11:
-        snprintf(out, n, "%s",
-                 settings_.exerciseProgram == 0 ? "BODY" : "KBELL");
+      case 11: {
+        static const char* ep[4] = {"BODY", "KBELL", "TABATA", "CORE"};
+        snprintf(out, n, "%s", ep[settings_.exerciseProgram & 3]);
         break;
+      }
       case 12: snprintf(out, n, "%d", settings_.exerciseReps); break;
       case 13: snprintf(out, n, "%d", settings_.exerciseRepSec); break;
       case 14:
@@ -337,6 +386,20 @@ class SettingsScene : public Scene {
         snprintf(out, n, "%s", tr[settings_.transitionMode >= 4 ? 0 : settings_.transitionMode]);
         break;
       }
+      case 24:
+        if (settings_.volume == 0) snprintf(out, n, "MUTE");
+        else snprintf(out, n, "%d", settings_.volume);
+        break;
+      case 25: snprintf(out, n, "%02d", t.hour); break;
+      case 26: snprintf(out, n, "%02d", t.minute); break;
+      case 27: snprintf(out, n, "%d", t.day); break;
+      case 28: snprintf(out, n, "%s", timeutil::monthShort(t.month)); break;
+      case 29: snprintf(out, n, "%d", t.year); break;
+      case 30:
+        snprintf(out, n, "UTC%c%d", settings_.zoneHours < 0 ? '-' : '+',
+                 settings_.zoneHours < 0 ? -settings_.zoneHours : settings_.zoneHours);
+        break;
+      case 31: snprintf(out, n, "%s", settings_.euDst ? "EU AUTO" : "OFF"); break;
       default: out[0] = 0;
     }
   }

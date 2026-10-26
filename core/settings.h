@@ -15,6 +15,12 @@ struct Settings {
   bool autoplay = false;         // cycle scenes automatically
   uint16_t autoplaySeconds = 30;
   uint8_t transitionMode = 0;    // 0 auto (slide on arrows, fade on jump), 1 slide, 2 fade, 3 cut
+  uint8_t volume = 20;           // 0 mute .. 30 (DFPlayer scale)
+
+  // time zone for the device RTC, which keeps UTC (the sim uses the PC's
+  // local time and ignores these)
+  int8_t zoneHours = 1;          // UTC offset: +1 = CET (Barcelona)
+  bool euDst = true;             // EU summer time on the last Sundays of Mar/Oct
 
   // clock overlay, shown on top of any scene (its own button toggles type)
   uint8_t overlayType = 0;       // 0 off, 1 digital, 2 analog, 3 word
@@ -23,9 +29,9 @@ struct Settings {
 
   // per-scene
   uint8_t yogaBody = 0;          // 0 female, 1 male
-  uint8_t yogaProgram = 0;       // 0 sun salutation, 1 standing, 2 wind down
+  uint8_t yogaProgram = 0;       // 0 wake-up, 1 sun salutation, 2 standing, 3 hips, 4 bedtime
   uint16_t yogaHoldSec = 15;
-  uint8_t exerciseProgram = 0;   // 0 bodyweight, 1 kettlebell
+  uint8_t exerciseProgram = 0;   // 0 bodyweight, 1 kettlebell, 2 tabata, 3 core
   uint8_t exerciseReps = 8;
   uint8_t exerciseRepSec = 3;    // seconds per rep
   uint8_t breatheStyle = 0;      // 0 box (4-4-4-4), 1 relax (4-7-8)
@@ -51,6 +57,35 @@ struct Settings {
     } else {
       return currentHour >= nightStartHour && currentHour < nightEndHour;
     }
+  }
+
+  // pull every field back into its legal range — stored settings may come
+  // from a hand-edited file or an older layout, and several values are
+  // divisors or table indices
+  void sanitize() {
+    if (brightness < 16) brightness = 16;
+    if (paletteIndex < 0 || paletteIndex > 6) paletteIndex = 0;
+    rotation &= 3;
+    if (autoplaySeconds < 10 || autoplaySeconds > 600) autoplaySeconds = 30;
+    if (transitionMode > 3) transitionMode = 0;
+    if (volume > 30) volume = 20;
+    if (zoneHours < -12 || zoneHours > 14) zoneHours = 1;
+    if (overlayType > 3) overlayType = 0;
+    if (overlayPos > 8) overlayPos = 4;
+    if (overlaySize > 2) overlaySize = 1;
+    yogaBody &= 1;
+    if (yogaProgram > 4) yogaProgram = 0;
+    if (yogaHoldSec < 5 || yogaHoldSec > 60) yogaHoldSec = 15;
+    exerciseProgram &= 3;
+    if (exerciseReps < 4 || exerciseReps > 20) exerciseReps = 8;
+    if (exerciseRepSec < 2 || exerciseRepSec > 6) exerciseRepSec = 3;
+    breatheStyle &= 1;
+    if (breatheSec < 3 || breatheSec > 8) breatheSec = 4;
+    if (pongLevel > 2) pongLevel = 1;
+    if (snakeSpeed > 2) snakeSpeed = 1;
+    nightStartHour %= 24;
+    nightEndHour %= 24;
+    if (nightBrightness < 8 || nightBrightness > 128) nightBrightness = 16;
   }
 
   uint8_t effectiveBrightness(int currentHour) const {
