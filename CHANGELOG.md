@@ -26,6 +26,11 @@ All notable changes to Coriolis will be documented in this file, newest first.
   limit. Clip index = file number now (`core/audio.h`, `namespace voice`).
 - The clock overlay and toast were drawn into the scene's own canvas, burning into trail-style
   scenes; they are composited on a separate output now and stay pinned during slides.
+- Second-pass review: on the device a move's spoken name was replaced by "one" (DFPlayer
+  now queues voice clips), "get ready" was cut off by the first countdown tick, choosing the
+  current scene in the launcher restarted it, the sim didn't save volume/zone/summer time,
+  timers weren't safe across the 49-day millis() wrap, loaded settings weren't range-checked,
+  and re-flashing could shift a correct RTC by the UTC offset.
 - Removed `docs/CORIOLIS_HARDWARE_MANUAL.pdf` and its generator (pin 2, wrong frame sizes);
   replaced by `docs/BUILD.md` and `docs/Coriolis_Build_Guide.pdf`.
 

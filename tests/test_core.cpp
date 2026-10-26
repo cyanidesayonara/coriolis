@@ -63,7 +63,9 @@ class NullStore : public SettingsStore {
 class GreedyScene : public Scene {
  public:
   int keys = 0;
+  int starts = 0;
   const char* name() const { return "Tetris"; }
+  void start(Context&) { starts++; }
   bool input(Context&, Key) { keys++; return true; }
   uint32_t draw(Context& ctx) { ctx.fb.clear(); return 33; }
 };
@@ -113,6 +115,18 @@ static void testNight() {
   CHECK(s.isNightTime(23) && s.isNightTime(3) && !s.isNightTime(7));
   CHECK(s.effectiveBrightness(2) == s.nightBrightness);
   CHECK(s.effectiveBrightness(12) == 200);
+}
+
+static void testSanitize() {
+  Settings s;
+  s.exerciseRepSec = 0;   // a divisor
+  s.yogaHoldSec = 0;      // a divisor
+  s.overlayType = 9;      // a table index
+  s.overlayPos = 200;
+  s.volume = 99;
+  s.sanitize();
+  CHECK(s.exerciseRepSec == 3 && s.yogaHoldSec == 15);
+  CHECK(s.overlayType == 0 && s.overlayPos == 4 && s.volume == 20);
 }
 
 static void testShell() {
@@ -166,6 +180,18 @@ static void testShell() {
   CHECK(strcmp(shell.activeName(), "Settings") == 0);
   shell.key(ctx, Key::Back);
   CHECK(!shell.menuOpen());
+
+  // picking the scene that's already showing must not restart it (it would
+  // throw away a game or workout in progress)
+  {
+    int before = game.starts;
+    shell.show(ctx, 1);
+    before = game.starts;
+    shell.command(ctx, Command::Menu);
+    shell.key(ctx, Key::Select);
+    CHECK(game.starts == before);
+    CHECK(!shell.menuOpen() && shell.current() == 1);
+  }
 
   // Home from anywhere
   shell.command(ctx, Command::Home);
@@ -247,6 +273,7 @@ int main() {
   testColor();
   testTime();
   testNight();
+  testSanitize();
   testShell();
   testGuides();
   if (failures) {

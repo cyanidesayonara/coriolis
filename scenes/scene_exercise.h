@@ -225,7 +225,7 @@ class ExerciseScene : public Scene {
       if (settings_.exerciseProgram != lastProgram_) buildProgram();
       char l0[24], l1[24];
       snprintf(l0, sizeof(l0), "%s", programName(settings_.exerciseProgram));
-      if (tabata())
+      if (settings_.exerciseProgram == 2)
         snprintf(l1, sizeof(l1), "8 x 20s on, 10s off");
       else
         snprintf(l1, sizeof(l1), "%d moves, %d reps", moves_ % 100,
@@ -238,7 +238,8 @@ class ExerciseScene : public Scene {
     if (phase_ == COUNTDOWN) {
       uint32_t e = ctx.nowMs - phaseStartMs_;
       int sec = int(e / 1000);
-      if (sec != lastTick_ && sec < 3) {
+      // ticks on 2 and 1 only: a tick at 3 would cut "get ready" short
+      if (sec != lastTick_ && sec >= 1 && sec < 3) {
         lastTick_ = sec;
         ctx.audio.play(Cue::Tick);
       }
@@ -344,7 +345,8 @@ class ExerciseScene : public Scene {
   uint32_t frozenElapsed_ = 0;
   uint32_t sessionMs_ = 0;
 
-  bool tabata() const { return settings_.exerciseProgram == 2; }
+  // the program the steps were built from (settings may change mid-run)
+  bool tabata() const { return lastProgram_ == 2; }
 
   uint32_t repMs() const {
     return tabata() ? 900 : uint32_t(settings_.exerciseRepSec) * 1000;
@@ -376,7 +378,7 @@ class ExerciseScene : public Scene {
     frozenElapsed_ = 0;
     paused_ = false;
     halfwayDone_ = false;
-    lastRep_ = -1;
+    lastRep_ = 0;  // the move's name announces the first rep; counting starts at "two"
     lastTick_ = -1;
     const Step& st = steps_[i];
     if (st.rest) {
@@ -451,7 +453,7 @@ class ExerciseScene : public Scene {
     if (!st.timed && sinceRep < 240) {
       int cx = ctx.fb.width() / 2, cy = ctx.fb.height() / 2;
       RGB ring = guide::titleColor();
-      ring.dim(uint8_t(220 - sinceRep));
+      ring.dim(uint8_t(220 - sinceRep * 220 / 240));
       ctx.fb.circle(cx, cy, 6 + int(sinceRep / 12), ring);
     }
 

@@ -100,14 +100,32 @@ class RtcTime : public TimeSource {
   }
 
   // the Teensy Loader sets the RTC to the PC's *local* time on upload;
-  // reinterpret that once as local and store UTC
-  void adoptLoaderTime() {
+  // reinterpret that once as local and store UTC. Only when the RTC really
+  // looks freshly set: within two hours after this build was compiled
+  // (compile time is local too). An upload that left the RTC alone (an old
+  // .hex, another loader) keeps its UTC untouched. Returns whether it did.
+  bool adoptLoaderTime() {
     int64_t local = int64_t(Teensy3Clock.get());
+    int64_t built = compileTimeLocal();
+    if (local < built - 300 || local > built + 7200) return false;
     setUtc(local - offsetForLocal(local));
+    return true;
   }
 
  private:
   const Settings& s_;
+
+  static int64_t compileTimeLocal() {
+    static const char months[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
+    const char* d = __DATE__;  // "Mmm dd yyyy"
+    const char* t = __TIME__;  // "hh:mm:ss"
+    int mo = 1;
+    for (int i = 0; i < 12; i++)
+      if (strncmp(d, months + i * 3, 3) == 0) mo = i + 1;
+    int day = atoi(d + 4), year = atoi(d + 7);
+    return timeutil::toEpoch(year, mo, day, atoi(t), atoi(t + 3), atoi(t + 6));
+  }
+
   int32_t offsetForLocal(int64_t local) const {
     // the offset depends on the UTC instant; standard time gets us there
     return timeutil::localOffset(local - s_.zoneHours * 3600, s_.zoneHours,
@@ -241,7 +259,7 @@ class DeviceInput : public InputState {
     uint32_t now = ctx.nowMs;
     pollIr(shell, ctx, now);
     pollSerial(shell, ctx, rtc, now);
-    if (now >= heldUntilMs_) heldKey_ = Key::None;
+    if (int32_t(now - heldUntilMs_) >= 0) heldKey_ = Key::None;
   }
 
  private:
@@ -298,7 +316,8 @@ class DeviceInput : public InputState {
     }
     if (irButton_ == Button::None) return;
 
-    bool held = now - IrReceiver::lastSeenMs() < 160;
+    // signed: the ISR may stamp lastSeenMs after `now` was sampled
+    bool held = int32_t(now - IrReceiver::lastSeenMs()) < 160;
     bool menuLike = irButton_ == Button::Menu || irButton_ == Button::Star ||
                     irButton_ == Button::Play;
     if (held) {
@@ -400,10 +419,17 @@ class DfPlayerAudio : public AudioSink {
     lastCueMs_ = millis();
   }
 
+  // voice clips queue behind each other (a move name, then the first rep
+  // count) rather than replacing one another; each waits for the chime fired
+  // with it and for the previous clip to be spoken
   void voice(int n) {
     if (n < 1 || n > 255 || muted_) return;
-    pendingVoice_ = n;
-    voiceDueMs_ = millis() + (millis() - lastCueMs_ < 600 ? 650 : 0);
+    if (voiceCount_ == VQ) return;  // a backlog of speech is worse than a gap
+    voices_[(voiceHead_ + voiceCount_) % VQ] = uint8_t(n);
+    voiceCount_++;
+    uint32_t now = millis();
+    uint32_t due = now + (now - lastCueMs_ < 600 ? 650 : 0);
+    if (voiceCount_ == 1 && int32_t(due - voiceDueMs_) > 0) voiceDueMs_ = due;
   }
 
   void loop(Cue c) {
@@ -426,11 +452,13 @@ class DfPlayerAudio : public AudioSink {
 
   void update(uint32_t) {
     uint32_t now = millis();
-    if (pendingVoice_ && now >= voiceDueMs_) {
-      enqueue(0x0F, uint16_t((2 << 8) | pendingVoice_));
-      pendingVoice_ = 0;
+    if (voiceCount_ && int32_t(now - voiceDueMs_) >= 0) {
+      enqueue(0x0F, uint16_t((2 << 8) | voices_[voiceHead_]));
+      voiceHead_ = (voiceHead_ + 1) % VQ;
+      voiceCount_--;
+      voiceDueMs_ = now + VOICE_GAP_MS;  // let the clip be heard
     }
-    if (count_ == 0 || now < readyMs_ || now - lastSendMs_ < 60) return;
+    if (count_ == 0 || int32_t(now - readyMs_) < 0 || now - lastSendMs_ < 60) return;
     Cmd c = q_[head_];
     head_ = (head_ + 1) % QN;
     count_--;
@@ -443,8 +471,11 @@ class DfPlayerAudio : public AudioSink {
   struct Cmd { uint8_t cmd; uint16_t arg; };
   Cmd q_[QN];
   int head_ = 0, count_ = 0;
+  static const int VQ = 4;
+  static const uint32_t VOICE_GAP_MS = 1100;  // longest name ~1s
+  uint8_t voices_[VQ];
+  int voiceHead_ = 0, voiceCount_ = 0;
   uint32_t readyMs_ = 0, lastSendMs_ = 0, lastCueMs_ = 0, voiceDueMs_ = 0;
-  int pendingVoice_ = 0;
   bool looping_ = false, muted_ = false;
 
   void enqueue(uint8_t cmd, uint16_t arg) {
@@ -670,10 +701,8 @@ void setup() {
   audio.begin();
 
   store.load(settings);
-  if (store.firstBootOfBuild()) {
-    timeSource.adoptLoaderTime();
+  if (store.firstBootOfBuild() && timeSource.adoptLoaderTime())
     Serial.println("[time] first boot of this build: RTC converted to UTC");
-  }
 
   matrix.addLayer(&backgroundLayer);
   matrix.begin();
