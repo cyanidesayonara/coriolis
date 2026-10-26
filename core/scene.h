@@ -28,6 +28,11 @@ class TimeSource {
   virtual ~TimeSource() {}
   virtual TimeOfDay now() = 0;
   virtual bool available() { return true; }
+
+  // a backend with its own clock (the device RTC) lets settings set the
+  // local time; the simulator follows the PC clock and says no
+  virtual bool settable() const { return false; }
+  virtual void setLocal(const TimeOfDay&) {}
 };
 
 enum class Key {

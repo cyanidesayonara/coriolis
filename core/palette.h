@@ -10,12 +10,16 @@ namespace coriolis {
 struct Palette {
   RGB entries[16];
   const char* name;
+  bool cyclic;  // the top end blends back into the bottom (hue wheels)
 
-  // index 0..255 sweeps the whole palette with blending
+  // index 0..255 sweeps the whole palette with blending. Gradients hold
+  // their last color at the top instead of wrapping back to the first, so
+  // "hottest" stays hottest.
   RGB lookup(uint8_t index, uint8_t brightness = 255) const {
     uint8_t slot = index >> 4;
     uint8_t frac = (index & 0x0F) << 4;
-    RGB c = lerpColor(entries[slot], entries[(slot + 1) & 15], frac);
+    uint8_t next = cyclic ? uint8_t((slot + 1) & 15) : uint8_t(slot < 15 ? slot + 1 : 15);
+    RGB c = lerpColor(entries[slot], entries[next], frac);
     if (brightness != 255) c.dim(brightness);
     return c;
   }
@@ -39,6 +43,7 @@ namespace palettes {
 inline Palette gradient(const char* name, RGB a, RGB b, RGB c, RGB d) {
   Palette p;
   p.name = name;
+  p.cyclic = false;
   const RGB anchor[4] = {a, b, c, d};
   for (int i = 0; i < 16; i++) {
     float t = i / 15.0f * 3.0f;
@@ -52,6 +57,7 @@ inline Palette gradient(const char* name, RGB a, RGB b, RGB c, RGB d) {
 inline Palette rainbow() {
   Palette p;
   p.name = "Rainbow";
+  p.cyclic = true;
   for (int i = 0; i < 16; i++) p.entries[i] = hsv(uint8_t(i * 16), 255, 255);
   return p;
 }

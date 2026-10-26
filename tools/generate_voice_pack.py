@@ -10,7 +10,12 @@ on the Coriolis matrix clock.
 DFPlayer Mini SD Card Layout:
   SD_CARD/
     01/  -> System cues & sound effects (001.mp3 .. 014.mp3)
-    02/  -> Voice clips: poses, exercises, numbers (001.mp3 .. 253.mp3)
+    02/  -> Voice clips: poses, exercises, numbers, prompts (001 .. 247)
+    ADVERT/ -> copies of the cues as 0001..0014, mixed over a looping track
+               (the fireplace crackle) by the DFPlayer's "advert" command
+
+Clip numbers ARE the indices the firmware passes to voice(); they are
+defined in core/audio.h (namespace voice) and must stay <= 255.
 
 Usage:
   python tools/generate_voice_pack.py [--out-dir audio_pack] [--voice en-US-AriaNeural]
@@ -54,13 +59,13 @@ CUES = [
 
 # ---------------------------------------------------------------------------
 # Voice Clips Mapping (Folder 02)
-# Range 0..19: Yoga Poses (02/001.mp3 .. 02/020.mp3)
-# Range 100..119: Exercise Moves (02/101.mp3 .. 02/120.mp3)
-# Range 200..231: Spoken Numbers (02/201.mp3 .. 02/231.mp3)
-# Range 250..260: Guidance Cues (02/251.mp3 .. 02/260.mp3)
+# 1..19:    yoga poses        (voice::POSE_BASE + pose id)
+# 101..116: exercise moves    (voice::MOVE_BASE + move id)
+# 201..230: spoken numbers    (voice::NUMBER_BASE + n)
+# 241..247: coaching prompts  (voice::SWITCH_SIDES ..)
 # ---------------------------------------------------------------------------
 VOICE_CLIPS = {
-    # Yoga poses (Index 0..13)
+    # Yoga poses
     1: "Mountain Pose",
     2: "Star Pose",
     3: "Warrior Two",
@@ -81,7 +86,7 @@ VOICE_CLIPS = {
     18: "Pigeon Pose",
     19: "Boat Pose",
 
-    # Exercise moves (Index 100..111)
+    # Exercise moves
     101: "Squats",
     102: "Push-ups",
     103: "Sit-ups",
@@ -91,11 +96,12 @@ VOICE_CLIPS = {
     107: "Goblet Squats",
     108: "Kettlebell Rows",
     109: "Kettlebell Press",
-    110: "Tabata Sprint",
-    111: "Core and Pilates",
-    112: "Rest",
+    113: "Glute bridges",
+    114: "Plank hold",
+    115: "Mountain climbers",
+    116: "High knees",
 
-    # Spoken numbers (Index 201..230)
+    # Spoken numbers
     201: "One",
     202: "Two",
     203: "Three",
@@ -127,14 +133,14 @@ VOICE_CLIPS = {
     229: "Twenty-nine",
     230: "Thirty",
 
-    # Coaching Cues (Index 250..255)
-    251: "Switch sides",
-    252: "Halfway there",
-    253: "Workout complete! Great job.",
-    254: "Three",
-    255: "Two",
-    256: "One",
-    257: "Get ready",
+    # Coaching prompts
+    241: "Switch sides",
+    242: "Halfway there",
+    243: "Workout complete! Great job.",
+    244: "Get ready",
+    245: "Namaste",
+    246: "Work",
+    247: "Rest",
 }
 
 
@@ -369,6 +375,8 @@ async def main():
     voice_dir = os.path.join(out_dir, "02")
     os.makedirs(cues_dir, exist_ok=True)
     os.makedirs(voice_dir, exist_ok=True)
+    advert_dir = os.path.join(out_dir, "ADVERT")
+    os.makedirs(advert_dir, exist_ok=True)
 
     use_edge = HAS_EDGE_TTS and not args.force_sapi
 
@@ -384,6 +392,7 @@ async def main():
     for track_num, name, desc in CUES:
         wav_path = os.path.join(cues_dir, f"{track_num:03d}.wav")
         synthesize_cue_wav(track_num, wav_path)
+        synthesize_cue_wav(track_num, os.path.join(advert_dir, f"{track_num:04d}.wav"))
         print(f"  [01/{track_num:03d}.wav] {name:12s} - {desc}")
 
     print("\nGenerating voice clips in folder 02/...")

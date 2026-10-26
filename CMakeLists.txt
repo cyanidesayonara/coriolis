@@ -22,6 +22,12 @@ if(MINGW)
   target_link_options(coriolis_sim PRIVATE -static)
 endif()
 
+# headless checks for the shared core/scenes code (no raylib needed)
+add_executable(coriolis_tests tests/test_core.cpp)
+if(MINGW)
+  target_link_options(coriolis_tests PRIVATE -static)
+endif()
+
 # display shape: default 128x128 square (the decided final form); the
 # widescreen experiment build is available with
 #   cmake -B build -DWIDE=ON

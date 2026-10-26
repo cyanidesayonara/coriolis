@@ -1,5 +1,8 @@
 # One-time firmware toolchain setup (Windows). Re-runnable.
 # Prereqs: git; arduino-cli (winget install ArduinoSA.CLI).
+# Note: the toolchain cannot cope with non-ASCII characters in paths (e.g.
+# an accented Windows user name). If compiles fail with missing system
+# headers, map the repo to a drive letter first:  subst X: <repo path>
 #
 # Installs the Teensy platform, clones SmartMatrix 4 (with the small GCC11
 # compatibility patch), and creates the CoriolisShared library that exposes
@@ -57,6 +60,8 @@ if (-not (Test-Path "$shared\src\scenes")) {
 #include "core/config.h"
 #include "core/display.h"
 #include "core/transition.h"
+#include "core/timeutil.h"
+#include "core/font5x7.h"
 #include "core/scene.h"
 #include "core/settings.h"
 #include "core/events.h"
@@ -86,9 +91,7 @@ if (-not (Test-Path "$shared\src\scenes")) {
 #include "scenes/scene_fire.h"
 #include "scenes/scene_aurora.h"
 #include "scenes/scene_settings.h"
-#include "scenes/scene_launcher.h"
-#include "scenes/clock_overlay.h"
-#include "scenes/toast.h"
+#include "scenes/shell.h"
 
 #endif
 "@ | Set-Content "$shared\src\CoriolisShared.h"
