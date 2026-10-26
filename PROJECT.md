@@ -9,7 +9,8 @@ Planning started July 2026. Hardware build planned for late 2026 after house mov
 ## Architecture & Design Pillars
 
 - **Display: 128×128 square, chunky pixels (Decided July 2026)**.
-  Four 64×64 HUB75 panels at P4 (~51×51 cm) or P5 (~64×64 cm). Square shows every
+  Four 64×64 HUB75E (1/32 scan) panels at P4 (~51×51 cm) or P3 (~38×38 cm);
+  64×64 P5 panels turned out to be rare, see `docs/BUILD.md`. Square shows every
   content shape well (landscape, portrait, square) and makes software rotation lossless.
   The 128×64 widescreen build remains as a sim experiment flag (`-DWIDE=ON`);
   code stays resolution-agnostic regardless.
@@ -17,14 +18,19 @@ Planning started July 2026. Hardware build planned for late 2026 after house mov
   - Refresh depth: 36/48-bit color, ~120 Hz @ 128×128. Smooth gradients at minimum brightness.
   - Built-in hardware RTC (persists through power cycles with a coin cell).
   - USB Host port on Teensy 4.1 for direct wireless gamepad dongles.
-  - DFPlayer Mini MP3 serial module with own microSD for offline audio (chimes, coach voices).
+  - DFPlayer Mini MP3 serial module on Serial1 (pins 0/1) with its own microSD for offline audio.
+  - Pins taken by the SmartLED Shield V5: 2 (OE), 3 (LAT), 6, 7 (CLK), 9–13; 4/5/22 reserved.
+    The IR receiver goes on pin 16.
   - ESP32 mini UART co-processor for weather feeds (keeps display firmware completely offline).
 - **Physical IR Remote Control**:
-  - Upgrading to a premium minimalist bead-blasted aluminum unibody NEC IR remote (Apple A1294 style).
-  - Crisp, weighted tactile buttons: D-Pad (Up/Down/Left/Right), Center/OK, Back/Home, Play/Pause.
-  - Mat-friendly ergonomics for fitness: pause workout, skip/redo exercise, adjust hold duration on the fly.
+  - Apple Remote (aluminium A1294 / white A1156) or the 17-key NEC kit remote (`docs/REMOTE.md`).
+  - Tap Menu = launcher, hold Menu = settings, hold Play/Pause = home; arrows + OK everywhere.
+  - Mat-friendly for fitness: pause, skip/redo a step, adjust holds/reps on the fly.
 - **Desktop-First Development**:
   - The desktop simulator (`sim/main.cpp` using raylib) is the primary development environment.
+  - `scenes/shell.h` (splash, scene switching, launcher, settings, transitions, overlay, toasts,
+    autoplay, night dimming) is shared verbatim by the simulator and the firmware, so the sim
+    exercises the device's navigation code. Backends only map inputs and copy `shell.frame()`.
   - Scenes draw into an abstract `FrameBuffer` via `Context& ctx` and never touch hardware directly.
 
 ## Guided Fitness & Yoga Suite
@@ -65,30 +71,39 @@ Designed specifically to convincingly replace YouTube workout/yoga videos on a d
   - Jumps directly to the active scene's section when opened (`S` key).
   - Configures brightness, palettes, rotation, autoplay, workout programs, rep counts, and overlay styles.
 
-## Draft BOM (Teensy 4.1 Variant, 128×128)
+## BOM (Teensy 4.1 Variant, 128×128) — checked October 2026
+
+Full sourcing, wiring and bring-up: [`docs/BUILD.md`](docs/BUILD.md) /
+[`docs/Coriolis_Build_Guide.pdf`](docs/Coriolis_Build_Guide.pdf).
 
 | Item | Est. | Notes |
 |---|---|---|
-| Teensy 4.1 | ~$31 | SparkFun |
-| SmartLED Shield for Teensy 4 (x2 — spare) | ~$24 ea | Smart-Prototyping / Crowd Supply / Jameco |
-| 4x 64×64 P4 (or P5) HUB75 panels | ~€30-45 ea | Same scan type, matched batch |
-| 5V PSU, 40A | ~€35-45 | Mean Well LRS-200-5 class |
-| DFPlayer Mini + small speaker | ~€6 | Audio cues, chimes, crackle bed |
-| Minimalist Aluminum IR Remote + Receiver | ~€15-20 | Apple A1294 style, NEC protocol |
-| 8MB PSRAM chip for Teensy 4.1 | ~€3 | Solder-on; GIFs, DOOM |
-| ESP32 mini (UART weather feeder) | ~€5 | Offline serial feeder |
-| Light sensor (TSL2591 / photoresistor) | ~€2-5 | Auto-dimming |
-| Coin cell for RTC, wiring, frame extrusion | ~€25-35 | 2020 aluminum extrusion |
+| SmartLED Shield for Teensy 4 (V5) | ~€20–25 + VAT | **Buy first** — discontinued at most stores; Smart Prototyping still lists it; open-source Gerbers as fallback |
+| Teensy 4.1 | ~€32–49 | SparkFun DEV-16771 via EU resellers |
+| 4× 64×64 HUB75E panels, 1/32 scan | ~€30–35 ea | P4 (HackSpark, verify scan) or P3 (Waveshare); avoid ICN2038S/ICN2053 drivers |
+| 5V PSU | ~€28–40 | Mean Well LRS-200-5 (40 A) |
+| IEC inlet + fuse, DC wiring, caps | ~€25–35 | |
+| DFPlayer Mini + microSD + 3W speaker | ~€15 | |
+| TSOP38438 IR receiver + Apple/NEC remote | ~€5–15 | receiver on pin 16 |
+| CR2032 + holder | ~€3 | RTC backup |
+| Frame (2020 extrusion or plywood), magnetic mounts, smoked acrylic | ~€60–110 | |
+| *Optional*: TSL2591, ESP32-C3, PSRAM | ~€15 | not used by the current firmware |
 
-Rough total: ~€280–330.
+Rough total: ~€330–450.
 
-## Current Software Status
+## Current Software Status (October 26, 2026)
 
-- **25 scenes running in simulator and firmware** with 100% test coverage via `--shots docs/screenshots`.
-- **Guided Fitness Suite**: Bilateral flows, 5 yoga routines, 4 exercise programs, halfway & countdown chimes, next-pose HUD previews, celebratory completion cards.
-- **Smooth Scene Transitions**: Hardware-agnostic `TransitionEngine` with directional horizontal slides (`SlideLeft`, `SlideRight`), smoothstep easing, and stationary HUD compositing.
-- **Scene Launcher**: Direct categorized switcher (`M` key / Remote Menu).
-- **Scheduled Night Mode**: Automatic sleep dimming schedule (default 23:00 to 07:00, 16 brightness) with dedicated `NIGHT` settings section.
-- **Hardware Remote Driver**: Interrupt-driven 38kHz NEC decoder on Teensy 4.1 Pin 2 supporting Apple A1294 and standard NEC remotes (`docs/REMOTE.md`).
-- **DFPlayer Mini Voice Pack**: Turnkey generator script (`tools/generate_voice_pack.py`) producing complete 14-cue PCM library and 54 spoken voice clips (`docs/AUDIO.md`).
-- **Firmware sync**: `CoriolisShared.h` umbrella header fully synced with all 25 scenes, transition engine, and settings.
+- **25 scenes** in the simulator and the firmware; the firmware compiles for Teensy 4.1
+  (Teensyduino 1.62, SmartMatrix 4 + patch) with ~196 KB of fast RAM free.
+- **Shared shell** (`scenes/shell.h`): boot splash, launcher, settings, transitions with a pinned
+  HUD, toasts, autoplay, night dimming — identical on desktop and device.
+- **Guided fitness**: 5 yoga flows with mirrored left/right sides, 4 exercise programs (bodyweight,
+  kettlebell, Tabata, core), 3-2-1 countdowns, next-up badges, halfway/tick cues, rest previews,
+  completion cards.
+- **Device backends**: RTC in UTC with zone + automatic EU summer time (set from Settings → Clock
+  or serial), versioned EEPROM, NEC/Apple IR decoder with hold detection, DFPlayer driver with a
+  command queue and advert-mode one-shots, panel test pattern.
+- **Tests**: `coriolis_tests` (time zones, color math, navigation routing, workout audio contract);
+  `--shots` gallery and `--poses` sheets for visual checks.
+- **Not yet**: GIFs from SD on the device, weather feed (ESP32), ambient light sensor,
+  personal calendar events from SD. All hardware-dependent; verified only in simulation so far.

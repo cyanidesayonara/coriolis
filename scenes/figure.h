@@ -33,12 +33,23 @@ inline void tweenPose(const float a[15][2], const float b[15][2], float t,
   }
 }
 
-// body: 0 female, 1 male
-inline void drawFigure(Context& ctx, const float j[15][2], int face,
-                       uint8_t bodyType) {
-  int span = figureSpan(ctx);
-  int ox, oy;
-  figureOrigin(ctx, span, ox, oy);
+// the other side of a one-sided pose: flip horizontally and swap every
+// left/right joint pair so the anatomy stays correct (the left knee is still
+// the left knee, it's just forward now)
+inline void mirrorPose(const float in[15][2], float out[15][2]) {
+  static const uint8_t partner[15] = {0, 1, 3, 2, 6, 7, 4, 5, 8,
+                                      11, 12, 9, 10, 14, 13};
+  for (int i = 0; i < 15; i++) {
+    out[i][0] = 1.0f - in[partner[i]][0];
+    out[i][1] = in[partner[i]][1];
+  }
+}
+
+// body: 0 female, 1 male. Draws into the square (ox, oy, span); the mat
+// is optional so small previews can float
+inline void drawFigureAt(Context& ctx, const float j[15][2], int face,
+                         uint8_t bodyType, int ox, int oy, int span,
+                         bool mat = true) {
 
   int px[15], py[15];
   for (int i = 0; i < 15; i++) {
@@ -51,8 +62,10 @@ inline void drawFigure(Context& ctx, const float j[15][2], int face,
   RGB hair(115, 68, 38);
 
   // the mat grounds every pose
-  int matY = oy + int(0.93f * span);
-  ctx.fb.rect(ox + span / 10, matY, span - span / 5, 2, matColor());
+  if (mat) {
+    int matY = oy + int(0.93f * span);
+    ctx.fb.rect(ox + span / 10, matY, span - span / 5, 2, matColor());
+  }
 
   float smx, smy;  // torso top midpoint, needed by the neck
   {
@@ -109,6 +122,7 @@ inline void drawFigure(Context& ctx, const float j[15][2], int face,
   int headR = span / 16;
   if (headR < 3) headR = 3;
   int faceOff = bodyType == 0 ? 3 : 2;
+  if (span < 80) faceOff = 1;  // small previews: keep the face inside the hair
   ctx.fb.fillCircle(px[0], py[0], headR, hair);
   int fx = px[0] + face;  // the face sits toward the looking direction
   int fy = py[0] + faceOff;
@@ -151,13 +165,18 @@ inline void drawFigure(Context& ctx, const float j[15][2], int face,
   ctx.fb.fillCircle(px[7], py[7], 2, limbs);
 }
 
-// a kettlebell hanging from (or held at) the midpoint of the two wrists,
-// given in normalized pose space
-inline void drawKettlebell(Context& ctx, const float j[15][2]) {
+inline void drawFigure(Context& ctx, const float j[15][2], int face,
+                       uint8_t bodyType) {
   int span = figureSpan(ctx);
   int ox, oy;
   figureOrigin(ctx, span, ox, oy);
+  drawFigureAt(ctx, j, face, bodyType, ox, oy, span);
+}
 
+// a kettlebell hanging from (or held at) the midpoint of the two wrists,
+// given in normalized pose space
+inline void drawKettlebellAt(Context& ctx, const float j[15][2], int ox,
+                             int oy, int span) {
   int bx = ox + int((j[5][0] + j[7][0]) * 0.5f * span);
   int by = oy + int((j[5][1] + j[7][1]) * 0.5f * span);
 
@@ -168,6 +187,13 @@ inline void drawKettlebell(Context& ctx, const float j[15][2]) {
   ctx.fb.set(bx - 2, by + 2, ironLight);
   ctx.fb.set(bx + 2, by + 2, ironLight);
   ctx.fb.fillCircle(bx, by + 5, 3, iron);
+}
+
+inline void drawKettlebell(Context& ctx, const float j[15][2]) {
+  int span = figureSpan(ctx);
+  int ox, oy;
+  figureOrigin(ctx, span, ox, oy);
+  drawKettlebellAt(ctx, j, ox, oy, span);
 }
 
 }

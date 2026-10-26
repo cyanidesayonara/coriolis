@@ -2,7 +2,55 @@
 
 All notable changes to Coriolis will be documented in this file, newest first.
 
-## [Unreleased] - 2026-10-23
+## [Unreleased] - 2026-10-26 — review, fixes and polish before the hardware build
+
+### Fixed (review of the October 23 changes)
+- **Firmware did not compile**: duplicate `case 0x07` in the IR decoder. Verified the whole
+  firmware now builds with arduino-cli + Teensyduino 1.62.
+- **IR receiver was on pin 2**, which is the SmartLED Shield V5's panel OE line. Moved to pin 16.
+  The decoder read Apple commands from the wrong byte, never mapped Settings/Back, and ignored
+  repeat frames; rewritten with validation, repeats (held keys) and tap/hold for Menu and Play.
+- **Features documented but never implemented** on October 23 (bilateral flows, `mirrorPose`,
+  five yoga flows, four exercise programs, Tabata, next-up badges, countdown and completion
+  screens, halfway/tick cues). They are implemented now; settings showed five yoga flow names
+  while only three existed.
+- **Launcher** received no arrow keys while a game was running (the game took them first);
+  scene indices were hard-coded; `&` and `/` didn't exist in the font.
+- **`lerp8` overflowed when fading down** (255→195 at 50% gave 97), corrupting every palette
+  blend, the crossfade transition and gradients. Fixed; gradient palettes no longer wrap their
+  top end back to black.
+- **EEPROM layout** changed without a version bump (old settings would load as garbage). Now
+  stores magic + struct size + build stamp and falls back to defaults on mismatch.
+- **Audio numbering**: exercise names were spoken by program position (kettlebell swings said
+  "squats"), rep counts were off by one, and prompt clips sat above the DFPlayer's 255-file folder
+  limit. Clip index = file number now (`core/audio.h`, `namespace voice`).
+- The clock overlay and toast were drawn into the scene's own canvas, burning into trail-style
+  scenes; they are composited on a separate output now and stay pinned during slides.
+- Second-pass review: on the device a move's spoken name was replaced by "one" (DFPlayer
+  now queues voice clips), "get ready" was cut off by the first countdown tick, choosing the
+  current scene in the launcher restarted it, the sim didn't save volume/zone/summer time,
+  timers weren't safe across the 49-day millis() wrap, loaded settings weren't range-checked,
+  and re-flashing could shift a correct RTC by the UTC offset.
+- Removed `docs/CORIOLIS_HARDWARE_MANUAL.pdf` and its generator (pin 2, wrong frame sizes);
+  replaced by `docs/BUILD.md` and `docs/Coriolis_Build_Guide.pdf`.
+
+### Added
+- `scenes/shell.h`: one navigation/menu/transition implementation for both backends.
+- DFPlayer Mini driver (Serial1), RTC in UTC with time zone + automatic EU summer time,
+  CLOCK settings section (set time/date/zone on the device), volume setting, serial time sync,
+  panel-mapping test pattern, optional brightness cap and panel-chain options.
+- UI facelift: 5×7 proportional font with lowercase and smooth scaling (`core/font5x7.h`), new
+  clock face (rounded gradient digits, breathing colon, date, seconds bar), icon-tab launcher with
+  animated selection, sliding toasts, redesigned setup cards, boot splash.
+- Yoga: cat, cow, low lunge, pigeon, boat poses. Exercise: glute bridge, plank hold, mountain
+  climbers, high knees.
+- `tests/test_core.cpp` (`coriolis_tests`), `--poses` render mode, new gallery shots.
+- `docs/Coriolis_User_Manual.pdf` (consumer-style user's manual) and
+  `docs/Coriolis_Build_Guide.pdf`, rendered from `docs/manual/*.html` by `tools/render_manuals.py`.
+
+## [2026-10-23] (notes below were partly inaccurate — see the review above)
+
+
 
 ### Added
 - **DFPlayer Mini Voice Pack Generator**:

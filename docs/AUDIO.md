@@ -1,146 +1,84 @@
 # Audio & DFPlayer Mini Guide
 
 Audio in Coriolis is an interface (`core/audio.h`), like time and input. Scenes fire named
-**cues** and speak **voice clips** by index; backends turn those into sound:
+**cues** and speak **voice clips** by number; backends turn those into sound:
 
-- **Simulator**: `SimAudio` in `sim/main.cpp` synthesizes short beeps and cues (toggle with `A`, off by default).
-- **Device**: A **DFPlayer Mini** (~€5 serial MP3 module with on-board DAC and 3W speaker output, connected to a microSD card) plays offline numbered clips. Zero Wi-Fi or cloud dependencies.
+- **Simulator**: `SimAudio` in `sim/main.cpp` synthesizes short beeps (toggle with `A`, off by default).
+- **Device**: `DfPlayerAudio` in `firmware/coriolis/coriolis.ino` drives a **DFPlayer Mini** on
+  `Serial1` (Teensy pins 0/1), which plays numbered clips from its own microSD card. No network.
+
+The firmware queues commands (the module takes one at a time, ~60 ms apart), lets a chime ring
+before a voice clip fired in the same moment, and while a loop plays (the fireplace crackle) sends
+one-shots as DFPlayer *advertisements*, which pause the loop, play, and resume it.
 
 ---
 
-## 1. Generating the Voice & Sound Pack
-
-A turnkey generator script is provided in `tools/generate_voice_pack.py`. It synthesizes all cues and uses Microsoft Edge Neural TTS (or local Windows SAPI fallback) to generate natural, studio-quality speech clips:
+## 1. Generating the sound pack
 
 ```bash
-# Generate the full sound pack into audio_pack/
-python tools/generate_voice_pack.py
-
-# Or choose a specific neural voice:
-python tools/generate_voice_pack.py --voice en-US-AriaNeural
+python tools/generate_voice_pack.py                      # into audio_pack/
+python tools/generate_voice_pack.py --voice en-US-JennyNeural
 ```
 
-The script produces two numbered folders ready for the microSD card:
-- `audio_pack/01/`: System cues & sound effects (`001.wav` .. `014.wav`)
-- `audio_pack/02/`: Spoken voice guidance clips (`001.mp3` .. `257.mp3`)
+Chimes are synthesized as 16-bit WAV. Speech uses Microsoft Edge neural TTS (`pip install edge-tts`)
+and falls back to Windows SAPI (WAV) without it. Output:
 
----
+```
+audio_pack/
+├── 01/       cues 001..014
+├── 02/       voice clips 001..247 (numbers below)
+└── ADVERT/   the cues again as 0001..0014, for playing over a loop
+```
 
-## 2. MicroSD Card Preparation
+## 2. microSD card
 
-1. **Card Size**: MicroSD card up to 32 GB.
-2. **File System**: Format as **FAT32** (or FAT16) with standard 32KB allocation unit size.
-3. **Card Structure**: Copy `01` and `02` directly to the root of the microSD card:
-   ```
-   SD_CARD/
-   ├── 01/
-   │   ├── 001.wav  (Chime)
-   │   ├── 002.wav  (StartBell)
-   │   ├── ...
-   │   └── 014.wav  (Tick)
-   └── 02/
-       ├── 001.mp3  (Mountain Pose)
-       ├── 101.mp3  (Squats)
-       ├── 201.mp3  (One)
-       └── 251.mp3  (Switch sides)
-   ```
-   > [!IMPORTANT]
-   > Do not rename files or alter the leading three-digit numbering format (`001`, `002`...). DFPlayer Mini's firmware indexes tracks based on folder and numerical filename prefixes.
+FAT32 (or FAT16), up to 32 GB. Copy `01`, `02` and `ADVERT` to the **root**. Don't rename files:
+the DFPlayer finds tracks by folder number and the leading digits of the file name.
 
----
+## 3. Cues (folder `01`)
 
-## 3. Cues Index (Folder `01`)
-
-Triggered via `ctx.audio.play(Cue)` and `ctx.audio.loop(Cue)`:
+`ctx.audio.play(Cue)` / `ctx.audio.loop(Cue)` — the track numbers are fixed in `DfPlayerAudio::trackFor()`.
 
 | Cue | Track | Sound | Fired by |
 |-----|-------|-------|----------|
-| `Chime` | `01/001.wav` | Soft C-major harmonic chord | Yoga/exercise step change |
-| `StartBell` | `01/002.wav` | Rising triple chime (C5-E5-G5) | Session begins |
-| `FinishBell` | `01/003.wav` | Celebratory descending cascade | Session completed |
-| `BreatheIn` | `01/004.wav` | Swelling rising tone (220→440 Hz) | Breathe: inhale |
-| `BreatheHold` | `01/005.wav` | Gentle calming harmonic hum | Breathe: hold |
-| `BreatheOut` | `01/006.wav` | Relaxing falling tone (440→220 Hz) | Breathe: exhale |
-| `Pop` | `01/007.wav` | Fireplace spark burst | Fireplace ambient spark |
-| `Crackle` | `01/008.wav` | Ambient crackle loop | Fireplace ambient bed (`loop`) |
-| `Eat` | `01/009.wav` | High 8-bit blip | Snake eats food |
-| `Die` | `01/010.wav` | Descending low tone | Snake game over |
-| `Bounce` | `01/011.wav` | Crisp paddle click | Pong bounce |
-| `Score` | `01/012.wav` | High win chime | Pong point scored |
-| `Halfway` | `01/013.wav` | Double chime | 50% hold elapsed in pose/set |
-| `Tick` | `01/014.wav` | Woodblock countdown tick | 3-2-1 countdown tick |
+| `Chime` | 001 | Soft C-major chord | Pose / move change, Tetris line |
+| `StartBell` | 002 | Rising C-E-G | Session / game starts |
+| `FinishBell` | 003 | Falling cascade | Move or session complete |
+| `BreatheIn` | 004 | Rising tone | Breathe: inhale |
+| `BreatheHold` | 005 | Calm hum | Breathe: hold |
+| `BreatheOut` | 006 | Falling tone | Breathe: exhale |
+| `Pop` | 007 | Spark pop | Fireplace, calendar fireworks |
+| `Crackle` | 008 | Crackle (looped) | Fireplace ambient bed |
+| `Eat` | 009 | 8-bit blip | Snake eats |
+| `Die` | 010 | Falling tone | Game over |
+| `Bounce` | 011 | Paddle click | Pong |
+| `Score` | 012 | Win chime | Pong / Labyrinth |
+| `Halfway` | 013 | Double chime | Halfway through a long hold or set |
+| `Tick` | 014 | Woodblock tick | 3-2-1 countdowns, last seconds of holds/rests |
 
----
+## 4. Voice clips (folder `02`)
 
-## 4. Spoken Voice Index (Folder `02`)
+`ctx.audio.voice(n)` plays `02/nnn` — **the number is the file name**. The ranges are constants in
+`core/audio.h` (`namespace voice`) and must stay ≤ 255 (the DFPlayer's per-folder limit).
 
-Triggered via `ctx.audio.voice(index)`. The namespace layout guarantees zero collision across scenes:
+| Range | Content |
+|---|---|
+| 001–019 | Yoga poses: 1 Mountain · 2 Star · 3 Warrior two · 4 Triangle · 5 Tree · 6 Chair · 7 Forward fold · 8 Downward dog · 9 Cobra · 10 Child's pose · 11 Plank · 12 Warrior one · 13 Bridge · 14 Savasana · 15 Cat · 16 Cow · 17 Low lunge · 18 Pigeon · 19 Boat |
+| 101–116 | Exercise moves: 101 Squats · 102 Push-ups · 103 Sit-ups · 104 Lunges · 105 Jumping jacks · 106 Kettlebell swings · 107 Goblet squats · 108 Kettlebell rows · 109 Kettlebell press · 113 Glute bridges · 114 Plank hold · 115 Mountain climbers · 116 High knees |
+| 201–230 | Numbers “one” … “thirty” (rep counting: `200 + n`) |
+| 241–247 | Prompts: 241 Switch sides · 242 Halfway there · 243 Workout complete, great job · 244 Get ready · 245 Namaste · 246 Work · 247 Rest |
 
-### Yoga Poses (`0..19` → `02/001.mp3` .. `02/020.mp3`)
-| Index | File | Spoken Phrase |
-|-------|------|---------------|
-| `0` | `02/001.mp3` | "Mountain Pose" |
-| `1` | `02/002.mp3` | "Star Pose" |
-| `2` | `02/003.mp3` | "Warrior Two" |
-| `3` | `02/004.mp3` | "Triangle Pose" |
-| `4` | `02/005.mp3` | "Tree Pose" |
-| `5` | `02/006.mp3` | "Chair Pose" |
-| `6` | `02/007.mp3` | "Forward Fold" |
-| `7` | `02/008.mp3` | "Downward-Facing Dog" |
-| `8` | `02/009.mp3` | "Cobra Pose" |
-| `9` | `02/010.mp3` | "Child's Pose" |
-| `10` | `02/011.mp3` | "Plank" |
-| `11` | `02/012.mp3` | "Warrior One" |
-| `12` | `02/013.mp3` | "Bridge Pose" |
-| `13` | `02/014.mp3` | "Savasana" |
-| `14` | `02/015.mp3` | "Cat Pose" |
-| `15` | `02/016.mp3` | "Cow Pose" |
-| `16` | `02/017.mp3` | "Low Lunge" |
-| `17` | `02/018.mp3` | "Pigeon Pose" |
-| `18` | `02/019.mp3` | "Boat Pose" |
+`tests/test_core.cpp` runs every yoga flow and exercise program and checks that all clip numbers
+stay in range; the generator's table covers every number the scenes use.
 
-### Exercise Moves (`100..119` → `02/101.mp3` .. `02/120.mp3`)
-| Index | File | Spoken Phrase |
-|-------|------|---------------|
-| `100` | `02/101.mp3` | "Squats" |
-| `101` | `02/102.mp3` | "Push-ups" |
-| `102` | `02/103.mp3` | "Sit-ups" |
-| `103` | `02/104.mp3` | "Lunges" |
-| `104` | `02/105.mp3` | "Jumping Jacks" |
-| `105` | `02/106.mp3` | "Kettlebell Swings" |
-| `106` | `02/107.mp3` | "Goblet Squats" |
-| `107` | `02/108.mp3` | "Kettlebell Rows" |
-| `108` | `02/109.mp3` | "Kettlebell Press" |
-| `109` | `02/110.mp3` | "Tabata Sprint" |
-| `110` | `02/111.mp3` | "Core and Pilates" |
-| `111` | `02/112.mp3` | "Rest" |
+## 5. Wiring (Teensy 4.1 ↔ DFPlayer Mini)
 
-### Spoken Numbers (`200..230` → `02/201.mp3` .. `02/231.mp3`)
-Spoken reps `1` to `30` ("One" .. "Thirty") corresponding to `200 + rep`.
+| DFPlayer | Connects to | Notes |
+|---|---|---|
+| VCC | 5 V rail | from the PSU, not through the Teensy |
+| GND | common ground | |
+| TX | Teensy pin 0 (RX1) | 3.3 V logic, safe for the Teensy |
+| RX | Teensy pin 1 (TX1) | through a **1 kΩ** series resistor |
+| SPK_1 / SPK_2 | speaker | 3 W, 4–8 Ω; neither terminal to ground |
 
-### Coaching Prompts (`250..260` → `02/251.mp3` .. `02/260.mp3`)
-| Index | File | Spoken Phrase |
-|-------|------|---------------|
-| `250` | `02/251.mp3` | "Switch sides" |
-| `251` | `02/252.mp3` | "Halfway there" |
-| `252` | `02/253.mp3` | "Workout complete! Great job." |
-| `253` | `02/254.mp3` | "Three" |
-| `254` | `02/255.mp3` | "Two" |
-| `255` | `02/256.mp3` | "One" |
-| `256` | `02/257.mp3` | "Get ready" |
-
----
-
-## 5. Hardware Wiring (Teensy 4.1 ↔ DFPlayer Mini)
-
-| DFPlayer Pin | Label | Teensy 4.1 Pin | Description |
-|:---:|:---:|:---:|:---|
-| 1 | `VCC` | `VIN` (5V) | 5V Power from display supply |
-| 2 | `RX` | `Pin 1` (`TX1`) | Serial receive from Teensy (put a 1kΩ resistor in series) |
-| 3 | `TX` | `Pin 0` (`RX1`) | Serial transmit to Teensy |
-| 6 | `SPK_1` | Speaker (+) | Direct 3W speaker lead |
-| 8 | `SPK_2` | Speaker (-) | Direct 3W speaker lead |
-| 7 / 10 | `GND` | `GND` | Common Ground |
-
-> [!TIP]
-> Always place a 1kΩ resistor in series between Teensy 4.1 TX (3.3V) and DFPlayer RX (5V) to eliminate UART line noise and ground hum.
+Serial2 (pins 7/8) is not usable: pin 7 is the SmartLED Shield's panel clock.

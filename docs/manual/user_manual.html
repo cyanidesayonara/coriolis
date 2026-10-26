@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Coriolis — User's Manual</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  @page { size: A5; margin: 13mm 12mm 11mm; }
+  @page cover { margin: 0; }
+  .page { height: 186mm; overflow: hidden; }
+  .cover {
+    page: cover; height: 210mm; width: 148mm; background: var(--night); color: #fff;
+    padding: 18mm 14mm; display: flex; flex-direction: column;
+  }
+  .cover .brand { font-size: 8pt; letter-spacing: 0.3em; text-transform: uppercase; color: #8f8fa6; }
+  .cover h1 { font-size: 34pt; font-weight: 300; letter-spacing: -0.02em; margin-top: 4mm; }
+  .cover h1 b { font-weight: 600; color: #a98bff; }
+  .cover .sub { color: #b9b9cc; font-size: 11pt; margin-top: 2mm; }
+  .cover .hero { margin: 12mm auto 0; width: 92mm; border-radius: 8px; box-shadow: 0 0 40px rgba(140,120,255,0.35); }
+  .cover .bottom { margin-top: auto; display: flex; justify-content: space-between; color: #8f8fa6; font-size: 8pt; }
+  .cover .bottom b { color: #fff; font-weight: 600; }
+
+  .remote-wrap { display: flex; gap: 8pt; align-items: flex-start; }
+  .remote-wrap svg { flex: 0 0 auto; }
+  .flowcard { border: 1px solid var(--rule); border-radius: 6px; padding: 5pt 7pt; margin-bottom: 5pt; }
+  .flowcard b { font-weight: 600; }
+  .flowcard .poses { color: var(--muted); font-size: 8.2pt; }
+  .seq { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5pt; margin: 6pt 0 2pt; }
+  .seq .arrow { text-align: center; }
+  .qr td { padding: 3pt 4pt; }
+  .back { page: cover; height: 210mm; width: 148mm; background: var(--night); color: #e8e8f0; padding: 16mm 14mm; }
+  .back h2 { color: #fff; }
+  .back table td { border-bottom-color: #2a2a38; }
+  .back th { color: #9a9ab0; border-bottom-color: #fff; }
+  .back .k { color: #c9b8ff; }
+</style>
+</head>
+<body>
+
+<!-- ============================== COVER ============================== -->
+<section class="page cover">
+  <div class="brand">Coriolis · LED wall display</div>
+  <h1>User's <b>Manual</b></h1>
+  <div class="sub">Wall clock, ambient art, guided fitness and games<br>on a 128 × 128 pixel LED canvas.</div>
+  <img class="hero" src="../screenshots/clock.png" alt="">
+  <div class="bottom"><span>Please read before first use<br>and keep for future reference.</span><span><b>Edition 1.0</b><br>October 2026</span></div>
+</section>
+
+<!-- ============================== CONTENTS ============================== -->
+<section class="page">
+  <div class="chapter-tag">Welcome</div>
+  <h1>Hello, Coriolis.</h1>
+  <div class="rule"></div>
+  <p class="lede">Coriolis is a wall clock first: calm, legible from across the room, and on all day without demanding attention. Ask more of it and it turns into a yoga instructor, a workout timer, a focus timer, a fireplace or an arcade.</p>
+  <ul class="toc">
+    <li><span class="n">1</span><span class="t">Safety and care</span><span class="d">3</span></li>
+    <li><span class="n">2</span><span class="t">Getting started</span><span class="d">4</span></li>
+    <li><span class="n">3</span><span class="t">The remote control</span><span class="d">5</span></li>
+    <li><span class="n">4</span><span class="t">Everyday use</span><span class="d">7</span></li>
+    <li><span class="n">5</span><span class="t">The scene menu</span><span class="d">8</span></li>
+    <li><span class="n">6</span><span class="t">Clocks and information</span><span class="d">9</span></li>
+    <li><span class="n">7</span><span class="t">Guided fitness</span><span class="d">10</span></li>
+    <li><span class="n">8</span><span class="t">Games</span><span class="d">14</span></li>
+    <li><span class="n">9</span><span class="t">Ambient art</span><span class="d">15</span></li>
+    <li><span class="n">10</span><span class="t">Settings</span><span class="d">16</span></li>
+    <li><span class="n">11</span><span class="t">Sound</span><span class="d">18</span></li>
+    <li><span class="n">12</span><span class="t">Troubleshooting</span><span class="d">19</span></li>
+    <li><span class="n">13</span><span class="t">Specifications</span><span class="d">20</span></li>
+  </ul>
+  <div class="note" style="margin-top:10pt">Coriolis is a self-built device. Some features depend on optional parts: sound needs the audio module and its memory card, and the Weather scene needs the optional weather module (it waits patiently without one).</div>
+  <div class="footer"><span>Coriolis User's Manual</span><span>2</span></div>
+</section>
+
+<!-- ============================== SAFETY ============================== -->
+<section class="page">
+  <div class="chapter-tag">Chapter 1</div>
+  <h2>Safety and care</h2>
+  <div class="warn"><b>Mains voltage inside.</b> The power supply inside the frame is connected to 230 V. Never open the back, touch the wiring or work on the electronics while the power cord is plugged in. Have any mains wiring checked by a qualified person.</div>
+  <ul>
+    <li>Use only the supplied mains lead and the fused, switched inlet on the back. Replace the fuse only with the same type (T3.15 A slow-blow).</li>
+    <li>Keep the ventilation slots at the top and bottom of the frame clear. Do not cover the display or hang it directly above a radiator or fireplace.</li>
+    <li>For indoor use in dry rooms only. Keep away from water, steam and direct sunlight.</li>
+    <li>The display weighs about 6 kg. Hang it on a wall cleat rated for at least 15 kg, screwed into a stud or with suitable wall plugs.</li>
+    <li>LED panels can be very bright. Avoid staring into the display at full brightness at close range; Night mode dims it automatically.</li>
+    <li>Keep the remote's coin battery away from children. If swallowed, seek medical help immediately.</li>
+  </ul>
+  <h3>Cleaning</h3>
+  <p>Switch off at the inlet. Wipe the front with a dry or barely damp microfibre cloth. Do not use solvents, glass cleaner or abrasive pads on the acrylic front.</p>
+  <h3>Disposal</h3>
+  <p>Electronic equipment and batteries must not go in household waste. Take them to an electronics collection point (in Spain, a <i>punto limpio</i>).</p>
+  <div class="footer"><span>Safety and care</span><span>3</span></div>
+</section>
+
+<!-- ============================== GETTING STARTED ============================== -->
+<section class="page">
+  <div class="chapter-tag">Chapter 2</div>
+  <h2>Getting started</h2>
+  <ol class="steps">
+    <li><b>Hang it up.</b> Mount the display on its wall cleat with the power inlet at the bottom. Leave a few centimetres free above and below for airflow.</li>
+    <li><b>Plug in and switch on</b> with the switch next to the power inlet on the back.</li>
+    <li><b>Watch it wake up.</b> A swirl of light spirals into the Coriolis logo, then the clock appears. Press any button to skip the intro.</li>
+    <li><b>Check the time.</b> The internal clock keeps time with its own battery, even when unplugged. If the time is wrong, hold <kbd>MENU</kbd> on the remote to open Settings and adjust it under <b>Clock</b> (page 16).</li>
+  </ol>
+  <div class="grid2" style="margin-top:6pt">
+    <div><img class="shot" src="../screenshots/splash.png" alt=""><div class="cap"><b>The intro</b> — about two seconds</div></div>
+    <div><img class="shot" src="../screenshots/clock.png" alt=""><div class="cap"><b>The clock</b> — the home screen</div></div>
+  </div>
+  <div class="tip">Coriolis switches between winter and summer time by itself on the last Sundays of March and October (European rule). You never have to change the clock for daylight saving.</div>
+  <div class="footer"><span>Getting started</span><span>4</span></div>
+</section>
+
+<!-- ============================== REMOTE ============================== -->
+<section class="page">
+  <div class="chapter-tag">Chapter 3</div>
+  <h2>The remote control</h2>
+  <p>Coriolis works with the slim aluminium Apple Remote. Point it at the display; the receiver sits behind the frame's edge.</p>
+  <div class="remote-wrap">
+    <svg width="225" height="330" viewBox="0 0 225 330" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif">
+      <defs>
+        <linearGradient id="alu" x1="0" x2="1">
+          <stop offset="0" stop-color="#c9c9cf"/><stop offset="0.5" stop-color="#ececf0"/><stop offset="1" stop-color="#c3c3ca"/>
+        </linearGradient>
+      </defs>
+      <rect x="72" y="8" width="66" height="312" rx="16" fill="url(#alu)" stroke="#a9a9b2"/>
+      <rect x="96" y="16" width="18" height="6" rx="3" fill="#2b2b33"/>
+      <circle cx="105" cy="98" r="30" fill="#fbfbfd" stroke="#b9b9c2"/>
+      <circle cx="105" cy="98" r="12" fill="#e6e6ec" stroke="#b9b9c2"/>
+      <path d="M105 72 l-5 6 h10z M105 124 l-5 -6 h10z M79 98 l6 -5 v10z M131 98 l-6 -5 v10z" fill="#55555f"/>
+      <circle cx="91" cy="160" r="10" fill="#fbfbfd" stroke="#b9b9c2"/>
+      <text x="91" y="162.5" font-size="5.5" text-anchor="middle" fill="#55555f" font-weight="700">MENU</text>
+      <circle cx="119" cy="160" r="10" fill="#fbfbfd" stroke="#b9b9c2"/>
+      <path d="M115 156 l5 4 -5 4z M121.5 156 h1.6 v8 h-1.6z M124.5 156 h1.6 v8 h-1.6z" fill="#55555f"/>
+      <g stroke="#7b5cff" stroke-width="1" fill="none">
+        <path d="M105 70 V48 H150"/><path d="M133 98 H155"/><path d="M77 98 H58"/><path d="M105 126 V138 H160"/>
+        <path d="M105 98 Q140 110 160 112"/><path d="M84 168 V195 H40"/><path d="M126 168 V196 H170"/>
+      </g>
+      <g font-size="8.5" fill="#1d1d24">
+        <text x="152" y="51">Up</text><text x="158" y="101">Right</text><text x="18" y="101">Left</text>
+        <text x="162" y="141">Down</text><text x="162" y="115" font-weight="700">OK (centre)</text>
+        <text x="2" y="198" font-weight="700">MENU</text><text x="172" y="199" font-weight="700">Play/Pause</text>
+      </g>
+      <text x="105" y="300" font-size="11" text-anchor="middle" fill="#9a9aa4"></text>
+    </svg>
+    <div style="font-size:8.6pt">
+      <h3 style="margin-top:2pt">Arrows</h3>
+      <p><b>Left / Right</b> — previous / next scene.<br><b>Up / Down</b> — change the colour theme.<br>Inside menus, games and workouts the arrows move, steer and adjust instead.</p>
+      <h3>OK</h3>
+      <p>Start, confirm, pause.</p>
+      <h3>MENU</h3>
+      <p><b>Tap</b> — open the scene menu (tap again to close).<br><b>Hold 1 s</b> — open Settings.</p>
+      <h3>Play/Pause</h3>
+      <p><b>Tap</b> — same as OK (pause a workout from the mat).<br><b>Hold 1 s</b> — go home to the clock.</p>
+    </div>
+  </div>
+  <div class="footer"><span>The remote control</span><span>5</span></div>
+</section>
+
+<section class="page">
+  <h2>Other remotes and buttons</h2>
+  <p>Coriolis also understands the common 17-button infrared remote (arrows, OK, number keys, <kbd>*</kbd> and <kbd>#</kbd>). It adds a few shortcuts:</p>
+  <table>
+    <tr><th>Button</th><th>Action</th></tr>
+    <tr><td class="k">Arrows, OK</td><td>As on the Apple Remote</td></tr>
+    <tr><td class="k">*</td><td>Scene menu (tap) · Settings (hold 1 s)</td></tr>
+    <tr><td class="k">#</td><td>Back: close a menu, leave a workout, or go home to the clock</td></tr>
+    <tr><td class="k">0</td><td>Clock overlay: off → digital → analog → words</td></tr>
+    <tr><td class="k">1 – 9</td><td>Jump straight to a favourite:</td></tr>
+  </table>
+  <div class="grid3" style="font-size:8.4pt; margin-bottom:6pt">
+    <div><b>1</b> Clock<br><b>2</b> Analog clock<br><b>3</b> Word clock</div>
+    <div><b>4</b> Weather<br><b>5</b> Calendar<br><b>6</b> Yoga</div>
+    <div><b>7</b> Exercise<br><b>8</b> Breathe<br><b>9</b> Fireplace</div>
+  </div>
+  <h3>Holding a button</h3>
+  <p>In menus, holding an arrow scrolls quickly. In games, holding an arrow keeps steering (for example, keeps the Pong paddle moving).</p>
+  <h3>Back</h3>
+  <p>The Apple Remote has no separate Back button. Use <kbd>MENU</kbd> to close menus, and <b>hold Play/Pause</b> to leave whatever you are doing and return to the clock.</p>
+  <div class="note">Another remote not working? Its button codes can be added to the firmware. The display reports every code it receives over its USB port (see the Build Guide).</div>
+  <div class="footer"><span>The remote control</span><span>6</span></div>
+</section>
+
+<!-- ============================== EVERYDAY ============================== -->
+<section class="page">
+  <div class="chapter-tag">Chapter 4</div>
+  <h2>Everyday use</h2>
+  <p>Coriolis shows one <b>scene</b> at a time: a clock, an animation, a game or a guided session. The clock is home; you can always get back to it by holding Play/Pause.</p>
+  <div class="grid2">
+    <div><img class="shot" src="../screenshots/clock.png" alt=""><div class="cap"><b>Clock</b> — time, date and a seconds bar</div></div>
+    <div><img class="shot" src="../screenshots/overlay.png" alt=""><div class="cap"><b>Clock overlay</b> on top of an animation</div></div>
+  </div>
+  <h3>Browse scenes</h3>
+  <p>Press <b>Right</b> or <b>Left</b> to slide to the next or previous scene. Its name appears briefly at the bottom of the display.</p>
+  <h3>Colour themes</h3>
+  <p>Press <b>Up</b> or <b>Down</b> on a clock or animation to change its colour theme: Rainbow, Heat, Ocean, Forest, Ice, Gray and Matrix. Guides and games keep their own colours so they stay easy to read.</p>
+  <h3>Clock overlay</h3>
+  <p>Keep the time visible over any animation: choose digital, analog or word style, position and size in <b>Settings → Overlay</b>, or press <kbd>0</kbd> on a 17-button remote.</p>
+  <h3>Autoplay</h3>
+  <p>Turn on <b>Settings → General → Auto</b> to cycle through clocks and animations automatically (every 30 seconds by default). Games and workouts are never interrupted.</p>
+  <div class="footer"><span>Everyday use</span><span>7</span></div>
+</section>
+
+<!-- ============================== LAUNCHER ============================== -->
+<section class="page">
+  <div class="chapter-tag">Chapter 5</div>
+  <h2>The scene menu</h2>
+  <p>Tap <kbd>MENU</kbd> to jump straight to any scene. The current scene pauses and dims in the background.</p>
+  <div class="grid2" style="align-items:start">
+    <div><img class="shot" src="../screenshots/launcher.png" alt=""><div class="cap"><b>Scene menu</b> — Ambient Art tab</div></div>
+    <div style="font-size:8.6pt">
+      <p style="margin-top:2pt">Four tabs along the top:</p>
+      <p><span class="swatch" style="background:#ffb846"></span><b>Clocks &amp; Info</b><br><span class="swatch" style="background:#ff7869"></span><b>Fitness</b><br><span class="swatch" style="background:#5fe18c"></span><b>Games</b><br><span class="swatch" style="background:#a58cff"></span><b>Ambient Art</b></p>
+      <table class="qr">
+        <tr><td class="k">Left / Right</td><td>switch tab</td></tr>
+        <tr><td class="k">Up / Down</td><td>choose a scene</td></tr>
+        <tr><td class="k">OK</td><td>start it</td></tr>
+        <tr><td class="k">MENU</td><td>close, no change</td></tr>
+      </table>
+    </div>
+  </div>
+  <p style="margin-top:6pt">The menu opens on the tab and entry of the scene you are watching, so a quick <kbd>MENU</kbd> → <b>Down</b> → <kbd>OK</kbd> moves to its neighbour.</p>
+  <div class="footer"><span>The scene menu</span><span>8</span></div>
+</section>
+
+<!-- ============================== CLOCKS ============================== -->
+<section class="page">
+  <div class="chapter-tag">Chapter 6</div>
+  <h2>Clocks and information</h2>
+  <div class="grid3">
+    <div><img class="shot" src="../screenshots/clock.png" alt=""><div class="cap"><b>Digital</b><br>rounded numerals, date</div></div>
+    <div><img class="shot" src="../screenshots/analog.png" alt=""><div class="cap"><b>Analog</b><br>hands and hour marks</div></div>
+    <div><img class="shot" src="../screenshots/wordclock.png" alt=""><div class="cap"><b>Word clock</b><br>“nine thirty-seven”</div></div>
+    <div><img class="shot" src="../screenshots/bounce.png" alt=""><div class="cap"><b>Bouncing</b><br>a drifting screensaver clock</div></div>
+    <div><img class="shot" src="../screenshots/calendar.png" alt=""><div class="cap"><b>Calendar</b><br>days to the next event</div></div>
+    <div><img class="shot" src="../screenshots/weather.png" alt=""><div class="cap"><b>Weather</b><br>animated sky and temperature</div></div>
+  </div>
+  <p><b>Calendar</b> counts down to Barcelona-area public holidays (and fireworks on the day itself). <b>Weather</b> needs the optional weather module; without it, the scene shows that it is waiting for data.</p>
+  <div class="footer"><span>Clocks and information</span><span>9</span></div>
+</section>
+
+<!-- ============================== FITNESS ============================== -->
+<section class="page">
+  <div class="chapter-tag">Chapter 7</div>
+  <h2>Guided fitness</h2>
+  <p class="lede" style="margin-bottom:6pt">Four coaches made to be read from the floor: a big clear figure, large timers, colour cues and spoken guidance.</p>
+  <p>Open them from the <b>Fitness</b> tab: <b>Yoga</b>, <b>Exercise</b>, <b>Breathe</b> and <b>Focus</b>. Every session runs the same way:</p>
+  <div class="seq">
+    <div><img class="shot" src="../screenshots/yoga_setup.png" alt=""><div class="cap"><b>1 · Choose</b><br>Up/Down picks the routine</div></div>
+    <div><img class="shot" src="../screenshots/countdown.png" alt=""><div class="cap"><b>2 · Get ready</b><br>3-2-1 with ticks</div></div>
+    <div><img class="shot" src="../screenshots/yoga.png" alt=""><div class="cap"><b>3 · Follow</b><br>the figure leads</div></div>
+    <div><img class="shot" src="../screenshots/yoga_done.png" alt=""><div class="cap"><b>4 · Done</b><br>summary and time</div></div>
+  </div>
+  <h3>During a session</h3>
+  <table>
+    <tr><td class="k">OK or Play/Pause</td><td>Pause / resume (take a water break)</td></tr>
+    <tr><td class="k">Right</td><td>Skip to the next pose or move</td></tr>
+    <tr><td class="k">Left</td><td>Go back and repeat the previous one</td></tr>
+    <tr><td class="k">Up / Down</td><td>Longer / shorter holds (yoga) · more / fewer reps (exercise)</td></tr>
+    <tr><td class="k">Hold Play/Pause</td><td>End the session (# on a 17-button remote returns to the setup card)</td></tr>
+  </table>
+  <div class="footer"><span>Guided fitness</span><span>10</span></div>
+</section>
+
+<section class="page">
+  <h2>Yoga</h2>
+  <p>Poses are held for 15 seconds by default (5 – 60 s). One-sided poses are done on the <b>right</b> and then the <b>left</b>: a tag shows the side, the figure mirrors itself and the coach says “switch sides”. For the last seconds of each pose a <b>Next</b> badge shows what comes next, with soft ticks; a chime marks the halfway point of longer holds.</p>
+  <div class="flowcard"><b>Morning wake-up</b> · 8 poses<div class="poses">Child's pose → Cow → Cat → Down dog → Low lunge (R/L) → Forward fold → Mountain</div></div>
+  <div class="flowcard"><b>Sun salutation</b> · 9 poses<div class="poses">Mountain → Forward fold → Plank → Cobra → Down dog → Warrior 1 (R/L) → Forward fold → Mountain</div></div>
+  <div class="flowcard"><b>Standing balance</b> · 10 poses<div class="poses">Chair → Warrior 1 (R/L) → Warrior 2 (R/L) → Triangle (R/L) → Star → Tree (R/L)</div></div>
+  <div class="flowcard"><b>Hips &amp; back</b> · 10 poses<div class="poses">Child's pose → Cat → Cow → Down dog → Low lunge (R/L) → Pigeon (R/L) → Bridge → Savasana</div></div>
+  <div class="flowcard"><b>Bedtime</b> · 8 poses<div class="poses">Child's pose → Cat → Cow → Pigeon (R/L) → Bridge → Boat → Savasana</div></div>
+  <p class="small">Choose the figure (female/male) and default hold time in Settings → Yoga. Listen to your body, and skip any pose that doesn't feel right.</p>
+  <div class="footer"><span>Guided fitness</span><span>11</span></div>
+</section>
+
+<section class="page">
+  <h2>Exercise</h2>
+  <p>The figure demonstrates each rep while the coach counts out loud; a ring pulses with every rep. Between moves you get a short rest with a live preview of the next move.</p>
+  <div class="grid3">
+    <div><img class="shot" src="../screenshots/exercise.png" alt=""><div class="cap"><b>Reps</b> — kettlebell swing</div></div>
+    <div><img class="shot" src="../screenshots/exercise_rest.png" alt=""><div class="cap"><b>Rest</b> — next move preview</div></div>
+    <div><img class="shot" src="../screenshots/tabata.png" alt=""><div class="cap"><b>Tabata</b> — green means go</div></div>
+  </div>
+  <table style="margin-top:6pt">
+    <tr><th>Program</th><th>Moves</th></tr>
+    <tr><td class="k">Bodyweight</td><td>Squats, push-ups, lunges (R/L), sit-ups, jumping jacks, glute bridges</td></tr>
+    <tr><td class="k">Kettlebell</td><td>Swings, goblet squats, rows (R/L), overhead press</td></tr>
+    <tr><td class="k">Tabata HIIT</td><td>8 rounds of 20 s work / 10 s rest: high knees, mountain climbers, squats, jumping jacks. A <span style="color:#22a35a;font-weight:600">green</span> frame means work, <span style="color:#d98a00;font-weight:600">amber</span> means rest.</td></tr>
+    <tr><td class="k">Core</td><td>Sit-ups, glute bridges, push-ups, 30 s plank hold, mountain climbers</td></tr>
+  </table>
+  <p class="small">Reps per set (default 8) and seconds per rep (default 3) are in Settings → Exercise. Rests are 10 s between moves and 5 s between sides.</p>
+  <div class="footer"><span>Guided fitness</span><span>12</span></div>
+</section>
+
+<section class="page">
+  <h2>Breathe and Focus</h2>
+  <div class="grid2" style="align-items:start">
+    <div>
+      <img class="shot" src="../screenshots/breathe.png" alt="">
+      <h3>Breathe</h3>
+      <p>Breathe in as the circle grows, hold while it stays, breathe out as it shrinks. <b>Box breathing</b> uses four equal phases; <b>4-7-8</b> has a long hold and a longer exhale to help you wind down. Up/Down sets the pace (3 – 8 s per in-breath); a soft tone marks each phase.</p>
+    </div>
+    <div>
+      <img class="shot" src="../screenshots/focus.png" alt="">
+      <h3>Focus</h3>
+      <p>A Pomodoro timer for the wall. Work for 25 minutes (Up/Down: 5 – 60), then take a 5-minute break; every fourth break is 15 minutes long. The ring drains as time runs, and a dot appears for each finished session. OK pauses.</p>
+    </div>
+  </div>
+  <div class="footer"><span>Guided fitness</span><span>13</span></div>
+</section>
+
+<!-- ============================== GAMES ============================== -->
+<section class="page">
+  <div class="chapter-tag">Chapter 8</div>
+  <h2>Games</h2>
+  <div class="grid4">
+    <div><img class="shot" src="../screenshots/tetris.png" alt=""><div class="cap"><b>Tetris</b></div></div>
+    <div><img class="shot" src="../screenshots/snake.png" alt=""><div class="cap"><b>Snake</b></div></div>
+    <div><img class="shot" src="../screenshots/pong.png" alt=""><div class="cap"><b>Pong</b></div></div>
+    <div><img class="shot" src="../screenshots/labyrinth.png" alt=""><div class="cap"><b>Labyrinth</b></div></div>
+  </div>
+  <table style="margin-top:6pt">
+    <tr><th>Game</th><th>Controls</th></tr>
+    <tr><td class="k">Tetris</td><td>Left/Right move · Up rotate · Down drop faster · OK drop. A shadow shows where the piece lands. Best score is kept.</td></tr>
+    <tr><td class="k">Snake</td><td>Arrows steer. Walls and your own tail end the game; OK plays again. Best length is kept.</td></tr>
+    <tr><td class="k">Pong</td><td>The computer plays both sides until you take over the left paddle with Up/Down. OK restarts. Difficulty in Settings → Pong.</td></tr>
+    <tr><td class="k">Labyrinth</td><td>A 3D maze. Up/Down walk, Left/Right turn; find the glowing pillar to go one level deeper. Left alone, it explores by itself.</td></tr>
+  </table>
+  <p>Each game starts from a title card: press <kbd>OK</kbd> to play. Use <kbd>MENU</kbd> or hold Play/Pause to leave a game; the arrow keys belong to the game while you play.</p>
+  <div class="footer"><span>Games</span><span>14</span></div>
+</section>
+
+<!-- ============================== AMBIENT ============================== -->
+<section class="page">
+  <div class="chapter-tag">Chapter 9</div>
+  <h2>Ambient art</h2>
+  <div class="grid4">
+    <div><img class="shot" src="../screenshots/coriolis.png" alt=""><div class="cap"><b>Coriolis</b></div></div>
+    <div><img class="shot" src="../screenshots/aurora.png" alt=""><div class="cap"><b>Aurora</b></div></div>
+    <div><img class="shot" src="../screenshots/fireplace.png" alt=""><div class="cap"><b>Fireplace</b></div></div>
+    <div><img class="shot" src="../screenshots/aquarium.png" alt=""><div class="cap"><b>Aquarium</b></div></div>
+    <div><img class="shot" src="../screenshots/lava.png" alt=""><div class="cap"><b>Lava lamp</b></div></div>
+    <div><img class="shot" src="../screenshots/spiro.png" alt=""><div class="cap"><b>Spirograph</b></div></div>
+    <div><img class="shot" src="../screenshots/mandala.png" alt=""><div class="cap"><b>Mandala</b></div></div>
+    <div><img class="shot" src="../screenshots/starfield.png" alt=""><div class="cap"><b>Starfield</b></div></div>
+    <div><img class="shot" src="../screenshots/rain.png" alt=""><div class="cap"><b>Digital rain</b></div></div>
+    <div><img class="shot" src="../screenshots/life.png" alt=""><div class="cap"><b>Game of life</b></div></div>
+  </div>
+  <p style="margin-top:6pt">Most animations follow the colour theme (Up/Down). The <b>Fireplace</b> crackles softly when sound is on; turn its sparks off in Settings → Fire. The <b>GIF player</b> is reserved for a future update with animations on a memory card.</p>
+  <div class="footer"><span>Ambient art</span><span>15</span></div>
+</section>
+
+<!-- ============================== SETTINGS ============================== -->
+<section class="page">
+  <div class="chapter-tag">Chapter 10</div>
+  <h2>Settings</h2>
+  <div class="grid2" style="align-items:start">
+    <div><img class="shot" src="../screenshots/settings.png" alt=""><div class="cap"><b>Settings</b>, opened from the clock</div></div>
+    <div style="font-size:8.6pt">
+      <p style="margin-top:2pt"><b>Hold MENU</b> to open Settings. It opens at the section for the scene you were watching.</p>
+      <table class="qr">
+        <tr><td class="k">Up / Down</td><td>choose a setting</td></tr>
+        <tr><td class="k">Left / Right</td><td>change it</td></tr>
+        <tr><td class="k">MENU</td><td>close and save</td></tr>
+      </table>
+      <p>Changes take effect immediately and are remembered when you close the menu, even through power cuts.</p>
+    </div>
+  </div>
+  <table style="margin-top:4pt">
+    <tr><th>General</th><th>What it does</th><th>Default</th></tr>
+    <tr><td class="k">Bright</td><td>Display brightness</td><td>255 (max)</td></tr>
+    <tr><td class="k">Volume</td><td>Sound volume, 0 = mute</td><td>20 of 30</td></tr>
+    <tr><td class="k">Palette</td><td>Colour theme</td><td>Rainbow</td></tr>
+    <tr><td class="k">Transit</td><td>Scene changes: Auto, Slide, Fade or Cut</td><td>Auto</td></tr>
+    <tr><td class="k">Rotate</td><td>Turn the picture 90° at a time</td><td>0</td></tr>
+    <tr><td class="k">Auto / Secs</td><td>Autoplay and its interval</td><td>Off / 30 s</td></tr>
+  </table>
+  <div class="footer"><span>Settings</span><span>16</span></div>
+</section>
+
+<section class="page">
+  <table>
+    <tr><th>Clock</th><th>What it does</th><th>Default</th></tr>
+    <tr><td class="k">Hour, Minute</td><td>Set the time (seconds restart at zero)</td><td>—</td></tr>
+    <tr><td class="k">Day, Month, Year</td><td>Set the date</td><td>—</td></tr>
+    <tr><td class="k">Zone</td><td>Time zone as an offset from UTC</td><td>UTC+1 (Spain)</td></tr>
+    <tr><td class="k">Summer</td><td>Automatic European summer time</td><td>EU auto</td></tr>
+    <tr><th>Night</th><th></th><th></th></tr>
+    <tr><td class="k">Auto</td><td>Dim the display automatically at night</td><td>On</td></tr>
+    <tr><td class="k">Start / End</td><td>Night hours</td><td>23:00 – 07:00</td></tr>
+    <tr><td class="k">Bright</td><td>Night brightness (lower = darker)</td><td>16</td></tr>
+    <tr><th>Overlay</th><th></th><th></th></tr>
+    <tr><td class="k">Clock</td><td>Clock on top of animations: Off, Digi, Anlg, Word</td><td>Off</td></tr>
+    <tr><td class="k">Pos / Size</td><td>Position on a 3 × 3 grid · small, medium, large</td><td>Middle / Med</td></tr>
+    <tr><th>Scenes</th><th></th><th></th></tr>
+    <tr><td class="k">Yoga</td><td>Flow · figure (fem/male) · hold seconds</td><td>Wake · Fem · 15</td></tr>
+    <tr><td class="k">Exercise</td><td>Program · reps per set · seconds per rep</td><td>Body · 8 · 3</td></tr>
+    <tr><td class="k">Breathe</td><td>Style (Box / 4-7-8) · in-breath seconds</td><td>Box · 4</td></tr>
+    <tr><td class="k">Pong / Snake</td><td>Difficulty · speed</td><td>Normal</td></tr>
+    <tr><td class="k">Fire</td><td>Sparks on/off</td><td>On</td></tr>
+  </table>
+  <div class="tip">Night mode only ever dims: if your daytime brightness is already lower than the night level, nothing changes.</div>
+  <div class="footer"><span>Settings</span><span>17</span></div>
+</section>
+
+<!-- ============================== SOUND ============================== -->
+<section class="page">
+  <div class="chapter-tag">Chapter 11</div>
+  <h2>Sound</h2>
+  <p>The built-in speaker plays chimes, countdown ticks, the spoken coach (pose names, “switch sides”, rep counts), the fireplace crackle and game sounds. Everything plays from a memory card inside the audio module; Coriolis never connects to the internet.</p>
+  <h3>Volume</h3>
+  <p><b>Settings → General → Volume</b>, from 0 (mute) to 30.</p>
+  <h3>The sound card</h3>
+  <p>The audio module has its own microSD card (FAT32, up to 32 GB) with three folders at the top level:</p>
+  <table>
+    <tr><td class="k"><code>01</code></td><td>Chimes, bells, ticks and game sounds</td></tr>
+    <tr><td class="k"><code>02</code></td><td>Spoken guidance: pose and move names, numbers, prompts</td></tr>
+    <tr><td class="k"><code>ADVERT</code></td><td>Copies of the chimes, played over the fireplace crackle</td></tr>
+  </table>
+  <p>To create or replace it, run <code>python tools/generate_voice_pack.py</code> on a computer and copy the three folders to the card's root. You can choose another voice with <code>--voice</code>. Do not rename the numbered files.</p>
+  <div class="footer"><span>Sound</span><span>18</span></div>
+</section>
+
+<!-- ============================== TROUBLESHOOTING ============================== -->
+<section class="page">
+  <div class="chapter-tag">Chapter 12</div>
+  <h2>Troubleshooting</h2>
+  <table>
+    <tr><th>Problem</th><th>Try this</th></tr>
+    <tr><td class="k">Nothing on the display</td><td>Check the mains lead and the switch on the back. Check the fuse in the inlet.</td></tr>
+    <tr><td class="k">Very dim display</td><td>It may be night-time: see Settings → Night. Otherwise raise Settings → General → Bright.</td></tr>
+    <tr><td class="k">Time is wrong</td><td>Settings → Clock: check Zone (UTC+1 for Spain) and Summer (EU auto), then the hour.</td></tr>
+    <tr><td class="k">Time resets after unplugging</td><td>Replace the clock battery (CR2032) on the controller board.</td></tr>
+    <tr><td class="k">Remote doesn't respond</td><td>Replace its coin battery and point it at the frame edge with the receiver. Bright sunlight on the receiver can blind it.</td></tr>
+    <tr><td class="k">Arrows don't change scene</td><td>You are in a game or workout, which uses the arrows. Tap MENU, or hold Play/Pause to go home.</td></tr>
+    <tr><td class="k">Stuck in a menu</td><td>Tap MENU to close it; hold Play/Pause to go home.</td></tr>
+    <tr><td class="k">No sound</td><td>Check Volume in Settings; check the sound card is inserted and has the <code>01</code>, <code>02</code> and <code>ADVERT</code> folders.</td></tr>
+    <tr><td class="k">Picture upside down or sideways</td><td>Settings → General → Rotate.</td></tr>
+    <tr><td class="k">Weather says it's waiting</td><td>The optional weather module isn't fitted or has no connection yet.</td></tr>
+    <tr><td class="k">A bright pixel or dark line</td><td>Switch off for 10 seconds and on again. If it stays, a panel or its cable needs attention (see the Build Guide).</td></tr>
+  </table>
+  <div class="footer"><span>Troubleshooting</span><span>19</span></div>
+</section>
+
+<!-- ============================== SPECS ============================== -->
+<section class="page">
+  <div class="chapter-tag">Chapter 13</div>
+  <h2>Specifications</h2>
+  <table>
+    <tr><td class="k">Display</td><td>128 × 128 RGB LEDs (16,384 pixels), four 64 × 64 panels, 24-bit colour, ~120 Hz refresh</td></tr>
+    <tr><td class="k">Size</td><td>Image 512 × 512 mm with 4 mm pixels (P4), or 384 × 384 mm with 3 mm pixels (P3). Frame about 550 × 550 × 80 mm (P4)</td></tr>
+    <tr><td class="k">Weight</td><td>About 5–6 kg (P4)</td></tr>
+    <tr><td class="k">Controller</td><td>Teensy 4.1 (600 MHz ARM Cortex-M7) with SmartLED Shield V5</td></tr>
+    <tr><td class="k">Clock</td><td>Battery-backed real-time clock (CR2032); automatic EU summer time</td></tr>
+    <tr><td class="k">Control</td><td>Infrared remote (Apple Remote or 17-button NEC remote); USB for servicing</td></tr>
+    <tr><td class="k">Sound</td><td>DFPlayer Mini, 3 W speaker, offline clips from microSD</td></tr>
+    <tr><td class="k">Power</td><td>230 V AC 50 Hz in; internal 5 V 40 A supply. Typical 10–30 W showing the clock; up to ~100 W on full white</td></tr>
+    <tr><td class="k">Network</td><td>None. Coriolis works fully offline.</td></tr>
+    <tr><td class="k">Content</td><td>25 scenes: 6 clocks/info · 4 fitness coaches (5 yoga flows, 4 exercise programs) · 4 games · 11 ambient animations</td></tr>
+  </table>
+  <div class="footer"><span>Specifications</span><span>20</span></div>
+</section>
+
+<!-- ============================== QUICK REFERENCE ============================== -->
+<section class="page back">
+  <div class="chapter-tag" style="color:#a98bff">Quick reference</div>
+  <h2>At a glance</h2>
+  <table style="margin-top:6pt">
+    <tr><th>Want to…</th><th>Do this</th></tr>
+    <tr><td class="k">Change scene</td><td>Left / Right</td></tr>
+    <tr><td class="k">Pick any scene</td><td>Tap MENU · Left/Right tab · Up/Down · OK</td></tr>
+    <tr><td class="k">Change colours</td><td>Up / Down on a clock or animation</td></tr>
+    <tr><td class="k">Open Settings</td><td>Hold MENU for 1 second</td></tr>
+    <tr><td class="k">Close a menu</td><td>Tap MENU</td></tr>
+    <tr><td class="k">Go home to the clock</td><td>Hold Play/Pause for 1 second</td></tr>
+    <tr><td class="k">Start a workout</td><td>Fitness tab · Up/Down choose routine · OK</td></tr>
+    <tr><td class="k">Pause a workout</td><td>OK or Play/Pause</td></tr>
+    <tr><td class="k">Skip / repeat a pose</td><td>Right / Left</td></tr>
+    <tr><td class="k">Set the time</td><td>Hold MENU · Clock section</td></tr>
+    <tr><td class="k">Dim at night</td><td>Settings · Night (on by default, 23:00–07:00)</td></tr>
+    <tr><td class="k">Mute</td><td>Settings · General · Volume to 0</td></tr>
+  </table>
+  <p style="margin-top:14pt;color:#8f8fa6;font-size:8pt">Coriolis — successor to Aurora and Borealis. Designed and built in Badalona.</p>
+</section>
+
+</body>
+</html>

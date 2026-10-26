@@ -61,6 +61,17 @@ inline const uint8_t* glyph(char c) {
   static const uint8_t degree[5] = {0b010, 0b101, 0b010, 0b000, 0b000};
   static const uint8_t apostrophe[5] = {0b010, 0b010, 0b000, 0b000, 0b000};
   static const uint8_t dot[5] = {0b000, 0b000, 0b000, 0b000, 0b010};
+  static const uint8_t comma[5] = {0b000, 0b000, 0b000, 0b010, 0b100};
+  static const uint8_t slash[5] = {0b001, 0b001, 0b010, 0b100, 0b100};
+  static const uint8_t amp[5] = {0b010, 0b101, 0b010, 0b101, 0b011};
+  static const uint8_t plus[5] = {0b000, 0b010, 0b111, 0b010, 0b000};
+  static const uint8_t bang[5] = {0b010, 0b010, 0b010, 0b000, 0b010};
+  static const uint8_t query[5] = {0b110, 0b001, 0b010, 0b000, 0b010};
+  static const uint8_t lparen[5] = {0b001, 0b010, 0b010, 0b010, 0b001};
+  static const uint8_t rparen[5] = {0b100, 0b010, 0b010, 0b010, 0b100};
+  static const uint8_t percent[5] = {0b101, 0b001, 0b010, 0b100, 0b101};
+  static const uint8_t lt[5] = {0b001, 0b010, 0b100, 0b010, 0b001};
+  static const uint8_t gt[5] = {0b100, 0b010, 0b001, 0b010, 0b100};
   static const uint8_t blank[5] = {0, 0, 0, 0, 0};
 
   if (c >= '0' && c <= '9') return digits[c - '0'];
@@ -71,6 +82,17 @@ inline const uint8_t* glyph(char c) {
   if (c == '*') return degree;  // '*' stands in for the degree sign
   if (c == '\'') return apostrophe;
   if (c == '.') return dot;
+  if (c == ',') return comma;
+  if (c == '/') return slash;
+  if (c == '&') return amp;
+  if (c == '+') return plus;
+  if (c == '!') return bang;
+  if (c == '?') return query;
+  if (c == '(') return lparen;
+  if (c == ')') return rparen;
+  if (c == '%') return percent;
+  if (c == '<') return lt;
+  if (c == '>') return gt;
   return blank;
 }
 
