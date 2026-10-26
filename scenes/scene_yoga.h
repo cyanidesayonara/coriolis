@@ -260,7 +260,8 @@ class YogaScene : public Scene {
     if (phase_ == COUNTDOWN) {
       uint32_t e = ctx.nowMs - phaseStartMs_;
       int sec = int(e / 1000);
-      if (sec != lastTick_ && sec < 3) {
+      // ticks on 2 and 1 only: a tick at 3 would cut "get ready" short
+      if (sec != lastTick_ && sec >= 1 && sec < 3) {
         lastTick_ = sec;
         ctx.audio.play(Cue::Tick);
       }

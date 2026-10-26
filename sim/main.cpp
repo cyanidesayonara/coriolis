@@ -302,6 +302,9 @@ class FileSettingsStore : public SettingsStore {
     fprintf(f, "autoplay=%d\n", s.autoplay ? 1 : 0);
     fprintf(f, "autoplaySeconds=%d\n", s.autoplaySeconds);
     fprintf(f, "transitionMode=%d\n", s.transitionMode);
+    fprintf(f, "volume=%d\n", s.volume);
+    fprintf(f, "zoneHours=%d\n", s.zoneHours);
+    fprintf(f, "euDst=%d\n", s.euDst ? 1 : 0);
     fprintf(f, "yogaBody=%d\n", s.yogaBody);
     fprintf(f, "yogaProgram=%d\n", s.yogaProgram);
     fprintf(f, "yogaHoldSec=%d\n", s.yogaHoldSec);

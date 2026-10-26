@@ -59,6 +59,35 @@ struct Settings {
     }
   }
 
+  // pull every field back into its legal range — stored settings may come
+  // from a hand-edited file or an older layout, and several values are
+  // divisors or table indices
+  void sanitize() {
+    if (brightness < 16) brightness = 16;
+    if (paletteIndex < 0 || paletteIndex > 6) paletteIndex = 0;
+    rotation &= 3;
+    if (autoplaySeconds < 10 || autoplaySeconds > 600) autoplaySeconds = 30;
+    if (transitionMode > 3) transitionMode = 0;
+    if (volume > 30) volume = 20;
+    if (zoneHours < -12 || zoneHours > 14) zoneHours = 1;
+    if (overlayType > 3) overlayType = 0;
+    if (overlayPos > 8) overlayPos = 4;
+    if (overlaySize > 2) overlaySize = 1;
+    yogaBody &= 1;
+    if (yogaProgram > 4) yogaProgram = 0;
+    if (yogaHoldSec < 5 || yogaHoldSec > 60) yogaHoldSec = 15;
+    exerciseProgram &= 3;
+    if (exerciseReps < 4 || exerciseReps > 20) exerciseReps = 8;
+    if (exerciseRepSec < 2 || exerciseRepSec > 6) exerciseRepSec = 3;
+    breatheStyle &= 1;
+    if (breatheSec < 3 || breatheSec > 8) breatheSec = 4;
+    if (pongLevel > 2) pongLevel = 1;
+    if (snakeSpeed > 2) snakeSpeed = 1;
+    nightStartHour %= 24;
+    nightEndHour %= 24;
+    if (nightBrightness < 8 || nightBrightness > 128) nightBrightness = 16;
+  }
+
   uint8_t effectiveBrightness(int currentHour) const {
     if (isNightTime(currentHour)) {
       return nightBrightness < brightness ? nightBrightness : brightness;

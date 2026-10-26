@@ -21,10 +21,10 @@ class Toast {
     untilMs_ = nowMs + durMs;
   }
 
-  bool visible(uint32_t nowMs) const { return nowMs < untilMs_; }
+  bool visible(uint32_t nowMs) const { return int32_t(untilMs_ - nowMs) > 0; }
 
   void draw(Context& ctx) {
-    if (ctx.nowMs >= untilMs_) return;
+    if (!visible(ctx.nowMs)) return;
     uint32_t age = ctx.nowMs - startMs_;
     uint32_t left = untilMs_ - ctx.nowMs;
 

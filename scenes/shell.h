@@ -48,6 +48,7 @@ class Shell {
 
   void begin(Context& ctx, bool splash = true) {
     launcher_.attach(scenes_, count_);
+    settings_.sanitize();
     ctx.palette = &palettes::byIndex(settings_.paletteIndex);
     ctx.audio.setVolume(settings_.volume);
     lastVolume_ = settings_.volume;
@@ -72,7 +73,10 @@ class Shell {
     }
     if (launcher_.isActive()) {
       int chosen = launcher_.handleInput(k);
-      if (chosen >= 0) switchTo(ctx, chosen, TransitionType::CrossFade, true);
+      // choosing the scene already showing just closes the menu — it must
+      // not restart a game or workout in progress
+      if (chosen >= 0 && chosen != current_)
+        switchTo(ctx, chosen, TransitionType::CrossFade, true);
       return;
     }
     if (inSettings_) {
@@ -175,7 +179,8 @@ class Shell {
     bool transitioning = transition_.isActive(ctx.nowMs);
     bool animating = transitioning || toast_.visible(ctx.nowMs) ||
                      launcher_.isActive();
-    bool sceneDue = ctx.nowMs >= nextFrameMs_;
+    // signed differences survive millis() wrapping (every ~49.7 days)
+    bool sceneDue = int32_t(ctx.nowMs - nextFrameMs_) >= 0;
     bool composeDue = (animating || hudWasAnimating_) &&
                       ctx.nowMs - lastComposeMs_ >= 16;
     if (!sceneDue && !composeDue) return false;
@@ -281,6 +286,7 @@ class Shell {
   void closeSettings(Context& ctx) {
     settingsScene_.stop(ctx);  // persists any changes
     inSettings_ = false;
+    ctx.fb.clear();  // trail scenes would otherwise fade the menu out slowly
   }
 
   void endSplash(Context& ctx) {
