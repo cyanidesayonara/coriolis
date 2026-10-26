@@ -1,0 +1,108 @@
+/* Shared print styles for the Coriolis manuals (rendered to PDF by
+   tools/render_manuals.py through Edge/Chrome headless). */
+:root {
+  --ink: #1d1d24;
+  --muted: #5d5d6b;
+  --faint: #9a9aa8;
+  --rule: #e2e1ea;
+  --panel: #f5f4fa;
+  --accent: #7b5cff;      /* lavender, the guide titles */
+  --accent-2: #00a896;    /* teal, the yoga mat */
+  --warm: #ff7a5c;        /* coral, the figure */
+  --amber: #f0a020;
+  --night: #0d0d14;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body {
+  margin: 0;
+  font-family: "Segoe UI Variable Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  color: var(--ink);
+  font-size: 9.6pt;
+  line-height: 1.45;
+}
+
+.page {
+  page-break-after: always;
+  break-after: page;
+  position: relative;
+}
+.page:last-child { page-break-after: auto; break-after: auto; }
+
+h1, h2, h3 { font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif; margin: 0; }
+h1 { font-size: 21pt; font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 13.5pt; font-weight: 600; margin: 0 0 6pt; }
+h3 { font-size: 10.5pt; font-weight: 600; margin: 10pt 0 3pt; }
+p { margin: 0 0 6pt; }
+ul, ol { margin: 0 0 6pt; padding-left: 14pt; }
+li { margin-bottom: 2pt; }
+small, .small { font-size: 8pt; color: var(--muted); }
+code, kbd {
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 0.88em;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0 3px;
+}
+kbd { font-family: inherit; font-weight: 600; font-size: 0.85em; }
+
+.chapter-tag {
+  font-size: 7.5pt; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 2pt;
+}
+.lede { color: var(--muted); font-size: 10.2pt; margin-bottom: 10pt; }
+.rule { height: 3px; width: 34px; background: var(--accent); border-radius: 2px; margin: 6pt 0 10pt; }
+
+table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; font-size: 8.7pt; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 7.6pt;
+     text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1.5px solid var(--ink); padding: 3pt 4pt; }
+td { border-bottom: 1px solid var(--rule); padding: 3.5pt 4pt; vertical-align: top; }
+td.k { white-space: nowrap; font-weight: 600; }
+
+.note, .warn, .tip {
+  border-radius: 6px; padding: 6pt 8pt 6pt 26pt; margin: 6pt 0 8pt; position: relative; font-size: 8.8pt;
+}
+.note { background: #f0edff; }
+.tip { background: #e6f6f3; }
+.warn { background: #fff1e6; }
+.note::before, .warn::before, .tip::before {
+  position: absolute; left: 8pt; top: 5pt; font-weight: 800; font-size: 10pt;
+}
+.note::before { content: "i"; color: var(--accent); font-family: Georgia, serif; font-style: italic; }
+.tip::before { content: "\2713"; color: var(--accent-2); }
+.warn::before { content: "!"; color: #d9480f; }
+
+.shot {
+  display: block; width: 100%; border-radius: 6px; background: #000;
+  image-rendering: pixelated;
+}
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8pt; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7pt; }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6pt; }
+.cap { font-size: 7.8pt; color: var(--muted); margin-top: 2pt; text-align: center; }
+.cap b { color: var(--ink); font-weight: 600; }
+
+.steps { counter-reset: step; list-style: none; padding: 0; }
+.steps > li { counter-increment: step; position: relative; padding-left: 22pt; margin-bottom: 6pt; }
+.steps > li::before {
+  content: counter(step); position: absolute; left: 0; top: 0;
+  width: 15pt; height: 15pt; border-radius: 50%; background: var(--ink); color: #fff;
+  font-size: 8pt; font-weight: 700; text-align: center; line-height: 15pt;
+}
+
+.pill { display: inline-block; border-radius: 99px; padding: 0 6pt; font-size: 7.6pt; font-weight: 600;
+        background: var(--panel); border: 1px solid var(--rule); }
+.swatch { display: inline-block; width: 8pt; height: 8pt; border-radius: 2px; vertical-align: -1pt; margin-right: 3pt; }
+
+.footer {
+  position: absolute; bottom: 0; left: 0; right: 0; font-size: 7pt; color: var(--faint);
+  display: flex; justify-content: space-between; border-top: 1px solid var(--rule); padding-top: 3pt;
+}
+
+.toc { list-style: none; padding: 0; margin: 0; }
+.toc li { display: flex; align-items: baseline; gap: 6pt; padding: 4pt 0; border-bottom: 1px solid var(--rule); }
+.toc .n { font-weight: 700; color: var(--accent); width: 16pt; }
+.toc .t { flex: 1; }
+.toc .d { color: var(--muted); font-size: 8pt; }

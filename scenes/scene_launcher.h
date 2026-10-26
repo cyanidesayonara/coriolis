@@ -1,181 +1,252 @@
-// Scene Launcher — a categorized quick-picker for the 25 scenes.
-// Grouped into CLOCKS, GUIDED FITNESS, GAMES, and AMBIENT ART.
-// Up/Down changes category, Left/Right picks a scene, OK launches it.
+// Scene Launcher — the categorized quick-picker opened by the remote's Menu
+// button. Four icon tabs across the top (Clocks, Fitness, Games, Art),
+// left/right switches tab, up/down walks the list, OK launches. The
+// selection pill and the tab marker glide to their targets instead of
+// jumping. Scenes are matched by name, so reordering the rotation never
+// breaks the menu; anything unlisted lands under Art.
 #ifndef CORIOLIS_SCENE_LAUNCHER_H
 #define CORIOLIS_SCENE_LAUNCHER_H
 
+#include <string.h>
+
 #include "../core/scene.h"
 #include "../core/font.h"
+#include "../core/font5x7.h"
 
 namespace coriolis {
 
 class SceneLauncher {
  public:
-  struct Entry {
-    const char* name;
-    int sceneIndex;
-  };
+  static const int CAT_COUNT = 4;
+  static const int MAX_ITEMS = 16;
 
-  struct Category {
-    const char* title;
-    int count;
-    Entry entries[12];
-  };
-
-  SceneLauncher() {
-    // 0: Clocks & Info
-    categories_[0].title = "CLOCKS & INFO";
-    categories_[0].count = 6;
-    categories_[0].entries[0] = {"Digital", 0};
-    categories_[0].entries[1] = {"Analog", 1};
-    categories_[0].entries[2] = {"Word", 2};
-    categories_[0].entries[3] = {"Weather", 3};
-    categories_[0].entries[4] = {"Calendar", 4};
-    categories_[0].entries[5] = {"Bounce", 19};
-
-    // 1: Guided Fitness
-    categories_[1].title = "GUIDED FITNESS";
-    categories_[1].count = 4;
-    categories_[1].entries[0] = {"Yoga", 9};
-    categories_[1].entries[1] = {"Exercise", 10};
-    categories_[1].entries[2] = {"Breathe", 11};
-    categories_[1].entries[3] = {"Focus", 12};
-
-    // 2: Games
-    categories_[2].title = "GAMES";
-    categories_[2].count = 4;
-    categories_[2].entries[0] = {"Pong", 5};
-    categories_[2].entries[1] = {"Snake", 6};
-    categories_[2].entries[2] = {"Tetris", 7};
-    categories_[2].entries[3] = {"Labyrinth", 8};
-
-    // 3: Ambient Art
-    categories_[3].title = "AMBIENT ART";
-    categories_[3].count = 11;
-    categories_[3].entries[0] = {"Coriolis", 16};
-    categories_[3].entries[1] = {"Aurora", 24};
-    categories_[3].entries[2] = {"Lava", 17};
-    categories_[3].entries[3] = {"Spiro", 14};
-    categories_[3].entries[4] = {"Mandala", 15};
-    categories_[3].entries[5] = {"Fireplace", 23};
-    categories_[3].entries[6] = {"Aquarium", 22};
-    categories_[3].entries[7] = {"Starfield", 20};
-    categories_[3].entries[8] = {"Life", 21};
-    categories_[3].entries[9] = {"Rain", 18};
-    categories_[3].entries[10] = {"GIFs", 13};
-  }
-
-  void open(int currentSceneIdx) {
-    active_ = true;
-    catIdx_ = 0;
-    itemIdx_ = 0;
+  // resolve the category tables against the actual scene list
+  void attach(Scene* const* scenes, int count) {
+    struct Def { const char* scene; const char* label; };
+    static const Def clocks[] = {
+        {"Clock", "Digital"}, {"Analog", "Analog"}, {"Word Clock", "Word clock"},
+        {"Bounce", "Bouncing"}, {"Weather", "Weather"}, {"Calendar", "Calendar"}};
+    static const Def fitness[] = {
+        {"Yoga", "Yoga"}, {"Exercise", "Exercise"}, {"Breathe", "Breathe"},
+        {"Focus", "Focus timer"}};
+    static const Def games[] = {
+        {"Tetris", "Tetris"}, {"Snake", "Snake"}, {"Pong", "Pong"},
+        {"Labyrinth", "Labyrinth"}};
+    static const Def art[] = {
+        {"Coriolis", "Coriolis"}, {"Aurora", "Aurora"}, {"Fireplace", "Fireplace"},
+        {"Aquarium", "Aquarium"}, {"Lava", "Lava lamp"}, {"Spiro", "Spirograph"},
+        {"Mandala", "Mandala"}, {"Starfield", "Starfield"}, {"Rain", "Digital rain"},
+        {"Life", "Game of life"}, {"Gifs", "GIF player"}};
+    const Def* tables[CAT_COUNT] = {clocks, fitness, games, art};
+    const int sizes[CAT_COUNT] = {int(sizeof(clocks) / sizeof(clocks[0])),
+                                  int(sizeof(fitness) / sizeof(fitness[0])),
+                                  int(sizeof(games) / sizeof(games[0])),
+                                  int(sizeof(art) / sizeof(art[0]))};
+    bool placed[64] = {false};
     for (int c = 0; c < CAT_COUNT; c++) {
-      for (int i = 0; i < categories_[c].count; i++) {
-        if (categories_[c].entries[i].sceneIndex == currentSceneIdx) {
-          catIdx_ = c;
-          itemIdx_ = i;
-          return;
+      cats_[c].count = 0;
+      for (int i = 0; i < sizes[c]; i++) {
+        for (int s = 0; s < count && s < 64; s++) {
+          if (strcmp(scenes[s]->name(), tables[c][i].scene) == 0) {
+            add(c, tables[c][i].label, s);
+            placed[s] = true;
+            break;
+          }
         }
       }
     }
+    for (int s = 0; s < count && s < 64; s++)
+      if (!placed[s]) add(3, scenes[s]->name(), s);
+  }
+
+  void open(int currentScene) {
+    active_ = true;
+    cat_ = 0;
+    item_ = 0;
+    for (int c = 0; c < CAT_COUNT; c++)
+      for (int i = 0; i < cats_[c].count; i++)
+        if (cats_[c].items[i].scene == currentScene) { cat_ = c; item_ = i; }
+    pillY_ = -1.0f;  // snap on the first frame
+    tabX_ = -1.0f;
+    scroll_ = 0;
   }
 
   void close() { active_ = false; }
   bool isActive() const { return active_; }
 
+  // >= 0: launch that scene; -1: closed without choosing; -2: consumed
   int handleInput(Key k) {
     if (!active_) return -1;
-    if (k == Key::Up) {
-      catIdx_ = (catIdx_ + CAT_COUNT - 1) % CAT_COUNT;
-      if (itemIdx_ >= categories_[catIdx_].count) itemIdx_ = 0;
-      return -2;  // consumed
+    switch (k) {
+      case Key::Left:
+        cat_ = (cat_ + CAT_COUNT - 1) % CAT_COUNT;
+        item_ = 0;
+        scroll_ = 0;
+        return -2;
+      case Key::Right:
+        cat_ = (cat_ + 1) % CAT_COUNT;
+        item_ = 0;
+        scroll_ = 0;
+        return -2;
+      case Key::Up:
+        if (cats_[cat_].count) item_ = (item_ + cats_[cat_].count - 1) % cats_[cat_].count;
+        return -2;
+      case Key::Down:
+        if (cats_[cat_].count) item_ = (item_ + 1) % cats_[cat_].count;
+        return -2;
+      case Key::Select:
+        if (!cats_[cat_].count) return -2;
+        active_ = false;
+        return cats_[cat_].items[item_].scene;
+      case Key::Back:
+        active_ = false;
+        return -1;
+      default:
+        return -2;
     }
-    if (k == Key::Down) {
-      catIdx_ = (catIdx_ + 1) % CAT_COUNT;
-      if (itemIdx_ >= categories_[catIdx_].count) itemIdx_ = 0;
-      return -2;
-    }
-    if (k == Key::Left) {
-      int count = categories_[catIdx_].count;
-      itemIdx_ = (itemIdx_ + count - 1) % count;
-      return -2;
-    }
-    if (k == Key::Right) {
-      int count = categories_[catIdx_].count;
-      itemIdx_ = (itemIdx_ + 1) % count;
-      return -2;
-    }
-    if (k == Key::Select) {
-      active_ = false;
-      return categories_[catIdx_].entries[itemIdx_].sceneIndex;
-    }
-    if (k == Key::Back) {
-      active_ = false;
-      return -1;
-    }
-    return -2;
   }
 
+  static RGB accent(int cat) {
+    static const RGB a[CAT_COUNT] = {RGB(255, 184, 70), RGB(255, 120, 105),
+                                     RGB(95, 225, 140), RGB(165, 140, 255)};
+    return a[cat % CAT_COUNT];
+  }
+
+  static const char* title(int cat) {
+    static const char* t[CAT_COUNT] = {"Clocks & Info", "Fitness", "Games",
+                                       "Ambient Art"};
+    return t[cat % CAT_COUNT];
+  }
+
+  // draws over whatever is already in the framebuffer (the shell puts a
+  // dimmed still of the paused scene there)
   void draw(Context& ctx) {
     if (!active_) return;
-    const int W = ctx.fb.width(), H = ctx.fb.height();
+    FrameBuffer& fb = ctx.fb;
+    const int W = fb.width(), H = fb.height();
+    const bool compact = H < 100;
+    const RGB acc = accent(cat_);
 
-    // Dark translucent backdrop
-    for (int y = 0; y < H; y++) {
-      for (int x = 0; x < W; x++) {
-        ctx.fb.at(x, y).dim(32);
-      }
-    }
-
-    // Top Header
-    RGB titleCol = ctx.palette->lookupBright(0);
-    font3x5::drawText(ctx.fb, "SCENE SELECT", 4, 3, 1, titleCol);
-    ctx.fb.hLine(0, W - 1, 10, RGB(60, 60, 60));
-
-    // Categories list on the left / upper section
-    int cy = 15;
+    // --- tabs: four icons, the active one lit in its accent color
+    const int iconY = 4, slot = W / CAT_COUNT;
     for (int c = 0; c < CAT_COUNT; c++) {
-      bool isSelCat = (c == catIdx_);
-      RGB catCol = isSelCat ? RGB(255, 255, 255) : RGB(100, 100, 100);
-      if (isSelCat) {
-        ctx.fb.rect(2, cy + 1, 2, 4, ctx.palette->lookupBright(0));
-      }
-      font3x5::drawText(ctx.fb, categories_[c].title, 7, cy, 1, catCol);
-      cy += 9;
+      int ix = c * slot + (slot - ICON) / 2;
+      RGB col = c == cat_ ? accent(c) : RGB(70, 70, 76);
+      drawIcon(fb, c, ix, iconY, col);
+    }
+    float tabTarget = float(cat_ * slot + slot / 2);
+    tabX_ = tabX_ < 0 ? tabTarget : tabX_ + (tabTarget - tabX_) * 0.35f;
+    int tx = int(tabX_ + 0.5f);
+    fb.rect(tx - 6, iconY + ICON + 2, 13, 1, acc);
+
+    // --- category title
+    int titleY = iconY + ICON + 6;
+    if (!compact) {
+      font5x7::drawCentered(fb, title(cat_), W / 2, titleY, 1, RGB(235, 235, 240));
+      titleY += 11;
+    } else {
+      titleY += 1;
     }
 
-    ctx.fb.hLine(4, W - 5, cy + 2, RGB(55, 55, 55));
-    cy += 7;
+    // --- the list, scrolled so the selection stays in view
+    const int rowH = compact ? 9 : 11;
+    const int listTop = titleY + 1;
+    const int footerH = compact ? 0 : 9;
+    int visible = (H - listTop - footerH - 2) / rowH;
+    if (visible < 1) visible = 1;
+    const Category& cat = cats_[cat_];
+    if (item_ < scroll_) scroll_ = item_;
+    if (item_ >= scroll_ + visible) scroll_ = item_ - visible + 1;
 
-    // Items within the selected category
-    const Category& curCat = categories_[catIdx_];
-    int startY = cy;
-    for (int i = 0; i < curCat.count; i++) {
-      bool isSel = (i == itemIdx_);
-      int iy = startY + (i % 6) * 10;
-      int ix = (i < 6) ? 6 : (W / 2 + 2);
+    float pillTarget = float(listTop + (item_ - scroll_) * rowH);
+    pillY_ = pillY_ < 0 ? pillTarget : pillY_ + (pillTarget - pillY_) * 0.4f;
+    int py = int(pillY_ + 0.5f);
+    RGB pill = acc;
+    pill.dim(70);
+    roundRect(fb, 6, py, W - 12, rowH - 1, pill);
+    fb.rect(6, py + 2, 2, rowH - 5, acc);  // accent edge on the pill
 
-      if (isSel) {
-        RGB bar = ctx.palette->lookupBright(0);
-        bar.dim(75);
-        ctx.fb.rect(ix - 2, iy - 1, (W / 2) - 6, 8, bar);
-      }
-      RGB itemCol = isSel ? RGB(255, 255, 255) : RGB(140, 140, 140);
-      font3x5::drawText(ctx.fb, curCat.entries[i].name, ix + 1, iy, 1, itemCol);
+    for (int v = 0; v < visible && scroll_ + v < cat.count; v++) {
+      int i = scroll_ + v;
+      int y = listTop + v * rowH + (rowH - 1 - font5x7::GLYPH_H) / 2;
+      bool sel = i == item_;
+      RGB col = sel ? RGB(255, 255, 255) : RGB(150, 150, 158);
+      font5x7::drawText(fb, cat.items[i].label, 13, y, 1, col);
     }
 
-    // Bottom navigation hint
-    const char* hint = "UP/DN:CAT  L/R:SCENE  OK:GO";
-    int hw = font3x5::textWidth(hint, 1);
-    font3x5::drawText(ctx.fb, hint, (W - hw) / 2, H - 9, 1, RGB(120, 120, 120));
+    // scroll hints when the list overflows
+    if (scroll_ > 0) arrow(fb, W - 9, listTop - 2, true, RGB(120, 120, 130));
+    if (scroll_ + visible < cat.count)
+      arrow(fb, W - 9, listTop + visible * rowH - 1, false, RGB(120, 120, 130));
+
+    // --- footer hint
+    if (!compact) {
+      const char* hint = "<> GROUP   OK START";
+      int hw = font3x5::textWidth(hint, 1);
+      font3x5::drawText(fb, hint, (W - hw) / 2, H - 7, 1, RGB(85, 85, 92));
+    }
   }
 
  private:
-  static const int CAT_COUNT = 4;
-  Category categories_[CAT_COUNT];
-  int catIdx_ = 0;
-  int itemIdx_ = 0;
+  static const int ICON = 11;
+
+  struct Item {
+    char label[16];
+    int scene;
+  };
+  struct Category {
+    int count = 0;
+    Item items[MAX_ITEMS];
+  };
+
+  Category cats_[CAT_COUNT];
+  int cat_ = 0;
+  int item_ = 0;
+  int scroll_ = 0;
   bool active_ = false;
+  float pillY_ = -1.0f;
+  float tabX_ = -1.0f;
+
+  void add(int c, const char* label, int scene) {
+    Category& cat = cats_[c];
+    if (cat.count >= MAX_ITEMS) return;
+    strncpy(cat.items[cat.count].label, label, sizeof(cat.items[0].label) - 1);
+    cat.items[cat.count].label[sizeof(cat.items[0].label) - 1] = 0;
+    cat.items[cat.count].scene = scene;
+    cat.count++;
+  }
+
+  // a filled rectangle with its four corner pixels knocked out
+  static void roundRect(FrameBuffer& fb, int x, int y, int w, int h,
+                        const RGB& c) {
+    fb.rect(x + 1, y, w - 2, h, c);
+    fb.rect(x, y + 1, 1, h - 2, c);
+    fb.rect(x + w - 1, y + 1, 1, h - 2, c);
+  }
+
+  static void arrow(FrameBuffer& fb, int x, int y, bool up, const RGB& c) {
+    for (int i = 0; i < 3; i++) {
+      int row = up ? y + i : y + 2 - i;
+      fb.hLine(x + 2 - i, x + 2 + i, row, c);
+    }
+  }
+
+  // 11x11 category icons: clock, heart, gamepad, sparkle
+  static void drawIcon(FrameBuffer& fb, int cat, int x, int y, const RGB& c) {
+    static const uint16_t icons[CAT_COUNT][ICON] = {
+        {0x0F8, 0x306, 0x222, 0x421, 0x421, 0x439, 0x401, 0x401, 0x202, 0x306,
+         0x0F8},
+        {0x000, 0x38E, 0x7DF, 0x7FF, 0x7FF, 0x3FE, 0x1FC, 0x0F8, 0x070, 0x020,
+         0x000},
+        {0x000, 0x000, 0x3FE, 0x6FB, 0x475, 0x6FB, 0x7FF, 0x707, 0x202, 0x000,
+         0x000},
+        {0x020, 0x020, 0x070, 0x070, 0x1FC, 0x7FF, 0x1FC, 0x070, 0x070, 0x020,
+         0x020},
+    };
+    for (int r = 0; r < ICON; r++)
+      for (int b = 0; b < ICON; b++)
+        if (icons[cat][r] & (1 << (ICON - 1 - b))) fb.set(x + b, y + r, c);
+  }
 };
 
 }

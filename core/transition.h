@@ -64,6 +64,14 @@ class TransitionEngine {
 
   void cancel() { active_ = false; }
 
+  // the snapshot buffer doubles as scratch space while no transition runs
+  // (the shell parks the launcher's dimmed backdrop here) — one less 48KB
+  // framebuffer on the device
+  FrameBuffer& scratch() {
+    active_ = false;
+    return snapshot_;
+  }
+
   bool isActive(uint32_t nowMs) const {
     if (!active_) return false;
     if (nowMs - startMs_ >= durationMs_) {
