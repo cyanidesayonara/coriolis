@@ -62,8 +62,10 @@ class SnakeScene : public Scene {
     }
     if (dead_) {
       if (k == Key::Select) { begin(ctx); return true; }
+      if (k == Key::Back) { started_ = false; return true; }
       return false;
     }
+    if (k == Key::Back) { started_ = false; return true; }
     // 0 up, 1 right, 2 down, 3 left — can't reverse straight back. Consume
     // any arrow (even a rejected reversal) so it never switches scenes.
     int nd = -1;
@@ -191,15 +193,32 @@ class SnakeScene : public Scene {
     ctx.fb.rect(0, 0, 1, gh_ * CELL, border);
     ctx.fb.rect(gw_ * CELL - 1, 0, 1, gh_ * CELL, border);
 
-    // food
-    ctx.fb.rect(food_.x * CELL + 1, food_.y * CELL + 1, CELL - 2, CELL - 2,
-                RGB(230, 40, 40));
+    // food: pulsing apple with a tiny green leaf
+    uint8_t pulse = beatsin8(45, ctx.nowMs, 190, 255);
+    RGB apple(pulse, uint8_t(36 * pulse / 255), uint8_t(36 * pulse / 255));
+    int fx = food_.x * CELL, fy = food_.y * CELL;
+    ctx.fb.rect(fx + 1, fy + 1, CELL - 2, CELL - 2, apple);
+    ctx.fb.set(fx + 2, fy, RGB(70, 210, 80));
 
-    // snake: bright head, body fading back a touch
-    for (int i = 0; i < len_; i++) {
+    // snake: bright mint head with eyes, body tapering into deep emerald tail
+    for (int i = len_ - 1; i >= 0; i--) {
       Cell s = at(i);
-      RGB c = i == 0 ? RGB(180, 255, 180) : RGB(40, 200, 60);
-      ctx.fb.rect(s.x * CELL, s.y * CELL, CELL - 1, CELL - 1, c);
+      RGB c;
+      if (i == 0) {
+        c = RGB(185, 255, 175);
+      } else {
+        uint8_t frac = uint8_t(i * 255 / (len_ > 1 ? len_ - 1 : 1));
+        c = lerpColor(RGB(60, 225, 85), RGB(22, 115, 45), frac);
+      }
+      int sx = s.x * CELL, sy = s.y * CELL;
+      ctx.fb.rect(sx, sy, CELL - 1, CELL - 1, c);
+      if (i == 0) {
+        RGB eye(15, 50, 20);
+        if (dir_ == 0) { ctx.fb.set(sx, sy, eye); ctx.fb.set(sx + 2, sy, eye); }
+        else if (dir_ == 1) { ctx.fb.set(sx + 2, sy, eye); ctx.fb.set(sx + 2, sy + 2, eye); }
+        else if (dir_ == 2) { ctx.fb.set(sx, sy + 2, eye); ctx.fb.set(sx + 2, sy + 2, eye); }
+        else { ctx.fb.set(sx, sy, eye); ctx.fb.set(sx, sy + 2, eye); }
+      }
     }
 
     char scoreText[8];

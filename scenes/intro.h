@@ -19,14 +19,14 @@ inline void draw(Context& ctx, const char* title, const char* const* lines,
 
   // title in the big rounded face, with a soft vertical gradient
   int scale = (font5x7::textWidth(title, 2) <= W - 8 && H >= 100) ? 2 : 1;
-  int ty = H / 2 - 16 - lineCount * 5;
-  if (ty < 5) ty = 5;
+  int ty = H / 2 - 17 - lineCount * 5;
+  if (ty < 4) ty = 4;
   RGB deep = accent;
   deep.dim(150);
   font5x7::drawCentered(ctx.fb, title, W / 2, ty, scale, accent, deep);
 
-  // a short accent rule under the title
-  int ruleY = ty + font5x7::GLYPH_H * scale + 4;
+  // a short accent rule under the title, clear of descenders
+  int ruleY = ty + font5x7::GLYPH_H * scale + (scale > 1 ? 6 : 4);
   RGB rule = accent;
   rule.dim(90);
   ctx.fb.hLine(W / 2 - 10, W / 2 + 10, ruleY, rule);

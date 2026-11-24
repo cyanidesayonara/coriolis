@@ -49,6 +49,8 @@ class Shell {
   void begin(Context& ctx, bool splash = true) {
     launcher_.attach(scenes_, count_);
     settings_.sanitize();
+    lastSaved_ = settings_;
+    savePending_ = false;
     ctx.palette = &palettes::byIndex(settings_.paletteIndex);
     ctx.audio.setVolume(settings_.volume);
     lastVolume_ = settings_.volume;
@@ -62,14 +64,16 @@ class Shell {
     nextFrameMs_ = 0;
   }
 
-  // a navigation key press. The launcher and settings take keys while open;
-  // otherwise the scene gets first refusal and the shell handles the rest
-  void key(Context& ctx, Key k) {
-    if (k == Key::None) return;
+  // a navigation key press. Returns true if the key had an effect (or false if
+  // nothing consumed it, e.g., Back at the home clock). The launcher and
+  // settings take keys while open; otherwise the scene gets first refusal and
+  // the shell handles the rest.
+  bool key(Context& ctx, Key k) {
+    if (k == Key::None) return false;
     nextFrameMs_ = 0;
     if (splashOn_) {
       endSplash(ctx);
-      return;
+      return true;
     }
     if (launcher_.isActive()) {
       int chosen = launcher_.handleInput(k);
@@ -77,32 +81,35 @@ class Shell {
       // not restart a game or workout in progress
       if (chosen >= 0 && chosen != current_)
         switchTo(ctx, chosen, TransitionType::CrossFade, true);
-      return;
+      return true;
     }
     if (inSettings_) {
       if (!settingsScene_.input(ctx, k) && k == Key::Back) closeSettings(ctx);
-      return;
+      return true;
     }
-    if (scenes_[current_]->input(ctx, k)) return;
+    if (scenes_[current_]->input(ctx, k)) return true;
     switch (k) {
       case Key::Right:
         switchTo(ctx, (current_ + 1) % count_, TransitionType::SlideLeft);
-        break;
+        return true;
       case Key::Left:
         switchTo(ctx, (current_ + count_ - 1) % count_, TransitionType::SlideRight);
-        break;
+        return true;
       case Key::Up:
       case Key::Down: {
         int d = k == Key::Up ? 1 : palettes::COUNT - 1;
         settings_.paletteIndex = (settings_.paletteIndex + d) % palettes::COUNT;
         toast_.show(palettes::byIndex(settings_.paletteIndex).name, ctx.nowMs);
-        break;
+        return true;
       }
       case Key::Back:
-        if (current_ != 0) switchTo(ctx, 0, TransitionType::CrossFade);
-        break;
+        if (current_ != 0) {
+          switchTo(ctx, 0, TransitionType::CrossFade);
+          return true;
+        }
+        return false;
       default:
-        break;
+        return false;
     }
   }
 
@@ -210,6 +217,23 @@ class Shell {
       overlay::draw(out, settings_);
     toast_.draw(out);
 
+    // auto-persist high scores, palette changes, overlay toggles, and
+    // title-card tweaks after a short debounce so rapid taps don't thrash EEPROM
+    if (!inSettings_) {
+      if (settings_ != lastSaved_) {
+        if (!savePending_) {
+          savePending_ = true;
+          dirtySinceMs_ = ctx.nowMs;
+        } else if (ctx.nowMs - dirtySinceMs_ >= SAVE_DEBOUNCE_MS) {
+          settingsScene_.persist();
+          lastSaved_ = settings_;
+          savePending_ = false;
+        }
+      } else {
+        savePending_ = false;
+      }
+    }
+
     lastComposeMs_ = ctx.nowMs;
     hudWasAnimating_ = animating;  // one more compose clears a finished toast
     return true;
@@ -217,9 +241,16 @@ class Shell {
 
   const FrameBuffer& frame() const { return out_; }
 
-  // output brightness right now, honoring the night schedule
+  // output brightness right now, honoring the night schedule (menus stay
+  // readable at night instead of dimming below 96)
   uint8_t brightness(Context& ctx) const {
-    return settings_.effectiveBrightness(ctx.time.now().hour);
+    uint8_t b = settings_.effectiveBrightness(ctx.time.now().hour);
+    if (menuOpen() && b < 96) return 96;
+    return b;
+  }
+
+  bool isNightActive(Context& ctx) const {
+    return settings_.isNightTime(ctx.time.now().hour);
   }
 
   const char* activeName() const {
@@ -253,8 +284,12 @@ class Shell {
   uint32_t nextFrameMs_ = 0;
   uint32_t lastSwitchMs_ = 0;
   uint32_t lastComposeMs_ = 0;
+  Settings lastSaved_;
+  bool savePending_ = false;
+  uint32_t dirtySinceMs_ = 0;
 
   static const uint32_t SWITCH_MS = 260;
+  static const uint32_t SAVE_DEBOUNCE_MS = 2000;
 
   void switchTo(Context& ctx, int to, TransitionType type,
                 bool fromLauncher = false) {
@@ -285,6 +320,8 @@ class Shell {
 
   void closeSettings(Context& ctx) {
     settingsScene_.stop(ctx);  // persists any changes
+    lastSaved_ = settings_;
+    savePending_ = false;
     inSettings_ = false;
     ctx.fb.clear();  // trail scenes would otherwise fade the menu out slowly
   }

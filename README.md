@@ -135,9 +135,10 @@ python tools/render_manuals.py
 | `↑` / `↓` | cycle palette (when the scene doesn't use them) |
 | `C` | cycle the clock overlay (off / digital / analog / word) |
 | `A` | toggle simulated audio / beeps |
-| `BACKSPACE` | back: closes settings, leaves a workout, otherwise home |
+| `N` | toggle Night Mode auto-dimming |
+| `BACKSPACE` | back: closes menus, leaves a game/workout, otherwise home |
 | `R` | rotate the display 90° |
-| `ESC` | quit (saves settings) |
+| `ESC` | back out (same as `BACKSPACE`), or quit on the Clock (saves settings) |
 
 Start with `--no-splash` to skip the boot animation. Each control maps to a
 button on the device's IR remote; see [docs/REMOTE.md](docs/REMOTE.md).
@@ -171,14 +172,18 @@ Arrow keys are offered to the active scene first, matching how a
 remote/gamepad will behave on the device. Scene-specific keys:
 
 - **Pong**: `↑`/`↓` grab the left paddle (AI-vs-AI until you interfere),
-  `ENTER` restarts the match.
+  `ENTER` opens pause/restart/exit, `BACKSPACE`/`ESC` returns to the card.
 - **Snake**: arrows steer; walls and your own tail are fatal; `ENTER`
-  retries after game over. Your best length is kept and shown on the card.
-- **Tetris**: `←`/`→` move, `↑` rotate, `↓` soft-drop, `ENTER` hard-drop;
-  a landing shadow shows where the piece will fall. High score persists.
-- **Labyrinth**: a first-person raycaster maze. `↑`/`↓` walk, `←`/`→` turn;
-  reach the glowing pillar to descend into a fresh maze (the minimap keeps
-  you oriented). Left alone, it wanders the corridors on its own.
+  retries after game over; `BACKSPACE`/`ESC` returns to the card. Your best
+  length is kept and shown on the card.
+- **Tetris**: `←`/`→` move, `↑` rotate, `↓` soft-drop, `ENTER` hard-drop,
+  `BACKSPACE`/`ESC` returns to the card; a landing shadow shows where the
+  piece will fall. High score persists.
+- **Labyrinth**: a first-person raycaster maze. On the card `↑`/`↓` picks
+  maze size (`13×13` / `19×19` / `25×25`). In the maze `↑`/`↓` walk,
+  `←`/`→` turn, `ENTER` opens pause/new-maze/exit, and `BACKSPACE`/`ESC`
+  returns to the card; reach the glowing pillar to descend into a fresh maze
+  (the minimap keeps you oriented). Left alone, it wanders on its own.
 - **Gifs**: `↑`/`↓` browse files. Drop `.gif` files into a `gifs/` folder
   next to the exe (`build/gifs/`).
 - **Calendar**: fully offline countdowns — put an `events.txt` next to the

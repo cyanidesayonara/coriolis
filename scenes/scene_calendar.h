@@ -9,6 +9,7 @@
 
 #include "../core/scene.h"
 #include "../core/font.h"
+#include "../core/font5x7.h"
 #include "../core/math8.h"
 #include "../core/events.h"
 
@@ -62,28 +63,39 @@ class CalendarScene : public Scene {
       return 33;
     }
 
-    // big countdown: days number, then "DAYS TO <LABEL>"
+    // big rounded countdown: days number, then "day(s) to <LABEL>"
+    const int W = ctx.fb.width(), H = ctx.fb.height();
     char num[8];
     snprintf(num, sizeof(num), "%d", days);
-    int scale = days < 100 ? 5 : 4;
-    int nw = font3x5::textWidth(num, scale);
+    int scale = H >= 100 ? (days < 100 ? 5 : 4) : (days < 100 ? 3 : 2);
+    int ny = H >= 100 ? 22 : 7;
     RGB hi = ctx.palette->lookupBright(uint8_t(ctx.nowMs / 900));
-    font3x5::drawText(ctx.fb, num, (ctx.fb.width() - nw) / 2, 22, scale, hi);
+    RGB lo = hi;
+    lo.dim(165);
+    font5x7::drawCentered(ctx.fb, num, W / 2, ny, scale, hi, lo);
 
-    char line[28];
-    snprintf(line, sizeof(line), "DAYS TO %s", nearest.label);
-    int lw = font3x5::textWidth(line, 1);
-    font3x5::drawText(ctx.fb, line, (ctx.fb.width() - lw) / 2, 26 + scale * 6,
-                      1, RGB(170, 170, 170));
+    char line[32];
+    snprintf(line, sizeof(line), "%s to %s", days == 1 ? "day" : "days",
+             nearest.label);
+    int subY = ny + font5x7::GLYPH_H * scale + (H >= 100 ? 6 : 3);
+    if (font5x7::textWidth(line, 1) <= W - 6) {
+      font5x7::drawCentered(ctx.fb, line, W / 2, subY, 1, RGB(180, 182, 192));
+    } else {
+      int lw = font3x5::textWidth(line, 1);
+      font3x5::drawText(ctx.fb, line, (W - lw) / 2, subY, 1,
+                        RGB(170, 170, 170));
+    }
 
     // the next couple of events, small at the bottom
-    int y = ctx.fb.height() - 22;
-    for (int i = 1; i < n && i < 3; i++) {
-      const Event& e = events_.get(order[i]);
-      snprintf(line, sizeof(line), "%d.%d %s %d", e.day, e.month, e.label,
-               daysUntil(order[i], today));
-      font3x5::drawText(ctx.fb, line, 4, y, 1, RGB(100, 100, 100));
-      y += 8;
+    if (H >= 100) {
+      int y = H - 22;
+      for (int i = 1; i < n && i < 3; i++) {
+        const Event& e = events_.get(order[i]);
+        snprintf(line, sizeof(line), "%d.%d %s %d", e.day, e.month, e.label,
+                 daysUntil(order[i], today));
+        font3x5::drawText(ctx.fb, line, 4, y, 1, RGB(105, 108, 118));
+        y += 8;
+      }
     }
 
     // today's date, small in the corner

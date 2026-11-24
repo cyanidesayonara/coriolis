@@ -41,12 +41,20 @@ class LavaScene : public Scene {
       if (b.y > H - m) { b.y = H - m; b.vy = -b.vy; }
     }
 
+    float r2[NB];
+    for (int i = 0; i < NB; i++) r2[i] = b_[i].r * b_[i].r;
+
     for (int y = 0; y < H; y++) {
+      float dy2[NB];
+      for (int i = 0; i < NB; i++) {
+        float dy = y - b_[i].y;
+        dy2[i] = dy * dy + 1.0f;
+      }
       for (int x = 0; x < W; x++) {
         float field = 0.0f;
         for (int i = 0; i < NB; i++) {
-          float dx = x - b_[i].x, dy = y - b_[i].y;
-          field += (b_[i].r * b_[i].r) / (dx * dx + dy * dy + 1.0f);
+          float dx = x - b_[i].x;
+          field += r2[i] / (dx * dx + dy2[i]);
         }
         if (field < 0.45f) { ctx.fb.set(x, y, RGB(0, 0, 0)); continue; }
         // hold the hottest white for the very cores; spend most of the range

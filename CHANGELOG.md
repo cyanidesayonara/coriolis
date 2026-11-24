@@ -2,6 +2,20 @@
 
 All notable changes to Coriolis will be documented in this file, newest first.
 
+## [Unreleased] - 2026-11-23 — navigation escapes, figure overhaul, and visual polish
+
+### Fixed
+- **Labyrinth & game navigation traps**: Pressing `Back` (`Backspace` / `Esc`) inside Labyrinth, Pong, Snake, Tetris, Breathe, or Focus now returns cleanly to the scene's setup card where `Left`/`Right` immediately switch scenes; `OK` (`Enter`) in Labyrinth or Pong also opens a pause menu with an `Exit` option for remotes without a Back button.
+- **Simulator `ESC` behavior**: Pressing `Esc` in the desktop simulator now backs out of active scenes/menus (like `Backspace`) instead of abruptly terminating the window, and exits cleanly when back on the home Clock.
+- **Focus & Countdown layout**: Fixed the `"FOCUS"` title colliding with the draining timer ring and gave the 3-2-1 `"Get ready"` label extra clearance above the countdown arc.
+- **Supine pose head orientation**: Supine poses (`Bridge`, `Savasana`, `Situp`, `Glute Bridge`) now face upward toward the ceiling instead of into the mat.
+
+### Changed / Improved
+- **Athletic figure & animation overhaul (`scenes/figure.h`)**: Replaced blocky stick/slab geometry with anti-aliased tapered shaded capsules, oriented oval heads with distinct female/male outfits and hair, 3-layer near/far limb depth sorting, mat highlights with contact shadows, curved spine support (`Cat`, `Cow`, `Cobra`, `Child's Pose`, `Forward Fold`, `Bridge`, `Boat`, `Situp`), an upgraded kettlebell, and arc-preserving kinematic pose interpolation (`tweenPoseKinematic`) with 2-bone IK for planted ankles.
+- **Refined fitness poses & cues (`scenes/scene_yoga.h`, `scenes/scene_exercise.h`)**: Switched bodyweight Squat to a clear side profile, gave Jumping Jacks and Kettlebell Swings true sweeping pendulum arcs (with a motion trail behind the kettlebell), aligned raised arms with the ear line in Warrior 1 / Low Lunge, and sharpened High Knees and Mountain Climbers.
+- **Display & UI polish**: Added SDF anti-aliased `drawArc`, `fillCircleAA`, and `blend` primitives (`core/display.h`); upgraded Breathe with layered phase-colored radial auras and an outer progress arc; upgraded Focus, Weather, Calendar, and Pong to `font5x7` rounded numerals/arcs; added procedural stone seams, trim, maze size selection (`13×13` / `19×19` / `25×25`), and fog-of-war minimap shading to Labyrinth; added 3D block bevels to Tetris, gradient shading + eyes + pulsing apple to Snake, ball trail to Pong, 60-minute dial dots + counterweight hand to Analog Clock, and shaded oval fish with wagging tails, kelp, and pebbles to Aquarium.
+- **Performance, hardware safety & manuals**: Eliminated per-pixel divisions in `LavaScene` and `AuroraScene`; added debounced auto-persistence in `Shell` so game high scores and in-session tweaks save to EEPROM without entering Settings; added a dynamic frame current limiter (`powerLimitedBrightness`) in `core/display.h` and `firmware/coriolis/coriolis.ino`; updated `docs/manual/user_manual.html` and regenerated `docs/Coriolis_User_Manual.pdf` and `docs/Coriolis_Build_Guide.pdf`.
+
 ## [Unreleased] - 2026-10-26 — review, fixes and polish before the hardware build
 
 ### Fixed (review of the October 23 changes)
