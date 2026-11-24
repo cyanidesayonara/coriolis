@@ -1,0 +1,70 @@
+/* Coriolis palette: deep smoked-acrylic obsidian with LED cyan, aurora mint,
+   workout coral, warm amber, and launcher lavender. Dark is the default; light
+   follows prefers-color-scheme unless overridden by the theme toggle. */
+:root {
+  color-scheme: dark;
+  --mantle: #0a0d14;
+  --base: #111622;
+  --panel: #161c2c;
+  --surface0: #222a3f;
+  --surface1: #2f3a55;
+  --surface2: #465375;
+  --text: #e6ecf8;
+  --subtext: #9aa7c4;
+  --accent: #44d6e8;
+  --on-accent: #071018;
+  --led-cyan: #44d6e8;
+  --led-aurora: #4be39a;
+  --led-coral: #f07c6a;
+  --led-amber: #f5b553;
+  --led-violet: #bfa3dc;
+  --bezel: #06080c;
+  --bezel-edge: #273049;
+  --glow: rgba(68, 214, 232, 0.16);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --mantle: #eef2f7;
+    --base: #ffffff;
+    --panel: #f7f9fc;
+    --surface0: #dfe5f0;
+    --surface1: #c8d1e2;
+    --surface2: #9ba8c2;
+    --text: #182032;
+    --subtext: #4d5b78;
+    --accent: #0e7d94;
+    --on-accent: #ffffff;
+    --led-cyan: #0e7d94;
+    --led-aurora: #178252;
+    --led-coral: #c44a38;
+    --led-amber: #a86b0e;
+    --led-violet: #6d5094;
+    --bezel: #11151e;
+    --bezel-edge: #38435e;
+    --glow: rgba(14, 125, 148, 0.12);
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --mantle: #eef2f7;
+  --base: #ffffff;
+  --panel: #f7f9fc;
+  --surface0: #dfe5f0;
+  --surface1: #c8d1e2;
+  --surface2: #9ba8c2;
+  --text: #182032;
+  --subtext: #4d5b78;
+  --accent: #0e7d94;
+  --on-accent: #ffffff;
+  --led-cyan: #0e7d94;
+  --led-aurora: #178252;
+  --led-coral: #c44a38;
+  --led-amber: #a86b0e;
+  --led-violet: #6d5094;
+  --bezel: #11151e;
+  --bezel-edge: #38435e;
+  --glow: rgba(14, 125, 148, 0.12);
+}
