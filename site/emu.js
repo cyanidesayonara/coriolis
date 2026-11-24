@@ -137,6 +137,7 @@
   var lastHudScene = "";
   var lastHudPalette = "";
   var lastNight = -1;
+  var lastNightEnabled = -1;
   var dotTimer = 0;
 
   function blinkIrLed() {
@@ -153,6 +154,7 @@
     var active = mod.UTF8ToString(mod._coriolis_active_name());
     var palette = mod.UTF8ToString(mod._coriolis_palette_name());
     var isNight = mod._coriolis_is_night();
+    var nightEnabled = mod._coriolis_night_enabled();
 
     if (active !== lastHudScene) {
       lastHudScene = active;
@@ -167,7 +169,10 @@
     if (isNight !== lastNight) {
       lastNight = isNight;
       if (nightBadgeEl) nightBadgeEl.hidden = !isNight;
-      if (nightBtnEl) nightBtnEl.setAttribute("aria-pressed", isNight ? "true" : "false");
+    }
+    if (nightEnabled !== lastNightEnabled) {
+      lastNightEnabled = nightEnabled;
+      if (nightBtnEl) nightBtnEl.setAttribute("aria-pressed", nightEnabled ? "true" : "false");
     }
   }
 

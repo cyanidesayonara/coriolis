@@ -7,6 +7,8 @@ a wall clock first, with ambient art, a guided-fitness suite, and games.
 Developed entirely against a desktop simulator; the images below are captured
 from it.
 
+**Live website & browser emulator:** <https://cyanidesayonara.github.io/coriolis/>
+
 **Documents:** [User's manual (PDF)](docs/Coriolis_User_Manual.pdf) ·
 [Build guide (PDF)](docs/Coriolis_Build_Guide.pdf) / [BUILD.md](docs/BUILD.md) ·
 [Remote](docs/REMOTE.md) · [Audio](docs/AUDIO.md) · [PROJECT.md](PROJECT.md) ·

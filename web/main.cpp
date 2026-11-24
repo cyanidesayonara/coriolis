@@ -483,6 +483,10 @@ WEB_EXPORT int coriolis_is_night() {
   return g_app.shell.isNightActive(g_app.ctx) ? 1 : 0;
 }
 
+WEB_EXPORT int coriolis_night_enabled() {
+  return g_app.settings.nightMode ? 1 : 0;
+}
+
 WEB_EXPORT void coriolis_cycle_weather() {
   if (!g_app.initialized) return;
   const char* msg = g_app.weatherProvider.cycle();
