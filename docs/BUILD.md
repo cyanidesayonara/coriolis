@@ -110,7 +110,10 @@ data, so the Teensy's orange LED flickers — that's normal. Coriolis uses:
 
 - Four 64×64 panels draw **4–5 A each at full white** (16–20 A total). The
   LRS-200-5 (40 A) has ample headroom; with the 22 A LRS-150F-5, cap
-  brightness at compile time (`-DCORIOLIS_MAX_BRIGHTNESS=180`).
+  brightness at compile time (`-DCORIOLIS_MAX_BRIGHTNESS=180`), or limit
+  only the brightest frames with `-DCORIOLIS_MAX_MILLIAMPS=16000`. The limiter
+  assumes 20 A at full white; if your panels measure differently, set
+  `CORIOLIS_FULL_WHITE_MILLIAMPS`.
   Typical clock use is a few amps.
 - Run each panel's power pigtail straight to the PSU terminals (or one
   1.5 mm² pair per two panels). Put a 1000–2200 µF capacitor across each

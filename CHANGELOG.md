@@ -2,6 +2,15 @@
 
 All notable changes to Coriolis will be documented in this file, newest first.
 
+## [Unreleased] - 2026-11-24 — review fixes
+
+### Fixed
+- **Menu brightness**: the menu brightness floor only applies at night and never exceeds the daytime setting, so brightness below 96 previews correctly.
+- **Lost changes**: a change made less than 2 s before opening Settings is now saved; the autosave waits for 2 s after the last change.
+- **Current limiter**: assumes 20 A at full white, as in BUILD.md (was 32 A), and is configurable with `CORIOLIS_FULL_WHITE_MILLIAMPS`.
+- **Pong**: pausing freezes the serve countdown.
+- **Website**: emulator buttons work from the keyboard, held keys are released when the window loses focus, and scene descriptions match the code.
+
 ## [Unreleased] - 2026-11-23 — navigation escapes, figure overhaul, and visual polish
 
 ### Fixed

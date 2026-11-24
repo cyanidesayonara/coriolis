@@ -293,6 +293,13 @@
       btn.addEventListener("pointerup", release);
       btn.addEventListener("pointerleave", release);
       btn.addEventListener("pointercancel", release);
+      // keyboard and assistive tech activate with a click and no pointer
+      btn.addEventListener("click", function (e) {
+        if (e.detail !== 0) return;
+        if (audioEnabled) ensureAudioCtx();
+        sendKey(kId);
+        syncHud();
+      });
     } else if (btn.dataset.cmd) {
       var cId = parseInt(btn.dataset.cmd, 10);
       btn.addEventListener("click", function () {
@@ -340,9 +347,34 @@
     Escape: KEY_BACK
   };
 
+  // After a mouse or touch click, hand focus back to the display so the
+  // keyboard keeps driving it; keyboard users keep their place.
+  cockpitEl.addEventListener("click", function (e) {
+    if (e.detail !== 0 && bezelEl && e.target.closest("button")) {
+      bezelEl.focus({ preventScroll: true });
+    }
+  });
+
+  // A keyup or pointerup can be lost while the page is in the background.
+  function releaseAllHeld() {
+    remoteButtons.forEach(function (btn) {
+      btn.classList.remove("is-down");
+    });
+    if (!mod) return;
+    for (var k = KEY_UP; k <= KEY_BACK; k++) mod._coriolis_set_held(k, 0);
+  }
+  window.addEventListener("blur", releaseAllHeld);
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) releaseAllHeld();
+  });
+
   document.addEventListener("keydown", function (e) {
     if (!mod || !cockpitEl.contains(document.activeElement)) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    // Enter and Space belong to a focused button
+    if ((e.code === "Enter" || e.code === "Space") &&
+        document.activeElement.closest("button")) return;
 
     var keyId = KEY_TO_ID[e.code];
     if (keyId) {
