@@ -28,6 +28,7 @@ EXPORTED_FUNCTIONS = [
     "_coriolis_rotate",
     "_coriolis_toggle_night",
     "_coriolis_is_night",
+    "_coriolis_night_enabled",
     "_coriolis_cycle_weather",
     "_coriolis_scene_count",
     "_coriolis_scene_name",
