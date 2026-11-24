@@ -43,6 +43,11 @@ class SettingsScene : public Scene {
     dirty_ = false;
   }
 
+  void persist() {
+    store_.save(settings_);
+    dirty_ = false;
+  }
+
   bool input(Context& ctx, Key k) {
     if (k == Key::Up) { row_ = (row_ + ITEM_COUNT - 1) % ITEM_COUNT; return true; }
     if (k == Key::Down) { row_ = (row_ + 1) % ITEM_COUNT; return true; }

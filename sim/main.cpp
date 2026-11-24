@@ -647,7 +647,10 @@ int main(int argc, char** argv) {
   // chunky pixels, the whole point — but keep the window on a 1080p screen
   int scale = 8;
   while (scale > 2 && (WIDTH * scale > 1700 || HEIGHT * scale > 900)) scale--;
-  InitWindow(WIDTH * scale, HEIGHT * scale, "Coriolis");
+  InitWindow(WIDTH * scale, HEIGHT * scale,
+             "Coriolis  |  Arrows: Nav  Enter: OK  Esc/Bksp: Back  M: Menu  "
+             "S: Settings  Space: Next  A: Audio");
+  SetExitKey(KEY_NULL);
   SetTargetFPS(120);
 
   FrameBuffer fb;
@@ -721,6 +724,7 @@ int main(int argc, char** argv) {
     if (IsKeyPressed(KEY_RIGHT)) shell.key(ctx, Key::Right);
     if (IsKeyPressed(KEY_ENTER)) shell.key(ctx, Key::Select);
     if (IsKeyPressed(KEY_BACKSPACE)) shell.key(ctx, Key::Back);
+    if (IsKeyPressed(KEY_ESCAPE) && !shell.key(ctx, Key::Back)) break;
     if (IsKeyPressed(KEY_M)) shell.command(ctx, Command::Menu);
     if (IsKeyPressed(KEY_S)) shell.command(ctx, Command::Settings);
     if (IsKeyPressed(KEY_C)) shell.command(ctx, Command::Overlay);
@@ -732,7 +736,12 @@ int main(int argc, char** argv) {
       shell.toast().show("Rotated", ctx.nowMs);
     }
 
-    // A toggles the simulator's beep audio (off by default)
+    // N toggles night auto-dimming; A toggles simulated beep audio
+    if (IsKeyPressed(KEY_N)) {
+      settings.nightMode = !settings.nightMode;
+      shell.toast().show(settings.nightMode ? "Night mode on" : "Night mode off",
+                         ctx.nowMs);
+    }
     if (IsKeyPressed(KEY_A)) {
       audio.setEnabled(!audio.enabled());
       shell.toast().show(audio.enabled() ? "Audio on" : "Audio off", ctx.nowMs);
@@ -761,6 +770,10 @@ int main(int argc, char** argv) {
     // debug labels at the bottom, clear of the matrix's own top bar
     DrawText(shell.activeName(), 8, HEIGHT * scale - 42, 20, RAYWHITE);
     DrawText(ctx.palette->name, 8, HEIGHT * scale - 20, 14, GRAY);
+    if (shell.isNightActive(ctx)) {
+      DrawText("NIGHT [N]", WIDTH * scale - 220, HEIGHT * scale - 20, 14,
+               ORANGE);
+    }
     const char* astat = !audio.ready() ? "audio: n/a"
                                         : (audio.enabled() ? "audio: ON [A]"
                                                            : "audio: off [A]");

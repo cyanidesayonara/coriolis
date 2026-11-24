@@ -26,6 +26,8 @@ struct Exercise {
   int voice;  // voice::MOVE_BASE + this (see docs/AUDIO.md)
   int face;
   bool kettlebell;
+  float spineCurveA;
+  float spineCurveB;
   float a[15][2];  // rep start/end
   float b[15][2];  // rep midpoint
 };
@@ -35,103 +37,102 @@ namespace exercises {
 // joint order: head neck lSho rSho lElb lWri rElb rWri pelvis
 //              lKnee lAnk rKnee rAnk lToe rToe
 
-// stand tall -> deep squat, arms reach forward for balance
-static const Exercise SQUAT = {"SQUAT", 1, 0, false,
-  {{0.50f,0.18f},{0.50f,0.26f},{0.42f,0.29f},{0.58f,0.29f},{0.40f,0.42f},
-   {0.39f,0.53f},{0.60f,0.42f},{0.61f,0.53f},{0.50f,0.52f},{0.46f,0.70f},
-   {0.45f,0.90f},{0.54f,0.70f},{0.55f,0.90f},{0.41f,0.92f},{0.59f,0.92f}},
-  {{0.50f,0.33f},{0.50f,0.40f},{0.43f,0.43f},{0.57f,0.43f},{0.34f,0.44f},
-   {0.27f,0.43f},{0.66f,0.44f},{0.73f,0.43f},{0.50f,0.65f},{0.39f,0.74f},
-   {0.42f,0.90f},{0.61f,0.74f},{0.58f,0.90f},{0.38f,0.92f},{0.62f,0.92f}}};
+// side view squat: stand tall -> deep hips-back squat, arms forward
+static const Exercise SQUAT = {"SQUAT", 1, -1, false, 0.0f, 0.0f,
+  {{0.48f,0.19f},{0.49f,0.27f},{0.49f,0.30f},{0.50f,0.31f},{0.50f,0.43f},
+   {0.49f,0.54f},{0.51f,0.43f},{0.50f,0.54f},{0.50f,0.54f},{0.49f,0.72f},
+   {0.50f,0.90f},{0.50f,0.72f},{0.51f,0.90f},{0.42f,0.92f},{0.43f,0.92f}},
+  {{0.43f,0.38f},{0.46f,0.45f},{0.47f,0.47f},{0.48f,0.48f},{0.34f,0.46f},
+   {0.22f,0.44f},{0.35f,0.47f},{0.23f,0.45f},{0.60f,0.68f},{0.39f,0.72f},
+   {0.50f,0.90f},{0.40f,0.73f},{0.51f,0.90f},{0.42f,0.92f},{0.43f,0.92f}}};
 
-// arms/legs in -> arms up, legs wide (jumping jack)
-static const Exercise JACKS = {"JACKS", 5, 0, false,
-  {{0.50f,0.15f},{0.50f,0.24f},{0.45f,0.27f},{0.55f,0.27f},{0.44f,0.40f},
-   {0.44f,0.52f},{0.56f,0.40f},{0.56f,0.52f},{0.50f,0.51f},{0.49f,0.70f},
+// arms/legs in -> arms up, legs wide (jumping jack); slight outward start so
+// kinematic interpolation sweeps arms in full circular arcs
+static const Exercise JACKS = {"JACKS", 5, 0, false, 0.0f, 0.0f,
+  {{0.50f,0.15f},{0.50f,0.24f},{0.44f,0.27f},{0.56f,0.27f},{0.41f,0.40f},
+   {0.40f,0.52f},{0.59f,0.40f},{0.60f,0.52f},{0.50f,0.51f},{0.49f,0.70f},
    {0.49f,0.90f},{0.51f,0.70f},{0.51f,0.90f},{0.46f,0.92f},{0.54f,0.92f}},
-  {{0.50f,0.13f},{0.50f,0.22f},{0.43f,0.25f},{0.57f,0.25f},{0.32f,0.16f},
-   {0.22f,0.08f},{0.68f,0.16f},{0.78f,0.08f},{0.50f,0.50f},{0.40f,0.68f},
+  {{0.50f,0.13f},{0.50f,0.22f},{0.43f,0.25f},{0.57f,0.25f},{0.31f,0.16f},
+   {0.22f,0.08f},{0.69f,0.16f},{0.78f,0.08f},{0.49f,0.49f},{0.40f,0.68f},
    {0.30f,0.90f},{0.60f,0.68f},{0.70f,0.90f},{0.25f,0.92f},{0.75f,0.92f}}};
 
 // pushup (side view): a = plank on straight arms, b = chest lowered
-static const Exercise PUSHUP = {"PUSHUP", 2, -1, false,
+static const Exercise PUSHUP = {"PUSHUP", 2, -1, false, 0.0f, 0.0f,
   {{0.26f,0.48f},{0.31f,0.55f},{0.32f,0.57f},{0.33f,0.58f},{0.31f,0.72f},
    {0.30f,0.90f},{0.32f,0.73f},{0.31f,0.90f},{0.52f,0.66f},{0.64f,0.73f},
    {0.76f,0.81f},{0.65f,0.74f},{0.77f,0.82f},{0.80f,0.90f},{0.81f,0.91f}},
-  {{0.25f,0.70f},{0.30f,0.76f},{0.31f,0.78f},{0.32f,0.79f},{0.38f,0.76f},
-   {0.30f,0.90f},{0.39f,0.77f},{0.31f,0.90f},{0.52f,0.79f},{0.64f,0.81f},
+  {{0.25f,0.70f},{0.30f,0.76f},{0.31f,0.78f},{0.32f,0.79f},{0.39f,0.75f},
+   {0.30f,0.90f},{0.40f,0.76f},{0.31f,0.90f},{0.52f,0.79f},{0.64f,0.81f},
    {0.76f,0.84f},{0.65f,0.82f},{0.77f,0.85f},{0.80f,0.91f},{0.81f,0.92f}}};
 
 // lunge (side view): a = standing tall, b = deep lunge, back knee dipping
-static const Exercise LUNGE = {"LUNGE", 4, -1, false,
-  {{0.48f,0.24f},{0.50f,0.32f},{0.50f,0.34f},{0.51f,0.35f},{0.50f,0.46f},
-   {0.49f,0.56f},{0.51f,0.46f},{0.50f,0.56f},{0.52f,0.56f},{0.51f,0.72f},
-   {0.50f,0.90f},{0.52f,0.72f},{0.51f,0.90f},{0.44f,0.92f},{0.45f,0.92f}},
-  {{0.48f,0.32f},{0.50f,0.40f},{0.50f,0.42f},{0.51f,0.43f},{0.49f,0.52f},
-   {0.51f,0.60f},{0.52f,0.53f},{0.53f,0.60f},{0.52f,0.68f},{0.38f,0.74f},
-   {0.36f,0.90f},{0.62f,0.84f},{0.70f,0.86f},{0.30f,0.92f},{0.76f,0.91f}}};
+static const Exercise LUNGE = {"LUNGE", 4, -1, false, 0.0f, 0.0f,
+  {{0.48f,0.22f},{0.49f,0.30f},{0.49f,0.32f},{0.50f,0.33f},{0.49f,0.45f},
+   {0.48f,0.56f},{0.50f,0.45f},{0.49f,0.56f},{0.51f,0.55f},{0.50f,0.72f},
+   {0.50f,0.90f},{0.51f,0.72f},{0.51f,0.90f},{0.43f,0.92f},{0.44f,0.92f}},
+  {{0.48f,0.31f},{0.49f,0.39f},{0.49f,0.41f},{0.50f,0.42f},{0.49f,0.52f},
+   {0.50f,0.61f},{0.51f,0.53f},{0.52f,0.61f},{0.51f,0.67f},{0.35f,0.73f},
+   {0.35f,0.90f},{0.62f,0.86f},{0.73f,0.87f},{0.28f,0.92f},{0.77f,0.91f}}};
 
-// situp (side view): a = lying with the knees bent, b = crunched up toward them
-static const Exercise SITUP = {"SITUP", 3, -1, false,
-  {{0.24f,0.84f},{0.30f,0.85f},{0.32f,0.86f},{0.33f,0.87f},{0.38f,0.82f},
-   {0.44f,0.78f},{0.39f,0.82f},{0.45f,0.78f},{0.52f,0.88f},{0.62f,0.72f},
-   {0.66f,0.88f},{0.63f,0.73f},{0.67f,0.88f},{0.72f,0.90f},{0.73f,0.91f}},
-  {{0.38f,0.60f},{0.41f,0.68f},{0.42f,0.70f},{0.43f,0.71f},{0.48f,0.72f},
-   {0.54f,0.70f},{0.49f,0.73f},{0.55f,0.70f},{0.52f,0.88f},{0.62f,0.72f},
-   {0.66f,0.88f},{0.63f,0.73f},{0.67f,0.88f},{0.72f,0.90f},{0.73f,0.91f}}};
+// situp (supine side view, face +1 looks up): a = lying, b = crunched up
+static const Exercise SITUP = {"SITUP", 3, 1, false, 0.0f, 0.045f,
+  {{0.23f,0.85f},{0.29f,0.85f},{0.31f,0.86f},{0.32f,0.87f},{0.38f,0.82f},
+   {0.44f,0.78f},{0.39f,0.82f},{0.45f,0.78f},{0.52f,0.88f},{0.62f,0.71f},
+   {0.66f,0.88f},{0.63f,0.72f},{0.67f,0.88f},{0.72f,0.90f},{0.73f,0.91f}},
+  {{0.42f,0.56f},{0.44f,0.64f},{0.45f,0.66f},{0.46f,0.67f},{0.51f,0.70f},
+   {0.58f,0.68f},{0.52f,0.71f},{0.59f,0.68f},{0.52f,0.88f},{0.62f,0.71f},
+   {0.66f,0.88f},{0.63f,0.72f},{0.67f,0.88f},{0.72f,0.90f},{0.73f,0.91f}}};
 
 // kettlebell row (side view): hinged flat back; a = bell hanging,
 // b = elbows pulled up past the ribs
-static const Exercise KB_ROW = {"KB ROW", 8, -1, true,
+static const Exercise KB_ROW = {"KB ROW", 8, -1, true, 0.0f, 0.0f,
   {{0.36f,0.46f},{0.41f,0.49f},{0.43f,0.51f},{0.45f,0.52f},{0.44f,0.64f},
    {0.45f,0.78f},{0.46f,0.64f},{0.47f,0.78f},{0.58f,0.62f},{0.48f,0.72f},
    {0.50f,0.90f},{0.51f,0.72f},{0.53f,0.90f},{0.45f,0.92f},{0.48f,0.92f}},
-  {{0.36f,0.46f},{0.41f,0.49f},{0.43f,0.51f},{0.45f,0.52f},{0.52f,0.52f},
-   {0.48f,0.62f},{0.54f,0.53f},{0.50f,0.62f},{0.58f,0.62f},{0.48f,0.72f},
+  {{0.36f,0.46f},{0.41f,0.49f},{0.43f,0.51f},{0.45f,0.52f},{0.53f,0.50f},
+   {0.48f,0.61f},{0.55f,0.51f},{0.50f,0.61f},{0.58f,0.62f},{0.48f,0.72f},
    {0.50f,0.90f},{0.51f,0.72f},{0.53f,0.90f},{0.45f,0.92f},{0.48f,0.92f}}};
 
-// kettlebell swing (side view, facing left): a = gorilla hinge with the
-// bell hanging near the floor between the legs; b = stand tall with the
-// arms swung forward and up, bell arcing outward to head height
-static const Exercise KB_SWING = {"KB SWING", 6, -1, true,
-  {{0.36f,0.46f},{0.41f,0.49f},{0.43f,0.51f},{0.45f,0.52f},{0.44f,0.66f},
-   {0.45f,0.83f},{0.46f,0.66f},{0.47f,0.83f},{0.58f,0.62f},{0.48f,0.72f},
-   {0.50f,0.90f},{0.51f,0.72f},{0.53f,0.90f},{0.45f,0.92f},{0.48f,0.92f}},
-  {{0.50f,0.17f},{0.50f,0.25f},{0.49f,0.29f},{0.51f,0.30f},{0.41f,0.24f},
-   {0.33f,0.20f},{0.42f,0.25f},{0.34f,0.21f},{0.51f,0.52f},{0.50f,0.71f},
-   {0.50f,0.90f},{0.52f,0.71f},{0.52f,0.90f},{0.45f,0.92f},{0.47f,0.92f}}};
+// kettlebell swing (side view, facing left): a = deep hip hinge with bell
+// tucked back between thighs; b = standing tall lockout, full-length arms
+// horizontal forward
+static const Exercise KB_SWING = {"KB SWING", 6, -1, true, 0.0f, 0.0f,
+  {{0.36f,0.44f},{0.42f,0.48f},{0.44f,0.50f},{0.46f,0.51f},{0.47f,0.65f},
+   {0.50f,0.78f},{0.48f,0.65f},{0.51f,0.78f},{0.62f,0.60f},{0.48f,0.74f},
+   {0.50f,0.90f},{0.50f,0.74f},{0.52f,0.90f},{0.42f,0.92f},{0.44f,0.92f}},
+  {{0.49f,0.18f},{0.50f,0.26f},{0.49f,0.29f},{0.51f,0.30f},{0.36f,0.29f},
+   {0.23f,0.29f},{0.37f,0.30f},{0.24f,0.30f},{0.51f,0.53f},{0.50f,0.72f},
+   {0.50f,0.90f},{0.51f,0.72f},{0.52f,0.90f},{0.42f,0.92f},{0.44f,0.92f}}};
 
-// goblet squat: bell at the chest, stand -> squat
-static const Exercise KB_GOBLET = {"GOBLET", 7, 0, true,
-  {{0.50f,0.18f},{0.50f,0.26f},{0.43f,0.29f},{0.57f,0.29f},{0.45f,0.36f},
-   {0.47f,0.40f},{0.55f,0.36f},{0.53f,0.40f},{0.50f,0.52f},{0.46f,0.70f},
-   {0.45f,0.90f},{0.54f,0.70f},{0.55f,0.90f},{0.41f,0.92f},{0.59f,0.92f}},
-  {{0.50f,0.33f},{0.50f,0.40f},{0.44f,0.43f},{0.56f,0.43f},{0.46f,0.49f},
-   {0.48f,0.53f},{0.54f,0.49f},{0.52f,0.53f},{0.50f,0.65f},{0.39f,0.74f},
-   {0.42f,0.90f},{0.61f,0.74f},{0.58f,0.90f},{0.38f,0.92f},{0.62f,0.92f}}};
+// goblet squat (front view): wide stance, knees out, bell held at chest
+static const Exercise KB_GOBLET = {"GOBLET", 7, 0, true, 0.0f, 0.0f,
+  {{0.50f,0.18f},{0.50f,0.26f},{0.42f,0.29f},{0.58f,0.29f},{0.44f,0.36f},
+   {0.48f,0.36f},{0.56f,0.36f},{0.52f,0.36f},{0.50f,0.52f},{0.44f,0.70f},
+   {0.42f,0.90f},{0.56f,0.70f},{0.58f,0.90f},{0.37f,0.92f},{0.63f,0.92f}},
+  {{0.50f,0.34f},{0.50f,0.41f},{0.43f,0.44f},{0.57f,0.44f},{0.44f,0.50f},
+   {0.48f,0.49f},{0.56f,0.50f},{0.52f,0.49f},{0.50f,0.66f},{0.36f,0.72f},
+   {0.42f,0.90f},{0.64f,0.72f},{0.58f,0.90f},{0.37f,0.92f},{0.63f,0.92f}}};
 
-// kettlebell press (two-handed, front view): both hands hold the bell at
-// the chest (a) and press it straight overhead (b). Both wrists share a
-// point so the bell renders at the hands, not in the body's center.
-static const Exercise KB_PRESS = {"KB PRESS", 9, 0, true,
-  {{0.50f,0.18f},{0.50f,0.26f},{0.42f,0.29f},{0.58f,0.29f},{0.45f,0.37f},
-   {0.48f,0.33f},{0.55f,0.37f},{0.52f,0.33f},{0.50f,0.52f},{0.46f,0.70f},
-   {0.45f,0.90f},{0.54f,0.70f},{0.55f,0.90f},{0.41f,0.92f},{0.59f,0.92f}},
-  {{0.50f,0.18f},{0.50f,0.26f},{0.42f,0.29f},{0.58f,0.29f},{0.46f,0.14f},
-   {0.48f,0.05f},{0.54f,0.14f},{0.52f,0.05f},{0.50f,0.52f},{0.46f,0.70f},
-   {0.45f,0.90f},{0.54f,0.70f},{0.55f,0.90f},{0.41f,0.92f},{0.59f,0.92f}}};
+// kettlebell press (two-handed, front view): chest rack -> straight overhead
+static const Exercise KB_PRESS = {"KB PRESS", 9, 0, true, 0.0f, 0.0f,
+  {{0.50f,0.21f},{0.50f,0.29f},{0.42f,0.32f},{0.58f,0.32f},{0.38f,0.39f},
+   {0.48f,0.36f},{0.62f,0.39f},{0.52f,0.36f},{0.50f,0.54f},{0.46f,0.71f},
+   {0.45f,0.90f},{0.54f,0.71f},{0.55f,0.90f},{0.41f,0.92f},{0.59f,0.92f}},
+  {{0.50f,0.21f},{0.50f,0.29f},{0.42f,0.32f},{0.58f,0.32f},{0.42f,0.16f},
+   {0.48f,0.03f},{0.58f,0.16f},{0.52f,0.03f},{0.50f,0.54f},{0.46f,0.71f},
+   {0.45f,0.90f},{0.54f,0.71f},{0.55f,0.90f},{0.41f,0.92f},{0.59f,0.92f}}};
 
-// glute bridge (side view): a = lying with the knees bent, b = hips lifted
-static const Exercise GLUTE_BRIDGE = {"BRIDGE", 13, -1, false,
-  {{0.24f,0.86f},{0.30f,0.86f},{0.32f,0.87f},{0.33f,0.88f},{0.40f,0.89f},
-   {0.48f,0.90f},{0.41f,0.89f},{0.49f,0.90f},{0.54f,0.86f},{0.64f,0.70f},
-   {0.68f,0.88f},{0.65f,0.71f},{0.69f,0.88f},{0.74f,0.90f},{0.75f,0.91f}},
-  {{0.24f,0.88f},{0.30f,0.86f},{0.32f,0.87f},{0.33f,0.88f},{0.40f,0.89f},
-   {0.48f,0.90f},{0.41f,0.89f},{0.49f,0.90f},{0.52f,0.70f},{0.64f,0.66f},
-   {0.68f,0.88f},{0.65f,0.67f},{0.69f,0.88f},{0.74f,0.90f},{0.75f,0.91f}}};
+// glute bridge (supine side view, face +1 looks up): hips lifted
+static const Exercise GLUTE_BRIDGE = {"BRIDGE", 13, 1, false, 0.0f, -0.040f,
+  {{0.23f,0.85f},{0.29f,0.85f},{0.31f,0.86f},{0.32f,0.87f},{0.40f,0.89f},
+   {0.48f,0.90f},{0.41f,0.89f},{0.49f,0.90f},{0.54f,0.87f},{0.64f,0.70f},
+   {0.68f,0.89f},{0.65f,0.71f},{0.69f,0.89f},{0.74f,0.91f},{0.75f,0.92f}},
+  {{0.23f,0.86f},{0.29f,0.85f},{0.31f,0.85f},{0.32f,0.86f},{0.40f,0.89f},
+   {0.48f,0.90f},{0.41f,0.89f},{0.49f,0.90f},{0.52f,0.68f},{0.65f,0.66f},
+   {0.68f,0.89f},{0.66f,0.67f},{0.69f,0.89f},{0.74f,0.91f},{0.75f,0.92f}}};
 
 // plank hold (side view): a long straight line; b only breathes
-static const Exercise PLANK_HOLD = {"PLANK", 14, -1, false,
+static const Exercise PLANK_HOLD = {"PLANK", 14, -1, false, 0.0f, 0.0f,
   {{0.26f,0.50f},{0.31f,0.56f},{0.32f,0.57f},{0.33f,0.58f},{0.31f,0.73f},
    {0.30f,0.90f},{0.32f,0.74f},{0.31f,0.90f},{0.52f,0.67f},{0.64f,0.74f},
    {0.76f,0.82f},{0.65f,0.75f},{0.77f,0.83f},{0.80f,0.90f},{0.81f,0.91f}},
@@ -139,23 +140,23 @@ static const Exercise PLANK_HOLD = {"PLANK", 14, -1, false,
    {0.30f,0.90f},{0.32f,0.74f},{0.31f,0.90f},{0.52f,0.68f},{0.64f,0.74f},
    {0.76f,0.82f},{0.65f,0.75f},{0.77f,0.83f},{0.80f,0.90f},{0.81f,0.91f}}};
 
-// mountain climbers (side view): from plank, knees drive to the chest in turn
-static const Exercise CLIMBER = {"CLIMBERS", 15, -1, false,
+// mountain climbers (side view): knees drive sharply forward under chest
+static const Exercise CLIMBER = {"CLIMBERS", 15, -1, false, 0.0f, 0.0f,
   {{0.26f,0.50f},{0.31f,0.56f},{0.32f,0.57f},{0.33f,0.58f},{0.31f,0.73f},
-   {0.30f,0.90f},{0.32f,0.74f},{0.31f,0.90f},{0.52f,0.65f},{0.42f,0.76f},
-   {0.50f,0.85f},{0.65f,0.74f},{0.77f,0.83f},{0.47f,0.89f},{0.81f,0.91f}},
+   {0.30f,0.90f},{0.32f,0.74f},{0.31f,0.90f},{0.52f,0.65f},{0.40f,0.72f},
+   {0.48f,0.84f},{0.65f,0.75f},{0.77f,0.84f},{0.45f,0.88f},{0.81f,0.91f}},
   {{0.26f,0.50f},{0.31f,0.56f},{0.32f,0.57f},{0.33f,0.58f},{0.31f,0.73f},
-   {0.30f,0.90f},{0.32f,0.74f},{0.31f,0.90f},{0.52f,0.65f},{0.64f,0.74f},
-   {0.76f,0.83f},{0.42f,0.76f},{0.50f,0.85f},{0.80f,0.91f},{0.47f,0.89f}}};
+   {0.30f,0.90f},{0.32f,0.74f},{0.31f,0.90f},{0.52f,0.65f},{0.65f,0.75f},
+   {0.77f,0.84f},{0.40f,0.72f},{0.48f,0.84f},{0.81f,0.91f},{0.45f,0.88f}}};
 
-// high knees (front view): running on the spot, arms pumping opposite
-static const Exercise HIGH_KNEES = {"HIGH KNEES", 16, 0, false,
-  {{0.50f,0.18f},{0.50f,0.26f},{0.42f,0.29f},{0.58f,0.29f},{0.37f,0.38f},
-   {0.40f,0.30f},{0.62f,0.40f},{0.62f,0.50f},{0.50f,0.52f},{0.45f,0.60f},
-   {0.45f,0.75f},{0.54f,0.70f},{0.55f,0.90f},{0.42f,0.76f},{0.59f,0.92f}},
-  {{0.50f,0.18f},{0.50f,0.26f},{0.42f,0.29f},{0.58f,0.29f},{0.38f,0.40f},
-   {0.38f,0.50f},{0.63f,0.38f},{0.60f,0.30f},{0.50f,0.52f},{0.46f,0.70f},
-   {0.45f,0.90f},{0.55f,0.60f},{0.55f,0.75f},{0.41f,0.92f},{0.58f,0.76f}}};
+// high knees (front view): alternating high knee drive + opposite arm pump
+static const Exercise HIGH_KNEES = {"HIGH KNEES", 16, 0, false, 0.0f, 0.0f,
+  {{0.50f,0.17f},{0.50f,0.25f},{0.42f,0.28f},{0.58f,0.28f},{0.37f,0.37f},
+   {0.40f,0.28f},{0.62f,0.40f},{0.62f,0.51f},{0.50f,0.51f},{0.45f,0.54f},
+   {0.45f,0.72f},{0.54f,0.70f},{0.55f,0.90f},{0.42f,0.74f},{0.59f,0.92f}},
+  {{0.50f,0.17f},{0.50f,0.25f},{0.42f,0.28f},{0.58f,0.28f},{0.38f,0.40f},
+   {0.38f,0.51f},{0.63f,0.37f},{0.60f,0.28f},{0.50f,0.51f},{0.46f,0.70f},
+   {0.45f,0.90f},{0.55f,0.54f},{0.55f,0.72f},{0.41f,0.92f},{0.58f,0.74f}}};
 
 }
 
@@ -407,7 +408,8 @@ class ExerciseScene : public Scene {
     enterStep(ctx, step_ + 1);
   }
 
-  void pose(const Step& st, float tri, float j[15][2], int& face) const {
+  void pose(const Step& st, float tri, float j[15][2], int& face,
+            float& curve) const {
     float a[15][2], b[15][2];
     if (st.side < 0) {
       guide::mirrorPose(st.ex->a, a);
@@ -420,7 +422,8 @@ class ExerciseScene : public Scene {
       }
       face = st.ex->face;
     }
-    guide::tweenPose(a, b, tri, j);
+    guide::tweenPoseKinematic(a, b, tri, j);
+    curve = st.ex->spineCurveA + (st.ex->spineCurveB - st.ex->spineCurveA) * tri;
   }
 
   static float triangle(uint32_t t, uint32_t period) {
@@ -444,8 +447,30 @@ class ExerciseScene : public Scene {
     // holds only breathe; everything else runs a -> b -> a each rep
     float j[15][2];
     int face;
-    pose(st, triangle(elapsed, st.timed && !tabata() ? 4000 : rm), j, face);
-    guide::drawFigure(ctx, j, face, settings_.yogaBody);
+    float curve = 0.0f;
+    float tri = triangle(elapsed, st.timed && !tabata() ? 4000 : rm);
+    pose(st, tri, j, face, curve);
+
+    // subtle 3-point motion arc behind the kettlebell on swing reps
+    if (&ex == &exercises::KB_SWING && tri > 0.08f && tri < 0.96f) {
+      int span = guide::figureSpan(ctx), ox, oy;
+      guide::figureOrigin(ctx, span, ox, oy);
+      for (int k = 1; k <= 3; k++) {
+        float tj[15][2];
+        int tf;
+        float tc;
+        float pt = tri - k * 0.055f;
+        if (pt < 0.0f) pt = 0.0f;
+        pose(st, pt, tj, tf, tc);
+        float mx = ox + (tj[5][0] + tj[7][0]) * 0.5f * span;
+        float my = oy + ((tj[5][1] + tj[7][1]) * 0.5f + 0.06f) * span;
+        RGB arc(185, 165, 110);
+        arc.dim(uint8_t(130 - k * 35));
+        ctx.fb.fillCircleAA(mx, my, 1.3f - k * 0.2f, arc);
+      }
+    }
+
+    guide::drawFigure(ctx, j, face, settings_.yogaBody, curve);
     if (ex.kettlebell) guide::drawKettlebell(ctx, j);
 
     // a ring pops outward from the body on each counted rep
@@ -503,8 +528,10 @@ class ExerciseScene : public Scene {
       int ox = W - span - 4, oy = 14;
       float j[15][2];
       int face;
-      pose(st, triangle(ctx.nowMs, 2400), j, face);
-      guide::drawFigureAt(ctx, j, face, settings_.yogaBody, ox, oy, span, false);
+      float curve = 0.0f;
+      pose(st, triangle(ctx.nowMs, 2400), j, face, curve);
+      guide::drawFigureAt(ctx, j, face, settings_.yogaBody, ox, oy, span, false,
+                          curve);
       if (st.ex->kettlebell) guide::drawKettlebellAt(ctx, j, ox, oy, span);
     }
 
