@@ -9,6 +9,8 @@ All notable changes to Coriolis will be documented in this file, newest first.
 - **Lost changes**: a change made less than 2 s before opening Settings is now saved; the autosave waits for 2 s after the last change.
 - **Current limiter**: assumes 20 A at full white, as in BUILD.md (was 32 A), and is configurable with `CORIOLIS_FULL_WHITE_MILLIAMPS`.
 - **Pong**: pausing freezes the serve countdown.
+- **Breathe**: the orb and its rim share one center (they were half a pixel apart).
+- **Build**: the shared code compiles without warnings on the Teensy; tests run in CI on every pull request.
 - **Website**: emulator buttons work from the keyboard, held keys are released when the window loses focus, and scene descriptions match the code.
 
 ## [Unreleased] - 2026-11-23 — navigation escapes, figure overhaul, and visual polish

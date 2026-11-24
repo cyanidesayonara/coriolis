@@ -1,0 +1,22 @@
+name: Tests
+
+# Compiles and runs the headless checks for the shared core/ and scenes/ code.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: 128x128
+        run: g++ -std=c++11 -O1 -Wall -fsanitize=address,undefined -fno-sanitize-recover=all tests/test_core.cpp -o tests_square && ./tests_square
+      - name: 128x64
+        run: g++ -std=c++11 -O1 -Wall -fsanitize=address,undefined -fno-sanitize-recover=all -DCORIOLIS_HEIGHT=64 tests/test_core.cpp -o tests_wide && ./tests_wide

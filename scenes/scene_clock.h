@@ -25,7 +25,7 @@ class ClockScene : public Scene {
 
     TimeOfDay t = ctx.time.now();
 
-    char hh[3], mm[3];
+    char hh[4], mm[4];  // room for the sign the compiler has to assume
     snprintf(hh, sizeof(hh), "%02d", t.hour % 100);
     snprintf(mm, sizeof(mm), "%02d", t.minute % 100);
 

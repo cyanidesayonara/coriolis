@@ -100,7 +100,7 @@ class TetrisScene : public Scene {
     if (!started_) {
       char l0[16], l1[16];
       snprintf(l0, sizeof(l0), "START LEVEL %d", startLevel_);
-      snprintf(l1, sizeof(l1), "BEST %d", settings_.tetrisHigh);
+      snprintf(l1, sizeof(l1), "BEST %lu", (unsigned long)settings_.tetrisHigh);
       const char* lines[] = {l0, l1};
       intro::draw(ctx, "TETRIS", lines, 2, RGB(90, 210, 230));
       return 60;

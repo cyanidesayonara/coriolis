@@ -274,7 +274,7 @@ class YogaScene : public Scene {
     }
 
     if (phase_ == DONE) {
-      char stats[24], dur[8];
+      char stats[40], dur[16];
       guide::formatDuration(sessionMs_, dur, sizeof(dur));
       snprintf(stats, sizeof(stats), "%d poses  %s", count_ % 100, dur);
       guide::drawCompletion(ctx, "Namaste", stats, ctx.nowMs - phaseStartMs_);

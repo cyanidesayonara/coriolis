@@ -252,7 +252,7 @@ class ExerciseScene : public Scene {
     }
 
     if (phase_ == DONE) {
-      char stats[24], dur[8];
+      char stats[40], dur[16];
       guide::formatDuration(sessionMs_, dur, sizeof(dur));
       snprintf(stats, sizeof(stats), "%d moves  %s", moves_ % 100, dur);
       guide::drawCompletion(ctx, "Great job!", stats, ctx.nowMs - phaseStartMs_);

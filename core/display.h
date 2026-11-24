@@ -47,7 +47,7 @@ class FrameBuffer {
     dst.b = lerp8(dst.b, c.b, alpha);
   }
 
-  void clear() { memset(px, 0, sizeof(px)); }
+  void clear() { memset(static_cast<void*>(px), 0, sizeof(px)); }
 
   void fill(const RGB& c) {
     for (int i = 0; i < PIXELS; i++) px[i] = c;

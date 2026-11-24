@@ -109,7 +109,7 @@ inline void drawCountdown(Context& ctx, uint32_t elapsedMs, uint32_t totalMs,
   ctx.fb.drawArc(cx, cy, r, 2, 0.0f, TWO_PI_F, ringDim);
   ctx.fb.drawArc(cx, cy, r, 2, -1.5708f, TWO_PI_F * (1.0f - sec), titleColor());
 
-  char n[3];
+  char n[12];
   snprintf(n, sizeof(n), "%d", left);
   int scale = H >= 100 ? 5 : 3;
   // each numeral lands big and settles: a small pop at the start of a second

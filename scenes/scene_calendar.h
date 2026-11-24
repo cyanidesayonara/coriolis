@@ -65,7 +65,7 @@ class CalendarScene : public Scene {
 
     // big rounded countdown: days number, then "day(s) to <LABEL>"
     const int W = ctx.fb.width(), H = ctx.fb.height();
-    char num[8];
+    char num[12];
     snprintf(num, sizeof(num), "%d", days);
     int scale = H >= 100 ? (days < 100 ? 5 : 4) : (days < 100 ? 3 : 2);
     int ny = H >= 100 ? 22 : 7;
@@ -74,7 +74,7 @@ class CalendarScene : public Scene {
     lo.dim(165);
     font5x7::drawCentered(ctx.fb, num, W / 2, ny, scale, hi, lo);
 
-    char line[32];
+    char line[64];
     snprintf(line, sizeof(line), "%s to %s", days == 1 ? "day" : "days",
              nearest.label);
     int subY = ny + font5x7::GLYPH_H * scale + (H >= 100 ? 6 : 3);

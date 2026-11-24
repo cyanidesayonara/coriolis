@@ -135,10 +135,13 @@ class BreatheScene : public Scene {
     RGB core = lerpColor(phaseCol, RGB(255, 255, 255), 85);
     core.dim(125);
 
-    ctx.fb.fillCircleAA(float(cx), float(cy), r * 1.18f, outer);
-    ctx.fb.fillCircleAA(float(cx), float(cy), r * 1.02f, mid);
-    ctx.fb.fillCircleAA(float(cx), float(cy), r * 0.84f, inner);
-    ctx.fb.fillCircleAA(float(cx), float(cy), r * 0.45f, core);
+    // discs take continuous coordinates, arcs the pixel itself: +0.5 lines
+    // the two up on the same center
+    const float ox = cx + 0.5f, oy = cy + 0.5f;
+    ctx.fb.fillCircleAA(ox, oy, r * 1.18f, outer);
+    ctx.fb.fillCircleAA(ox, oy, r * 1.02f, mid);
+    ctx.fb.fillCircleAA(ox, oy, r * 0.84f, inner);
+    ctx.fb.fillCircleAA(ox, oy, r * 0.45f, core);
 
     // crisp outer rim on the breathing sphere and an outer phase-progress arc
     ctx.fb.drawArc(cx, cy, int(r + 0.5f), 1, 0.0f, TWO_PI_F, phaseCol);
@@ -150,7 +153,7 @@ class BreatheScene : public Scene {
     ctx.fb.drawArc(cx, cy, arcR, 2, -1.5708f, TWO_PI_F * phaseProg, phaseCol);
 
     // calm anchor dot in the middle
-    ctx.fb.fillCircleAA(float(cx), float(cy), 2.2f, RGB(230, 245, 245));
+    ctx.fb.fillCircleAA(ox, oy, 2.2f, RGB(230, 245, 245));
 
     guide::drawTopBar(ctx, settings_.breatheStyle == 0 ? "BREATHE" : "4-7-8");
 
@@ -167,7 +170,7 @@ class BreatheScene : public Scene {
 
     // phase seconds remaining bottom-left, completed-cycle count bottom-right
     int secLeft = int((phaseLen[phase] - (inCycle - acc) + 999) / 1000);
-    char leftBuf[8];
+    char leftBuf[16];
     snprintf(leftBuf, sizeof(leftBuf), "%ds", secLeft);
     font3x5::drawText(ctx.fb, leftBuf, 3, H - 7, 1, guide::mutedColor());
 
