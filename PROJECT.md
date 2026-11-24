@@ -91,10 +91,10 @@ Full sourcing, wiring and bring-up: [`docs/BUILD.md`](docs/BUILD.md) /
 
 Rough total: ~€330–450.
 
-## Current Software Status (October 26, 2026)
+## Current Software Status (November 24, 2026)
 
 - **25 scenes** in the simulator and the firmware; the firmware compiles for Teensy 4.1
-  (Teensyduino 1.62, SmartMatrix 4 + patch) with ~196 KB of fast RAM free.
+  (Teensyduino 1.62, SmartMatrix 4 + patch) with ~194 KB of fast RAM free.
 - **Shared shell** (`scenes/shell.h`): boot splash, launcher, settings, transitions with a pinned
   HUD, toasts, autoplay, night dimming — identical on desktop and device.
 - **Guided fitness**: 5 yoga flows with mirrored left/right sides, 4 exercise programs (bodyweight,

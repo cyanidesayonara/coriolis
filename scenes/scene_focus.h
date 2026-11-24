@@ -98,7 +98,7 @@ class FocusScene : public Scene {
                    accent);
 
     // MM:SS in rounded numerals inside the ring
-    char t[8];
+    char t[16];
     snprintf(t, sizeof(t), "%d:%02d", mins, secs);
     int scale = H >= 100 ? 3 : 2;
     while (scale > 1 && font5x7::textWidth(t, scale) > (r - 5) * 2) scale--;
