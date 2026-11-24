@@ -36,10 +36,17 @@
 #define CORIOLIS_MAX_BRIGHTNESS 255
 #endif
 
-// dynamic current cap in milliamps (0 = disabled; 25000 keeps four 64x64
-// panels comfortably below a 40A PSU even on full-white flashes)
+// dynamic current cap in milliamps (0 = disabled). 25000 suits the 40 A PSU
+// and only acts if the panels draw more than expected; use about 16000 with
+// the 22 A PSU
 #ifndef CORIOLIS_MAX_MILLIAMPS
 #define CORIOLIS_MAX_MILLIAMPS 25000
+#endif
+
+// what the four panels draw together at full white (BUILD.md: 16-20 A).
+// Raise it if your panels measure higher
+#ifndef CORIOLIS_FULL_WHITE_MILLIAMPS
+#define CORIOLIS_FULL_WHITE_MILLIAMPS 20000
 #endif
 
 #define COLOR_DEPTH 24
@@ -736,7 +743,8 @@ void loop() {
 
   if (shell.tick(ctx)) {
     uint8_t br = min(int(shell.brightness(ctx)), CORIOLIS_MAX_BRIGHTNESS);
-    br = powerLimitedBrightness(shell.frame(), br, CORIOLIS_MAX_MILLIAMPS);
+    br = powerLimitedBrightness(shell.frame(), br, CORIOLIS_MAX_MILLIAMPS,
+                                CORIOLIS_FULL_WHITE_MILLIAMPS);
     matrix.setBrightness(br);
     blit(shell.frame());
   }

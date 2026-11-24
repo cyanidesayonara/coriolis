@@ -50,6 +50,7 @@ class Shell {
     launcher_.attach(scenes_, count_);
     settings_.sanitize();
     lastSaved_ = settings_;
+    lastSeen_ = settings_;
     savePending_ = false;
     ctx.palette = &palettes::byIndex(settings_.paletteIndex);
     ctx.audio.setVolume(settings_.volume);
@@ -221,8 +222,9 @@ class Shell {
     // title-card tweaks after a short debounce so rapid taps don't thrash EEPROM
     if (!inSettings_) {
       if (settings_ != lastSaved_) {
-        if (!savePending_) {
-          savePending_ = true;
+        if (!savePending_ || settings_ != lastSeen_) {
+          savePending_ = true;  // every further change restarts the wait
+          lastSeen_ = settings_;
           dirtySinceMs_ = ctx.nowMs;
         } else if (ctx.nowMs - dirtySinceMs_ >= SAVE_DEBOUNCE_MS) {
           settingsScene_.persist();
@@ -241,11 +243,15 @@ class Shell {
 
   const FrameBuffer& frame() const { return out_; }
 
-  // output brightness right now, honoring the night schedule (menus stay
-  // readable at night instead of dimming below 96)
+  // output brightness right now, honoring the night schedule. At night menus
+  // stay readable at up to 96, but never brighter than the daytime setting,
+  // so adjusting brightness always previews the real value
   uint8_t brightness(Context& ctx) const {
     uint8_t b = settings_.effectiveBrightness(ctx.time.now().hour);
-    if (menuOpen() && b < 96) return 96;
+    if (menuOpen() && isNightActive(ctx)) {
+      uint8_t floor = settings_.brightness < 96 ? settings_.brightness : 96;
+      if (b < floor) return floor;
+    }
     return b;
   }
 
@@ -285,6 +291,7 @@ class Shell {
   uint32_t lastSwitchMs_ = 0;
   uint32_t lastComposeMs_ = 0;
   Settings lastSaved_;
+  Settings lastSeen_;
   bool savePending_ = false;
   uint32_t dirtySinceMs_ = 0;
 
@@ -319,7 +326,9 @@ class Shell {
   }
 
   void closeSettings(Context& ctx) {
-    settingsScene_.stop(ctx);  // persists any changes
+    // also covers a change made just before the menu opened, still debouncing
+    if (settings_ != lastSaved_) settingsScene_.persist();
+    settingsScene_.stop(ctx);
     lastSaved_ = settings_;
     savePending_ = false;
     inSettings_ = false;

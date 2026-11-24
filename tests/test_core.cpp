@@ -446,14 +446,88 @@ static void testPowerAndAutosave() {
   shell.tick(ctx);
   CHECK(store.saves == 0);
 
-  ctx.nowMs = 3100;
+  ctx.nowMs = 3100;  // only 600 ms after the second change
+  shell.tick(ctx);
+  CHECK(store.saves == 0);
+
+  ctx.nowMs = 4600;
   shell.tick(ctx);
   CHECK(store.saves == 1);
   CHECK(store.saved.snakeHigh == 12 && store.saved.tetrisHigh == 500);
 
-  ctx.nowMs = 6000;
+  ctx.nowMs = 8000;
   shell.tick(ctx);
   CHECK(store.saves == 1);
+
+  // a change still debouncing survives opening and closing Settings
+  shell.key(ctx, Key::Up);
+  ctx.nowMs += 100;
+  shell.tick(ctx);
+  shell.command(ctx, Command::Settings);
+  ctx.nowMs += 100;
+  shell.tick(ctx);
+  shell.key(ctx, Key::Back);
+  CHECK(store.saves == 2);
+  CHECK(store.saved.paletteIndex == settings.paletteIndex);
+
+  // the default wall (20 A at full white) is not dimmed by the 25 A cap
+  fb.fill(RGB(255, 255, 255));
+  CHECK(powerLimitedBrightness(fb, 255, 25000) == 255);
+}
+
+// by day, or below the floor, menus show the brightness the user picked
+static void testMenuBrightness() {
+  FrameBuffer fb;
+  FixedTime time;
+  NoInput held;
+  RecordingAudio audio;
+  Settings s;
+  s.nightMode = true;
+  s.nightStartHour = 22;
+  s.nightEndHour = 7;
+  s.nightBrightness = 16;
+  s.brightness = 32;
+  NullStore store;
+  SettingsScene settingsScene(s, store);
+  PlainScene clock("Clock");
+  Scene* list[] = {&clock};
+  Context ctx = {fb, time, held, audio, &palettes::byIndex(0), 0};
+  Shell shell(list, 1, s, settingsScene);
+  shell.begin(ctx, false);
+  shell.command(ctx, Command::Settings);
+  time.hour = 12;
+  CHECK(shell.brightness(ctx) == 32);
+  time.hour = 23;
+  CHECK(shell.brightness(ctx) == 32);
+  s.brightness = 200;
+  CHECK(shell.brightness(ctx) == 96);
+}
+
+// pausing Pong during the serve countdown must not use the countdown up
+static void testPongPause() {
+  FrameBuffer fb;
+  FixedTime time;
+  NoInput held;
+  RecordingAudio audio;
+  Settings s;
+  Context ctx = {fb, time, held, audio, &palettes::byIndex(0), 1000};
+  PongScene pong(s);
+  pong.start(ctx);
+  pong.input(ctx, Key::Select);
+  ctx.nowMs = 1050;
+  pong.draw(ctx);
+  pong.input(ctx, Key::Select);  // pause
+  ctx.nowMs = 61050;
+  pong.draw(ctx);
+  pong.input(ctx, Key::Back);    // resume with the countdown still running
+  int lit = 0;
+  for (int f = 1; f <= 30; f++) {  // 480 ms of frames
+    ctx.nowMs += 16;
+    ctx.fb.clear();
+    pong.draw(ctx);
+    if (f > 10) lit += ctx.fb.at(WIDTH / 2 + 1, HEIGHT / 2).r == 255;
+  }
+  CHECK(lit > 0);  // the waiting ball still blinks at the center
 }
 
 int main() {
@@ -466,6 +540,8 @@ int main() {
   testEscapes();
   testKinematics();
   testPowerAndAutosave();
+  testMenuBrightness();
+  testPongPause();
   if (failures) {
     printf("%d check(s) failed\n", failures);
     return 1;

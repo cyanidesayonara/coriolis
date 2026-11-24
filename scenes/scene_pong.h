@@ -55,9 +55,9 @@ class PongScene : public Scene {
         case Key::Down: pauseRow_ = (pauseRow_ + 1) % 3; return true;
         case Key::Left:
         case Key::Right: return true;
-        case Key::Back: paused_ = false; lastMs_ = ctx.nowMs; return true;
+        case Key::Back: resume(ctx); return true;
         case Key::Select:
-          if (pauseRow_ == 0) { paused_ = false; lastMs_ = ctx.nowMs; }
+          if (pauseRow_ == 0) { resume(ctx); }
           else if (pauseRow_ == 1) { begin(ctx); }
           else { paused_ = false; started_ = false; }
           return true;
@@ -73,6 +73,7 @@ class PongScene : public Scene {
       return true;  // unused here, but consume so it can't switch scenes
     if (k == Key::Select) {  // open compact pause/exit menu
       paused_ = true;
+      pausedAtMs_ = ctx.nowMs;
       pauseRow_ = 0;
       return true;
     }
@@ -119,7 +120,8 @@ class PongScene : public Scene {
       clampPaddle(rightY_, paddleHalf, h);
     }
 
-    bool serving = ctx.nowMs < serveAtMs_;
+    // the serve countdown stands still while paused
+    bool serving = (paused_ ? pausedAtMs_ : ctx.nowMs) < serveAtMs_;
     if (!paused_ && !serving) {
       for (int i = TRAIL - 1; i > 0; i--) {
         trailX_[i] = trailX_[i - 1];
@@ -234,6 +236,12 @@ class PongScene : public Scene {
 
   Settings& settings_;
 
+  void resume(Context& ctx) {
+    paused_ = false;
+    serveAtMs_ += ctx.nowMs - pausedAtMs_;
+    lastMs_ = ctx.nowMs;
+  }
+
   // px/s by difficulty setting; normal stays beatable on purpose
   int aiSpeed() const {
     return settings_.pongLevel == 0 ? 48 : (settings_.pongLevel == 1 ? 62 : 78);
@@ -248,6 +256,7 @@ class PongScene : public Scene {
   bool started_ = false;
   bool paused_ = false;
   int pauseRow_ = 0;
+  uint32_t pausedAtMs_ = 0;
   int serveDir_;
   uint32_t lastMs_, serveAtMs_;
 

@@ -173,7 +173,7 @@
 <section class="page">
   <h2>Power</h2>
   <ul>
-    <li>Four 64 × 64 panels draw <b>4–5 A each at full white</b> (16–20 A in total). The LRS-200-5 (40 A) has plenty of headroom. With the 22 A LRS-150F-5, cap brightness at compile time: <code>-DCORIOLIS_MAX_BRIGHTNESS=180</code>. Showing the clock, Coriolis uses a few amps.</li>
+    <li>Four 64 × 64 panels draw <b>4–5 A each at full white</b> (16–20 A in total). The LRS-200-5 (40 A) has plenty of headroom. With the 22 A LRS-150F-5, cap brightness at compile time: <code>-DCORIOLIS_MAX_BRIGHTNESS=180</code>, or limit only the brightest frames with <code>-DCORIOLIS_MAX_MILLIAMPS=16000</code>. Showing the clock, Coriolis uses a few amps.</li>
     <li>Run each panel's power pigtail straight to the PSU terminals, or one 1.5 mm² pair per two panels (2.5 mm² for a single trunk). Ferrule every end. Fit a 1000–2200 µF capacitor across each pair at the panels.</li>
     <li>The shield feeds the Teensy from its JST input through a 0.5 A diode. <b>Cut the VUSB–VIN pad bridge</b> on the underside of the Teensy so USB and the 5 V rail never fight. Afterwards the Teensy only runs with the PSU on — flash it with the PSU on.</li>
     <li>Power the DFPlayer (and later the ESP32) from the 5 V rail, not through the Teensy.</li>

@@ -225,10 +225,12 @@ class FrameBuffer {
 };
 
 // scale brightness down only when a frame's total LED drive exceeds the
-// current budget (e.g., full-white flashes), leaving normal scenes untouched
+// current budget (e.g., full-white flashes), leaving normal scenes untouched.
+// fullWhiteMilliamps is the whole wall's draw at full white (docs/BUILD.md);
+// linear in pixel value, so it overestimates on gamma-corrected panels
 inline uint8_t powerLimitedBrightness(const FrameBuffer& fb, uint8_t requested,
                                       uint32_t maxMilliamps,
-                                      uint32_t fullWhiteMilliamps = 32000) {
+                                      uint32_t fullWhiteMilliamps = 20000) {
   if (maxMilliamps == 0 || requested == 0 || fullWhiteMilliamps == 0)
     return requested;
   uint32_t sum = 0;
