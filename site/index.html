@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coriolis — 128×128 LED Wall Display</title>
+<meta name="description" content="A 128x128 HUB75 LED wall display driven by a Teensy 4.1. A clock first, with ambient art, a guided fitness suite, and games. Try the real C++ firmware live in WebAssembly.">
+<meta property="og:title" content="Coriolis — 128×128 LED Wall Display">
+<meta property="og:description" content="A wall clock first, with ambient art, guided workouts, and retro games. Run the real C++ engine live in your browser.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Coriolis">
+<meta property="og:url" content="https://cyanidesayonara.github.io/coriolis/">
+<meta property="og:image" content="https://cyanidesayonara.github.io/coriolis/img/screenshots/aurora.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230a0d14'/%3E%3Crect x='4' y='4' width='11' height='11' rx='2' fill='%2344d6e8'/%3E%3Crect x='17' y='4' width='11' height='11' rx='2' fill='%234be39a'/%3E%3Crect x='4' y='17' width='11' height='11' rx='2' fill='%23bfa3dc'/%3E%3Crect x='17' y='17' width='11' height='11' rx='2' fill='%23f07c6a'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="palette.css">
+<link rel="stylesheet" href="style.css">
+<script>
+  try {
+    var saved = localStorage.getItem("coriolis-theme");
+    if (saved === "light" || saved === "dark") {
+      document.documentElement.setAttribute("data-theme", saved);
+    }
+  } catch (e) {}
+</script>
+</head>
+<body>
+<div class="led-strip" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+<div class="wrap">
+
+<nav class="bar">
+  <a class="brand" href="#top">
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="6" fill="#0a0d14"/>
+      <rect x="4" y="4" width="11" height="11" rx="2" fill="#44d6e8"/>
+      <rect x="17" y="4" width="11" height="11" rx="2" fill="#4be39a"/>
+      <rect x="4" y="17" width="11" height="11" rx="2" fill="#bfa3dc"/>
+      <rect x="17" y="17" width="11" height="11" rx="2" fill="#f07c6a"/>
+    </svg>
+    <span>Coriolis</span>
+  </a>
+  <div class="links">
+    <a href="#try">Emulator</a>
+    <a class="wide-only" href="#scenes">Scenes</a>
+    <a class="wide-only" href="#manuals">Manuals</a>
+    <a class="wide-only" href="#hardware">Hardware</a>
+    <a href="#build-log">Build Log</a>
+    <a href="https://github.com/cyanidesayonara/coriolis">GitHub</a>
+    <button class="theme" type="button" aria-label="Switch to the light theme" title="Switch theme">
+      <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>
+      <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1z" fill="currentColor"/></svg>
+    </button>
+  </div>
+</nav>
+
+<header class="top" id="top">
+  <span class="hero-kicker">128×128 HUB75 LED WALL · TEENSY 4.1</span>
+  <h1>A wall clock first.<br>Built to live in a room.</h1>
+  <p class="pitch">Third generation of an LED wall display (Aurora → Borealis → Coriolis): four 64×64 panels driven by a Teensy 4.1, with ambient generative art, a guided-fitness suite, and retro games — developed simulator-first with a shared C++11 core.</p>
+  <div class="cta">
+    <a class="button primary" href="#try">Try the live emulator</a>
+    <a class="button" href="manuals/Coriolis_User_Manual.pdf">User's Manual (PDF)</a>
+    <a class="button" href="manuals/Coriolis_Build_Guide.pdf">Build Guide (PDF)</a>
+    <a class="button" href="https://github.com/cyanidesayonara/coriolis">Source on GitHub</a>
+  </div>
+  <ul class="chips" aria-label="Highlights">
+    <li>128×128 pixels</li>
+    <li>25 scenes</li>
+    <li>100% offline</li>
+    <li>IR remote + spoken cues</li>
+    <li>Night mode auto-dim</li>
+  </ul>
+</header>
+
+<section id="try" aria-labelledby="try-title">
+  <h2 id="try-title">Try the real firmware live</h2>
+  <p class="lede">This is not a mockup: the display below runs Coriolis's actual C++11 <code>Shell</code>, transitions, launcher, settings menu, and all 25 scenes compiled to WebAssembly. Use the virtual IR remote, pick a scene below, or click the display to drive it with your keyboard.</p>
+
+  <div class="cockpit" id="cockpit">
+    <div class="emu-stage">
+      <div class="matrix-column">
+        <div class="bezel" id="bezel" tabindex="0" aria-label="Coriolis 128 by 128 LED matrix display. Click to focus for keyboard controls.">
+          <div class="canvas-wrap">
+            <canvas id="matrix" width="512" height="512"></canvas>
+            <canvas id="led-grid" width="512" height="512" aria-hidden="true"></canvas>
+            <div class="emu-loading" id="emu-loading">Booting Coriolis WebAssembly…</div>
+          </div>
+        </div>
+        <div class="hud-bar">
+          <div class="hud-meta" aria-live="polite">
+            <span class="badge">Scene: <b id="hud-scene">Splash</b></span>
+            <span class="badge">Palette: <b id="hud-palette">Ocean</b></span>
+            <span class="badge night" id="hud-night" hidden>NIGHT</span>
+          </div>
+          <div class="hud-toggles">
+            <button type="button" class="chip-btn" id="btn-weather" data-action="weather" hidden>Cycle weather</button>
+            <button type="button" class="chip-btn" id="btn-grid" data-action="grid" aria-pressed="true">LED Grid</button>
+            <button type="button" class="chip-btn" id="btn-audio" data-action="audio" aria-pressed="false">Sound: Off</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="remote" aria-label="Virtual IR remote">
+        <div class="remote-head">
+          <span class="remote-title">Virtual IR Remote</span>
+          <span class="remote-dot" id="remote-dot" aria-hidden="true"></span>
+        </div>
+
+        <div class="remote-row">
+          <button type="button" class="r-btn accent" data-cmd="1">Menu (M)</button>
+          <button type="button" class="r-btn" data-cmd="2">Settings (S)</button>
+          <button type="button" class="r-btn" data-cmd="3">Overlay (C)</button>
+          <button type="button" class="r-btn" data-cmd="5">Home (H)</button>
+        </div>
+
+        <div class="dpad" role="group" aria-label="Directional pad">
+          <span></span>
+          <button type="button" class="r-btn" data-key="1" aria-label="Up">▲</button>
+          <span></span>
+          <button type="button" class="r-btn" data-key="3" aria-label="Left">◀</button>
+          <button type="button" class="r-btn ok-btn" data-key="5">OK</button>
+          <button type="button" class="r-btn" data-key="4" aria-label="Right">▶</button>
+          <span></span>
+          <button type="button" class="r-btn" data-key="2" aria-label="Down">▼</button>
+          <span></span>
+        </div>
+
+        <div class="remote-util">
+          <button type="button" class="r-btn" data-key="6">Back (Esc)</button>
+          <button type="button" class="r-btn" data-cmd="4">Next (Space)</button>
+          <button type="button" class="r-btn" data-action="rotate">Rotate (R)</button>
+          <button type="button" class="r-btn" id="btn-night" data-action="night" aria-pressed="false">Night (N)</button>
+        </div>
+
+        <div class="kb-legend">
+          Click the display, then use <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> to navigate or adjust palette, <kbd>Enter</kbd> for OK, <kbd>Esc</kbd> for Back, <kbd>M</kbd> Launcher, <kbd>S</kbd> Settings, <kbd>C</kbd> Overlay, <kbd>A</kbd> Sound.
+        </div>
+      </aside>
+    </div>
+
+    <div class="quick-jump">
+      <div class="quick-jump-head">
+        <strong>Quick-jump scenes</strong>
+        <span>25 scenes in total — press <kbd>M</kbd> for the categorized launcher</span>
+      </div>
+      <div class="quick-pills" id="quick-pills" role="group" aria-label="Quick-jump scenes"></div>
+    </div>
+  </div>
+  <noscript><p class="lede">Enable JavaScript and WebAssembly to run the interactive emulator.</p></noscript>
+</section>
+
+<section id="scenes" aria-labelledby="scenes-title">
+  <h2 id="scenes-title">What's on the wall</h2>
+  <p class="lede">Captured directly from the simulator at native 128×128 resolution. Filter by category or jump any card straight into the live emulator above.</p>
+
+  <div class="filter-tabs" role="group" aria-label="Filter scenes by category">
+    <button type="button" class="tab-btn" data-filter="all" aria-pressed="true">All scenes</button>
+    <button type="button" class="tab-btn" data-filter="clocks" aria-pressed="false">Clocks &amp; Info</button>
+    <button type="button" class="tab-btn" data-filter="fitness" aria-pressed="false">Guided Fitness</button>
+    <button type="button" class="tab-btn" data-filter="games" aria-pressed="false">Games</button>
+    <button type="button" class="tab-btn" data-filter="art" aria-pressed="false">Ambient Art</button>
+  </div>
+
+  <div class="shot-grid">
+    <article class="shot-card" data-cat="clocks">
+      <div class="shot-frame"><img src="img/screenshots/clock.png" alt="Digital Clock scene on 128x128 matrix" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Digital Clock</h3><span class="cat-tag">Clock</span></div>
+        <p>Home scene: crisp across-the-room numerals with date and quiet seconds bar.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="0">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="clocks">
+      <div class="shot-frame"><img src="img/screenshots/analog.png" alt="Analog Clock scene with 60-minute dial dots" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Analog Clock</h3><span class="cat-tag">Clock</span></div>
+        <p>60-minute dial dots, bold 5-minute markers, and counterweighted second hand.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="1">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="clocks">
+      <div class="shot-frame"><img src="img/screenshots/wordclock.png" alt="Word Clock scene spelling out the current time" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Word Clock</h3><span class="cat-tag">Clock</span></div>
+        <p>Illuminated 5-minute English word matrix inspired by typographic wall clocks.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="2">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="clocks">
+      <div class="shot-frame"><img src="img/screenshots/weather.png" alt="Weather scene showing clear sun halo and temperature" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Weather</h3><span class="cat-tag">Info</span></div>
+        <p>Animated clear, cloud, rain, snow, and storm visuals fed from a local file or UART.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="3">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="clocks">
+      <div class="shot-frame"><img src="img/screenshots/calendar.png" alt="Calendar countdown to upcoming holidays" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Calendar</h3><span class="cat-tag">Info</span></div>
+        <p>Offline countdowns to birthdays and local holidays from <code>events.txt</code> on SD.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="4">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="fitness">
+      <div class="shot-frame"><img src="img/screenshots/yoga.png" alt="Yoga scene with articulated character figure and hold progress bar" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Yoga</h3><span class="cat-tag">Fitness</span></div>
+        <p>Five guided flows with articulated figures, bilateral mirroring, halfway bell, and NEXT cues.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="9">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="fitness">
+      <div class="shot-frame"><img src="img/screenshots/exercise.png" alt="Exercise scene demonstrating kettlebell swing" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Exercise &amp; Tabata</h3><span class="cat-tag">Fitness</span></div>
+        <p>Bodyweight, Kettlebell, Tabata HIIT, and Core sessions with live rep counters and rest previews.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="10">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="fitness">
+      <div class="shot-frame"><img src="img/screenshots/breathe.png" alt="Breathe scene with glowing phase ring and halo" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Breathe</h3><span class="cat-tag">Fitness</span></div>
+        <p>Box (4-4-4-4) and Relax (4-7-8) pacer with layered expanding aura and audio chimes.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="11">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="fitness">
+      <div class="shot-frame"><img src="img/screenshots/focus.png" alt="Focus timer Pomodoro dial" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Focus Timer</h3><span class="cat-tag">Fitness</span></div>
+        <p>Glanceable 25/5 Pomodoro timer with sweeping anti-aliased arc and break alerts.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="12">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="games">
+      <div class="shot-frame"><img src="img/screenshots/labyrinth.png" alt="First-person 3D raycast Labyrinth maze with minimap" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Labyrinth</h3><span class="cat-tag">Game</span></div>
+        <p>First-person 3D raycaster with ashlar stone seams, fog-of-war minimap, and pause menu.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="8">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="games">
+      <div class="shot-frame"><img src="img/screenshots/snake.png" alt="Snake arcade game with high-score tracking" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Snake</h3><span class="cat-tag">Game</span></div>
+        <p>Classic arcade snake with palette shading, directional eyes, pulsing apples, and persistent high score.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="6">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="games">
+      <div class="shot-frame"><img src="img/screenshots/tetris.png" alt="Tetris game with 3D beveled pieces" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Tetris</h3><span class="cat-tag">Game</span></div>
+        <p>Full 10×20 well with 3D beveled blocks, ghost drop target, hold/next preview, and EEPROM high score.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="7">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="games">
+      <div class="shot-frame"><img src="img/screenshots/pong.png" alt="Pong game against AI paddle" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Pong</h3><span class="cat-tag">Game</span></div>
+        <p>Fast two-paddle match with ball trail, rounded scoreboard numerals, and three AI difficulty levels.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="5">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="art">
+      <div class="shot-frame"><img src="img/screenshots/aurora.png" alt="Aurora generative ribbons over dark night sky" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Aurora</h3><span class="cat-tag">Art</span></div>
+        <p>Shifting atmospheric light curtains and starfield homage to Pixelmatix's original visualizer.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="24">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="art">
+      <div class="shot-frame"><img src="img/screenshots/lava.png" alt="Glowing Lava metaballs" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Lava</h3><span class="cat-tag">Art</span></div>
+        <p>Organic floating metaballs rendered with palette heat mapping and tight inner-loop integer math.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="17">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="art">
+      <div class="shot-frame"><img src="img/screenshots/fireplace.png" alt="Crackling Fireplace ambient scene" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Fireplace</h3><span class="cat-tag">Art</span></div>
+        <p>Warm simulated hearth flames with rising embers and optional audio crackle cues.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="23">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="art">
+      <div class="shot-frame"><img src="img/screenshots/aquarium.png" alt="Aquarium with swimming fish, kelp, and pebbles" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Aquarium</h3><span class="cat-tag">Art</span></div>
+        <p>Layered ocean backdrop with shaded fish, wagging tails, swaying kelp, bubbles, and pebbled floor.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="22">Run in emulator</button>
+      </div>
+    </article>
+
+    <article class="shot-card" data-cat="art">
+      <div class="shot-frame"><img src="img/screenshots/mandala.png" alt="Symmetrical fading Mandala kaleidoscope" width="128" height="128" loading="lazy"></div>
+      <div class="shot-body">
+        <div class="shot-top"><h3>Mandala</h3><span class="cat-tag">Art</span></div>
+        <p>Eight-fold symmetrical kinetic patterns leaving slow trails across dark space.</p>
+        <button type="button" class="chip-btn shot-action" data-jump-scene="15">Run in emulator</button>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section id="manuals" aria-labelledby="manuals-title">
+  <h2 id="manuals-title">Manuals &amp; technical docs</h2>
+  <p class="lede">Coriolis ships with two print-ready manuals generated directly from the repository docs and live simulator screenshots.</p>
+
+  <div class="cards-2">
+    <div class="card">
+      <h3>User's Manual (PDF)</h3>
+      <p>Complete end-user reference covering every clock, ambient scene, guided workout, game mode, Night Mode schedule, Clock Overlay positions, and IR remote / keyboard bindings.</p>
+      <a class="button primary" href="manuals/Coriolis_User_Manual.pdf">Open User's Manual</a>
+    </div>
+    <div class="card">
+      <h3>Hardware Build Guide (PDF)</h3>
+      <p>Full shopping list (~€330–450), HUB75E panel silicon checklist (avoiding ICN2038S/2053), Teensy 4.1 pin map, <code>VUSB–VIN</code> isolation, SmartMatrix 4 setup, and staged bring-up order.</p>
+      <a class="button primary" href="manuals/Coriolis_Build_Guide.pdf">Open Build Guide</a>
+    </div>
+  </div>
+
+  <div class="doc-links">
+    <a href="https://github.com/cyanidesayonara/coriolis/blob/master/docs/BUILD.md">BUILD.md on GitHub</a>
+    <a href="https://github.com/cyanidesayonara/coriolis/blob/master/docs/REMOTE.md">IR Remote Mapping</a>
+    <a href="https://github.com/cyanidesayonara/coriolis/blob/master/docs/AUDIO.md">DFPlayer Mini Audio &amp; Voice Pack</a>
+    <a href="https://github.com/cyanidesayonara/coriolis/blob/master/PROJECT.md">Architecture (PROJECT.md)</a>
+    <a href="https://github.com/cyanidesayonara/coriolis/blob/master/CHANGELOG.md">Changelog</a>
+  </div>
+</section>
+
+<section id="hardware" aria-labelledby="hardware-title">
+  <h2 id="hardware-title">Hardware &amp; architecture</h2>
+  <p class="lede">Three iterations of the same room-first idea: write scenes once against an abstract framebuffer so desktop, Teensy 4.1, and browser execute identical C++11 code.</p>
+
+  <div class="cards-2">
+    <div class="card">
+      <h3>Planned hardware bill of materials</h3>
+      <ul class="spec-list">
+        <li><span>Panels</span><strong>4× 64×64 HUB75E (1/32 scan, P4 or P3)</strong></li>
+        <li><span>Controller</span><strong>Teensy 4.1 + SmartLED Shield V5</strong></li>
+        <li><span>Power supply</span><strong>5 V 40 A Mean Well LRS-200-5 + bulk caps</strong></li>
+        <li><span>Current safety</span><strong>Dynamic per-frame brightness limiter (~25 A)</strong></li>
+        <li><span>Input</span><strong>TSOP38438 IR on pin 16 (Apple / 17-key NEC)</strong></li>
+        <li><span>Audio</span><strong>DFPlayer Mini + 40 mm speaker + microSD voice pack</strong></li>
+        <li><span>Enclosure</span><strong>Magnetic M3 panel mounts + 3 mm smoked cast acrylic</strong></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Software invariants</h3>
+      <p>Every visual mode renders solely into <code>FrameBuffer</code> through a <code>Context&amp;</code> struct carrying time, held keys, palette, audio cues, and monotonic milliseconds. No scene allocates on the heap per frame, and no scene calls platform headers.</p>
+      <p><strong>One shared shell:</strong> the boot splash, slide/crossfade transitions, categorized launcher, settings menu, night-mode brightness floor, toasts, and debounced settings persistence live in <code>scenes/shell.h</code> — shared line-for-line between firmware, desktop raylib simulator, and this WebAssembly page.</p>
+    </div>
+  </div>
+</section>
+
+<section id="build-log" aria-labelledby="blog-title">
+  <h2 id="blog-title">Build log &amp; upcoming posts</h2>
+  <p class="lede">The software is finished and running in both the desktop simulator and WebAssembly above; ordering parts and building the physical wall unit comes next. Build articles are published on <a href="https://santtu.fyi/blog">santtu.fyi</a> alongside the <a href="https://santtu.fyi/projects/coriolis">Coriolis portfolio entry</a>.</p>
+
+  <div class="cards-3">
+    <article class="card">
+      <span class="status-pill">Upcoming on santtu.fyi</span>
+      <h3>Part 1: Software before hardware</h3>
+      <p>Why Coriolis was built desktop-first: sharing <code>Shell</code> across platforms, designing readable 128×128 typography, guided fitness audio cues, and what a simulator can't predict until real HUB75 panels light up.</p>
+    </article>
+
+    <article class="card">
+      <span class="status-pill">Planned build post</span>
+      <h3>Part 2: Panels, power &amp; bench bring-up</h3>
+      <p>Sourcing compatible 1/32 HUB75E panels, cutting the Teensy <code>VUSB–VIN</code> pad, wiring the 40 A 5 V rail, SmartMatrix C-shape chaining, IR code capture, and testing DFPlayer spoken pose cues.</p>
+    </article>
+
+    <article class="card">
+      <span class="status-pill">Planned build post</span>
+      <h3>Part 3: Frame, acrylic diffuser &amp; wall mount</h3>
+      <p>Fabricating the magnetic 2020 extrusion / plywood shadow box, fitting the 3 mm smoked cast-acrylic sheet flush over panel seams, calibrating night dimming, and hanging the finished display.</p>
+    </article>
+  </div>
+
+  <div class="doc-links">
+    <a href="https://santtu.fyi/projects/coriolis">Project page on santtu.fyi</a>
+    <a href="https://santtu.fyi/blog">Read Santtu's engineering blog →</a>
+  </div>
+</section>
+
+<footer class="foot">
+  <span>Coriolis — 128×128 HUB75 LED wall display by Santtu Nykänen</span>
+  <nav class="foot-links" aria-label="Related links">
+    <a href="https://github.com/cyanidesayonara/coriolis">GitHub</a>
+    <a href="https://github.com/cyanidesayonara/borealis">Borealis (2016)</a>
+    <a href="https://santtu.fyi">santtu.fyi</a>
+    <a href="https://cyanidesayonara.github.io/stemma/">stemma</a>
+    <a href="https://cyanidesayonara.github.io/path-of-leash-resistance/">Path of Leash Resistance</a>
+  </nav>
+</footer>
+
+</div>
+<script src="emu/coriolis.js"></script>
+<script src="emu.js"></script>
+<script src="site.js"></script>
+</body>
+</html>
