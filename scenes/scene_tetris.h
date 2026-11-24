@@ -68,6 +68,7 @@ class TetrisScene : public Scene {
     }
     if (dead_) {
       if (k == Key::Select) { begin(ctx); return true; }
+      if (k == Key::Back) { started_ = false; return true; }
       return false;
     }
     // consume every control key while playing (even a blocked move), so a
@@ -87,8 +88,11 @@ class TetrisScene : public Scene {
       case Key::Select:
         hardDrop(ctx);  // OK slams it down
         return true;
+      case Key::Back:
+        started_ = false;
+        return true;
       default:
-        return false;  // Back falls through, to leave the game
+        return false;
     }
   }
 
@@ -226,8 +230,18 @@ class TetrisScene : public Scene {
     return uint32_t(g < 80 ? 80 : g);
   }
 
-  void cell(Context& ctx, int gx, int gy, const RGB& c, int ox, int oy) {
-    ctx.fb.rect(ox + gx * CELL, oy + gy * CELL, CELL - 1, CELL - 1, c);
+  void cell(Context& ctx, int gx, int gy, const RGB& c, int ox, int oy,
+            bool bevel = true) {
+    int x = ox + gx * CELL, y = oy + gy * CELL, s = CELL - 1;
+    ctx.fb.rect(x, y, s, s, c);
+    if (bevel && s >= 3) {
+      RGB hi = lerpColor(c, RGB(255, 255, 255), 85);
+      RGB sh = lerpColor(c, RGB(0, 0, 0), 110);
+      ctx.fb.hLine(x, x + s - 1, y, hi);
+      ctx.fb.vLine(x, y, y + s - 1, hi);
+      ctx.fb.hLine(x + 1, x + s - 1, y + s - 1, sh);
+      ctx.fb.vLine(x + s - 1, y + 1, y + s - 1, sh);
+    }
   }
 
   void render(Context& ctx) {
@@ -254,7 +268,7 @@ class TetrisScene : public Scene {
       ghost.dim(60);
       for (int i = 0; i < 4; i++)
         cell(ctx, px_ + TETROMINO[type_][rot_][i][0],
-             sy + TETROMINO[type_][rot_][i][1], ghost, bx, by);
+             sy + TETROMINO[type_][rot_][i][1], ghost, bx, by, false);
       for (int i = 0; i < 4; i++)
         cell(ctx, px_ + TETROMINO[type_][rot_][i][0],
              py_ + TETROMINO[type_][rot_][i][1], pieceColor(type_), bx, by);

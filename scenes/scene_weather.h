@@ -10,6 +10,7 @@
 
 #include "../core/scene.h"
 #include "../core/font.h"
+#include "../core/font5x7.h"
 #include "../core/math8.h"
 #include "../core/weather.h"
 
@@ -51,12 +52,20 @@ class WeatherScene : public Scene {
       default: break;
     }
 
-    // the temperature, big, lower half ('*' renders as the degree sign)
+    // the temperature, big rounded digits + anti-aliased degree symbol
+    const int W = ctx.fb.width(), H = ctx.fb.height();
     char t[8];
-    snprintf(t, sizeof(t), "%d*", w.tempC);
-    int tw = font3x5::textWidth(t, 4);
-    font3x5::drawText(ctx.fb, t, (ctx.fb.width() - tw) / 2,
-                      ctx.fb.height() - 34, 4, RGB(230, 230, 230));
+    snprintf(t, sizeof(t), "%d", w.tempC);
+    int scale = H >= 100 ? 4 : 2;
+    int degR = scale >= 4 ? 3 : 2;
+    int tw = font5x7::textWidth(t, scale);
+    int totalW = tw + degR * 2 + 5;
+    int tx = (W - totalW) / 2;
+    int ty = H - (H >= 100 ? 36 : 18);
+    RGB top(240, 242, 248), bot(175, 192, 220);
+    font5x7::drawText(ctx.fb, t, tx, ty, scale, top, bot);
+    ctx.fb.drawArc(tx + tw + degR + 3, ty + degR + 1, degR,
+                   scale >= 4 ? 2 : 1, 0.0f, TWO_PI_F, RGB(220, 228, 242));
 
     return 40;
   }
@@ -70,23 +79,36 @@ class WeatherScene : public Scene {
   uint32_t flashMs_ = 0;
 
   void drawSun(Context& ctx) {
-    int cx = ctx.fb.width() / 2, cy = 34, r = 13;
-    RGB core(255, 210, 60), ray(255, 170, 30);
-    ctx.fb.fillCircle(cx, cy, r, core);
+    int H = ctx.fb.height();
+    int cx = ctx.fb.width() / 2;
+    int cy = H >= 100 ? 36 : 20;
+    int r = H >= 100 ? 13 : 8;
+    RGB halo1(255, 165, 30); halo1.dim(24);
+    RGB halo2(255, 190, 45); halo2.dim(52);
+    ctx.fb.fillCircleAA(cx + 0.5f, cy + 0.5f, float(r + (H >= 100 ? 12 : 6)), halo1);
+    ctx.fb.fillCircleAA(cx + 0.5f, cy + 0.5f, float(r + (H >= 100 ? 5 : 3)), halo2);
+
+    RGB core(255, 215, 68), ray(255, 172, 35);
+    ctx.fb.fillCircleAA(cx + 0.5f, cy + 0.5f, float(r), core);
     float base = ctx.nowMs * 0.0006f;
     for (int i = 0; i < 8; i++) {
       float a = base + i * (TWO_PI_F / 8.0f);
       int x0 = cx + int(cosf(a) * (r + 3)), y0 = cy + int(sinf(a) * (r + 3));
-      int x1 = cx + int(cosf(a) * (r + 8)), y1 = cy + int(sinf(a) * (r + 8));
+      int x1 = cx + int(cosf(a) * (r + (H >= 100 ? 8 : 5)));
+      int y1 = cy + int(sinf(a) * (r + (H >= 100 ? 8 : 5)));
       ctx.fb.thickLine(x0, y0, x1, y1, ray);
     }
   }
 
   void drawCloud(Context& ctx, int cx, int cy, const RGB& c) {
-    ctx.fb.fillCircle(cx - 9, cy + 2, 6, c);
-    ctx.fb.fillCircle(cx, cy - 2, 8, c);
-    ctx.fb.fillCircle(cx + 10, cy + 2, 6, c);
-    ctx.fb.rect(cx - 12, cy + 3, 25, 5, c);
+    RGB under = c;
+    under.dim(185);
+    ctx.fb.fillCircleAA(float(cx - 9), float(cy + 2), 6.2f, under);
+    ctx.fb.fillCircleAA(float(cx + 10), float(cy + 2), 6.2f, under);
+    ctx.fb.rect(cx - 12, cy + 3, 25, 5, under);
+    ctx.fb.fillCircleAA(float(cx), float(cy - 2), 8.2f, c);
+    ctx.fb.fillCircleAA(float(cx - 8), float(cy + 1), 5.6f, c);
+    ctx.fb.fillCircleAA(float(cx + 9), float(cy + 1), 5.6f, c);
   }
 
   void drawClouds(Context& ctx, int n) {

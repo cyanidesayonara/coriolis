@@ -5,6 +5,7 @@
 #define CORIOLIS_DISPLAY_H
 
 #include <string.h>
+#include <math.h>
 
 #include "config.h"
 #include "color.h"
@@ -35,6 +36,16 @@ class FrameBuffer {
   }
 
   void set(int x, int y, const RGB& c) { at(x, y) = c; }
+
+  // alpha-blend c over pixel (x, y); alpha 0 = no-op, 255 = overwrite
+  void blend(int x, int y, const RGB& c, uint8_t alpha) {
+    if (alpha == 0 || !contains(x, y)) return;
+    RGB& dst = px[y * WIDTH + x];
+    if (alpha == 255) { dst = c; return; }
+    dst.r = lerp8(dst.r, c.r, alpha);
+    dst.g = lerp8(dst.g, c.g, alpha);
+    dst.b = lerp8(dst.b, c.b, alpha);
+  }
 
   void clear() { memset(px, 0, sizeof(px)); }
 
@@ -129,10 +140,110 @@ class FrameBuffer {
     }
   }
 
+  // anti-aliased filled circle in continuous pixel-center coordinates
+  void fillCircleAA(float cx, float cy, float r, const RGB& c) {
+    if (r <= 0.0f) return;
+    int x0 = int(floorf(cx - r - 1.0f));
+    int x1 = int(ceilf(cx + r + 1.0f));
+    int y0 = int(floorf(cy - r - 1.0f));
+    int y1 = int(ceilf(cy + r + 1.0f));
+    if (x0 < 0) x0 = 0;
+    if (y0 < 0) y0 = 0;
+    if (x1 >= WIDTH) x1 = WIDTH - 1;
+    if (y1 >= HEIGHT) y1 = HEIGHT - 1;
+    float rOut2 = (r + 1.0f) * (r + 1.0f);
+    for (int y = y0; y <= y1; y++) {
+      float dy = (y + 0.5f) - cy;
+      for (int x = x0; x <= x1; x++) {
+        float dx = (x + 0.5f) - cx;
+        float d2 = dx * dx + dy * dy;
+        if (d2 >= rOut2) continue;
+        float d = sqrtf(d2);
+        float cov = r + 0.5f - d;
+        if (cov <= 0.0f) continue;
+        if (cov >= 1.0f) set(x, y, c);
+        else blend(x, y, c, uint8_t(cov * 255.0f + 0.5f));
+      }
+    }
+  }
+
+  // anti-aliased ring arc around (cx, cy), angles in radians (0 = +x, +pi/2 = +y)
+  void drawArc(int cx, int cy, int r, int thickness, float startAngle,
+               float sweepAngle, const RGB& c) {
+    if (sweepAngle <= 0.0f || thickness <= 0 || r <= 0) return;
+    const float twoPi = 6.28318530718f;
+    bool full = sweepAngle >= twoPi - 0.001f;
+    float halfT = thickness * 0.5f;
+    float rMin = float(r) - halfT - 1.0f;
+    float rMax = float(r) + halfT + 1.0f;
+    if (rMin < 0.0f) rMin = 0.0f;
+    float rMin2 = rMin * rMin;
+    float rMax2 = rMax * rMax;
+
+    int pad = int(ceilf(rMax));
+    int x0 = cx - pad, x1 = cx + pad;
+    int y0 = cy - pad, y1 = cy + pad;
+    if (x0 < 0) x0 = 0;
+    if (y0 < 0) y0 = 0;
+    if (x1 >= WIDTH) x1 = WIDTH - 1;
+    if (y1 >= HEIGHT) y1 = HEIGHT - 1;
+
+    for (int y = y0; y <= y1; y++) {
+      float dy = float(y - cy);
+      for (int x = x0; x <= x1; x++) {
+        float dx = float(x - cx);
+        float d2 = dx * dx + dy * dy;
+        if (d2 < rMin2 || d2 > rMax2) continue;
+        float d = sqrtf(d2);
+        float radCov = halfT + 0.5f - fabsf(d - float(r));
+        if (radCov <= 0.0f) continue;
+        if (radCov > 1.0f) radCov = 1.0f;
+
+        float angCov = 1.0f;
+        if (!full) {
+          float a = atan2f(dy, dx) - startAngle;
+          while (a < 0.0f) a += twoPi;
+          while (a >= twoPi) a -= twoPi;
+          if (a > sweepAngle) {
+            float dEnd = (a - sweepAngle) * d;
+            float dStart = (twoPi - a) * d;
+            float out = dEnd < dStart ? dEnd : dStart;
+            if (out >= 1.0f) continue;
+            angCov = 1.0f - out;
+          }
+        }
+        float cov = radCov * angCov;
+        if (cov >= 1.0f) set(x, y, c);
+        else blend(x, y, c, uint8_t(cov * 255.0f + 0.5f));
+      }
+    }
+  }
+
  private:
   RGB scratch_;
   RGB scratchConst_;
 };
+
+// scale brightness down only when a frame's total LED drive exceeds the
+// current budget (e.g., full-white flashes), leaving normal scenes untouched
+inline uint8_t powerLimitedBrightness(const FrameBuffer& fb, uint8_t requested,
+                                      uint32_t maxMilliamps,
+                                      uint32_t fullWhiteMilliamps = 32000) {
+  if (maxMilliamps == 0 || requested == 0 || fullWhiteMilliamps == 0)
+    return requested;
+  uint32_t sum = 0;
+  for (int i = 0; i < PIXELS; i++) {
+    sum += fb.px[i].r + fb.px[i].g + fb.px[i].b;
+  }
+  if (sum == 0) return requested;
+  uint64_t denom = uint64_t(PIXELS) * 765u * 255u;
+  uint64_t estMa = (uint64_t(sum) * requested * fullWhiteMilliamps) / denom;
+  if (estMa <= maxMilliamps) return requested;
+  uint32_t scaled = uint32_t((uint64_t(maxMilliamps) * denom) /
+                             (uint64_t(sum) * fullWhiteMilliamps));
+  if (scaled < 1) return 1;
+  return scaled > requested ? requested : uint8_t(scaled);
+}
 
 }
 

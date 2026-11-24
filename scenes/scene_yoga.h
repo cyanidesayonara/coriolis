@@ -29,7 +29,8 @@ namespace coriolis {
 
 struct YogaPose {
   const char* name;
-  int face;  // -1 profile left, 0 front, +1 profile right
+  int face;          // -1 profile left, 0 front, +1 profile right
+  float spineCurve;  // + arches spine outward, - drops belly / backbend
   // x,y pairs, 0..1: head, neck, lSho, rSho, lElb, lWri, rElb, rWri,
   // pelvis, lKnee, lAnk, rKnee, rAnk, lToe, rToe
   float j[15][2];
@@ -38,28 +39,28 @@ struct YogaPose {
 namespace yoga_poses {
 
 // front view, standing straight, arms at the sides, feet grounded
-static const YogaPose MOUNTAIN = {"MOUNTAIN", 0, {
+static const YogaPose MOUNTAIN = {"MOUNTAIN", 0, 0.0f, {
     {0.50f, 0.185f}, {0.50f, 0.26f}, {0.42f, 0.29f}, {0.58f, 0.29f},
     {0.40f, 0.42f}, {0.39f, 0.54f}, {0.60f, 0.42f}, {0.61f, 0.54f},
     {0.50f, 0.53f}, {0.46f, 0.70f}, {0.45f, 0.90f}, {0.54f, 0.70f},
     {0.55f, 0.90f}, {0.41f, 0.92f}, {0.59f, 0.92f}}};
 
 // front view, legs wide, arms raised in a V
-static const YogaPose STAR = {"STAR", 0, {
+static const YogaPose STAR = {"STAR", 0, 0.0f, {
     {0.50f, 0.19f}, {0.50f, 0.27f}, {0.42f, 0.30f}, {0.58f, 0.30f},
     {0.30f, 0.21f}, {0.20f, 0.11f}, {0.70f, 0.21f}, {0.80f, 0.11f},
     {0.50f, 0.53f}, {0.38f, 0.70f}, {0.28f, 0.90f}, {0.62f, 0.70f},
     {0.72f, 0.90f}, {0.23f, 0.92f}, {0.77f, 0.92f}}};
 
 // front view, right foot against the standing leg, palms together overhead
-static const YogaPose TREE = {"TREE", 0, {
+static const YogaPose TREE = {"TREE", 0, 0.0f, {
     {0.50f, 0.165f}, {0.50f, 0.24f}, {0.43f, 0.27f}, {0.57f, 0.27f},
     {0.37f, 0.16f}, {0.48f, 0.05f}, {0.63f, 0.16f}, {0.52f, 0.05f},
     {0.50f, 0.52f}, {0.47f, 0.70f}, {0.46f, 0.90f}, {0.63f, 0.62f},
     {0.51f, 0.68f}, {0.42f, 0.92f}, {0.50f, 0.73f}}};
 
 // wide lunge, arms straight out over the legs
-static const YogaPose WARRIOR = {"WARRIOR 2", 0, {
+static const YogaPose WARRIOR = {"WARRIOR 2", 0, 0.0f, {
     {0.50f, 0.225f}, {0.50f, 0.30f}, {0.42f, 0.33f}, {0.58f, 0.33f},
     {0.28f, 0.33f}, {0.13f, 0.33f}, {0.72f, 0.33f}, {0.87f, 0.33f},
     {0.50f, 0.56f}, {0.31f, 0.70f}, {0.28f, 0.90f}, {0.66f, 0.73f},
@@ -67,105 +68,105 @@ static const YogaPose WARRIOR = {"WARRIOR 2", 0, {
 
 // side view, the inverted V: hands planted, hips high, heels reaching —
 // feet flexed, toes toward the hands
-static const YogaPose DOWN_DOG = {"DOWN DOG", -1, {
-    {0.32f, 0.575f}, {0.36f, 0.52f}, {0.34f, 0.54f}, {0.36f, 0.55f},
+static const YogaPose DOWN_DOG = {"DOWN DOG", -1, 0.0f, {
+    {0.35f, 0.585f}, {0.37f, 0.53f}, {0.34f, 0.54f}, {0.36f, 0.55f},
     {0.26f, 0.70f}, {0.19f, 0.90f}, {0.28f, 0.71f}, {0.21f, 0.91f},
-    {0.56f, 0.30f}, {0.66f, 0.57f}, {0.74f, 0.86f}, {0.68f, 0.58f},
-    {0.75f, 0.87f}, {0.67f, 0.90f}, {0.69f, 0.91f}}};
+    {0.56f, 0.30f}, {0.66f, 0.58f}, {0.75f, 0.88f}, {0.68f, 0.59f},
+    {0.76f, 0.89f}, {0.67f, 0.91f}, {0.69f, 0.92f}}};
 
 // side view, sitting back into an invisible chair, arms up along the ears
-static const YogaPose CHAIR = {"CHAIR", -1, {
-    {0.40f, 0.28f}, {0.44f, 0.36f}, {0.45f, 0.38f}, {0.46f, 0.39f},
-    {0.36f, 0.28f}, {0.29f, 0.20f}, {0.37f, 0.29f}, {0.30f, 0.21f},
-    {0.58f, 0.62f}, {0.46f, 0.72f}, {0.50f, 0.90f}, {0.47f, 0.73f},
-    {0.51f, 0.90f}, {0.44f, 0.92f}, {0.45f, 0.92f}}};
+static const YogaPose CHAIR = {"CHAIR", -1, 0.0f, {
+    {0.39f, 0.27f}, {0.43f, 0.35f}, {0.44f, 0.37f}, {0.45f, 0.38f},
+    {0.36f, 0.26f}, {0.28f, 0.16f}, {0.37f, 0.27f}, {0.29f, 0.17f},
+    {0.59f, 0.62f}, {0.44f, 0.73f}, {0.50f, 0.90f}, {0.45f, 0.74f},
+    {0.51f, 0.90f}, {0.42f, 0.92f}, {0.43f, 0.92f}}};
 
 // side view, folded at the hips, hands reaching the floor
-static const YogaPose FOLD = {"FORWARD FOLD", -1, {
+static const YogaPose FOLD = {"FORWARD FOLD", -1, 0.045f, {
     {0.42f, 0.82f}, {0.43f, 0.74f}, {0.43f, 0.72f}, {0.44f, 0.73f},
     {0.45f, 0.80f}, {0.44f, 0.89f}, {0.46f, 0.80f}, {0.45f, 0.89f},
     {0.54f, 0.54f}, {0.52f, 0.72f}, {0.52f, 0.90f}, {0.53f, 0.72f},
     {0.53f, 0.90f}, {0.46f, 0.92f}, {0.47f, 0.92f}}};
 
 // front view, legs wide, torso tilted — one hand to the shin, one to the sky
-static const YogaPose TRIANGLE = {"TRIANGLE", 0, {
+static const YogaPose TRIANGLE = {"TRIANGLE", 0, 0.0f, {
     {0.33f, 0.30f}, {0.38f, 0.36f}, {0.34f, 0.40f}, {0.42f, 0.32f},
     {0.33f, 0.52f}, {0.31f, 0.65f}, {0.46f, 0.22f}, {0.50f, 0.12f},
     {0.50f, 0.55f}, {0.32f, 0.72f}, {0.30f, 0.90f}, {0.68f, 0.72f},
     {0.70f, 0.90f}, {0.26f, 0.92f}, {0.74f, 0.92f}}};
 
-// side view, kneeling folded over the knees, arms stretched out in front
-static const YogaPose CHILD = {"CHILDS POSE", -1, {
-    {0.33f, 0.82f}, {0.40f, 0.79f}, {0.42f, 0.80f}, {0.43f, 0.81f},
-    {0.33f, 0.86f}, {0.24f, 0.88f}, {0.34f, 0.86f}, {0.25f, 0.88f},
+// side view, kneeling folded over the knees, arms stretched out on the mat
+static const YogaPose CHILD = {"CHILDS POSE", -1, 0.055f, {
+    {0.33f, 0.80f}, {0.40f, 0.79f}, {0.42f, 0.80f}, {0.43f, 0.81f},
+    {0.32f, 0.88f}, {0.22f, 0.90f}, {0.33f, 0.88f}, {0.23f, 0.90f},
     {0.66f, 0.76f}, {0.62f, 0.88f}, {0.76f, 0.90f}, {0.63f, 0.88f},
     {0.77f, 0.90f}, {0.83f, 0.91f}, {0.84f, 0.92f}}};
 
 // side view, lying with the chest lifted — feet pointed, tops on the floor
-static const YogaPose COBRA = {"COBRA", -1, {
-    {0.29f, 0.60f}, {0.31f, 0.64f}, {0.32f, 0.66f}, {0.34f, 0.67f},
-    {0.32f, 0.78f}, {0.29f, 0.90f}, {0.35f, 0.79f}, {0.32f, 0.91f},
+static const YogaPose COBRA = {"COBRA", -1, -0.045f, {
+    {0.28f, 0.58f}, {0.31f, 0.63f}, {0.33f, 0.66f}, {0.34f, 0.67f},
+    {0.34f, 0.79f}, {0.30f, 0.90f}, {0.36f, 0.80f}, {0.32f, 0.91f},
     {0.55f, 0.87f}, {0.71f, 0.89f}, {0.87f, 0.89f}, {0.72f, 0.90f},
     {0.88f, 0.90f}, {0.94f, 0.92f}, {0.95f, 0.93f}}};
 
 // side view, one straight line from head to heels on straight arms
-static const YogaPose PLANK = {"PLANK", -1, {
+static const YogaPose PLANK = {"PLANK", -1, 0.0f, {
     {0.26f, 0.50f}, {0.31f, 0.56f}, {0.32f, 0.57f}, {0.33f, 0.58f},
     {0.31f, 0.73f}, {0.30f, 0.90f}, {0.32f, 0.74f}, {0.31f, 0.90f},
     {0.52f, 0.67f}, {0.64f, 0.74f}, {0.76f, 0.82f}, {0.65f, 0.75f},
     {0.77f, 0.83f}, {0.80f, 0.90f}, {0.81f, 0.91f}}};
 
-// side view, deep lunge with the arms reaching overhead
-static const YogaPose WARRIOR1 = {"WARRIOR 1", -1, {
-    {0.46f, 0.26f}, {0.48f, 0.34f}, {0.48f, 0.36f}, {0.49f, 0.37f},
-    {0.46f, 0.24f}, {0.45f, 0.12f}, {0.48f, 0.25f}, {0.47f, 0.13f},
-    {0.50f, 0.60f}, {0.38f, 0.72f}, {0.36f, 0.90f}, {0.63f, 0.78f},
-    {0.72f, 0.88f}, {0.30f, 0.92f}, {0.78f, 0.91f}}};
+// side view, deep lunge with the arms reaching along the ear line
+static const YogaPose WARRIOR1 = {"WARRIOR 1", -1, 0.0f, {
+    {0.425f, 0.25f}, {0.455f, 0.33f}, {0.465f, 0.35f}, {0.475f, 0.36f},
+    {0.49f, 0.22f}, {0.505f, 0.08f}, {0.51f, 0.23f}, {0.525f, 0.09f},
+    {0.50f, 0.59f}, {0.35f, 0.71f}, {0.35f, 0.90f}, {0.62f, 0.76f},
+    {0.72f, 0.90f}, {0.28f, 0.92f}, {0.78f, 0.91f}}};
 
-// side view, on the back with the hips lifted, knees bent, feet flat
-static const YogaPose BRIDGE = {"BRIDGE", -1, {
-    {0.24f, 0.88f}, {0.30f, 0.86f}, {0.32f, 0.87f}, {0.33f, 0.88f},
+// supine side view (face +1 looks up at ceiling): hips lifted, knees bent
+static const YogaPose BRIDGE = {"BRIDGE", 1, -0.040f, {
+    {0.23f, 0.86f}, {0.29f, 0.85f}, {0.31f, 0.85f}, {0.32f, 0.86f},
     {0.40f, 0.89f}, {0.48f, 0.90f}, {0.41f, 0.89f}, {0.49f, 0.90f},
-    {0.52f, 0.70f}, {0.64f, 0.66f}, {0.68f, 0.88f}, {0.65f, 0.67f},
-    {0.69f, 0.88f}, {0.74f, 0.90f}, {0.75f, 0.91f}}};
+    {0.52f, 0.68f}, {0.65f, 0.66f}, {0.68f, 0.89f}, {0.66f, 0.67f},
+    {0.69f, 0.89f}, {0.74f, 0.91f}, {0.75f, 0.92f}}};
 
-// side view, flat on the back, arms at the sides — rest
-static const YogaPose SAVASANA = {"SAVASANA", -1, {
+// supine side view (face +1 looks up at ceiling): flat on the back — rest
+static const YogaPose SAVASANA = {"SAVASANA", 1, 0.0f, {
     {0.20f, 0.86f}, {0.26f, 0.87f}, {0.28f, 0.87f}, {0.29f, 0.88f},
     {0.38f, 0.89f}, {0.46f, 0.90f}, {0.39f, 0.90f}, {0.47f, 0.91f},
     {0.50f, 0.88f}, {0.64f, 0.88f}, {0.78f, 0.88f}, {0.65f, 0.89f},
     {0.79f, 0.89f}, {0.81f, 0.84f}, {0.82f, 0.85f}}};
 
 // side view, on all fours with the spine rounded up and the head tucked
-static const YogaPose CAT = {"CAT", -1, {
-    {0.27f, 0.70f}, {0.31f, 0.64f}, {0.33f, 0.59f}, {0.34f, 0.60f},
+static const YogaPose CAT = {"CAT", -1, 0.075f, {
+    {0.26f, 0.73f}, {0.30f, 0.64f}, {0.33f, 0.59f}, {0.34f, 0.60f},
     {0.32f, 0.75f}, {0.31f, 0.90f}, {0.33f, 0.76f}, {0.32f, 0.90f},
-    {0.62f, 0.62f}, {0.62f, 0.89f}, {0.76f, 0.90f}, {0.63f, 0.89f},
-    {0.77f, 0.90f}, {0.82f, 0.91f}, {0.83f, 0.92f}}};
+    {0.62f, 0.62f}, {0.62f, 0.88f}, {0.76f, 0.90f}, {0.63f, 0.88f},
+    {0.77f, 0.90f}, {0.83f, 0.91f}, {0.84f, 0.92f}}};
 
 // side view, on all fours with the belly dropped and the gaze lifted
-static const YogaPose COW = {"COW", -1, {
-    {0.25f, 0.51f}, {0.29f, 0.58f}, {0.32f, 0.64f}, {0.33f, 0.65f},
-    {0.32f, 0.77f}, {0.31f, 0.90f}, {0.33f, 0.78f}, {0.32f, 0.90f},
-    {0.62f, 0.60f}, {0.62f, 0.89f}, {0.76f, 0.90f}, {0.63f, 0.89f},
-    {0.77f, 0.90f}, {0.82f, 0.91f}, {0.83f, 0.92f}}};
+static const YogaPose COW = {"COW", -1, -0.065f, {
+    {0.25f, 0.50f}, {0.29f, 0.57f}, {0.33f, 0.62f}, {0.34f, 0.63f},
+    {0.32f, 0.76f}, {0.31f, 0.90f}, {0.33f, 0.77f}, {0.32f, 0.90f},
+    {0.62f, 0.59f}, {0.62f, 0.88f}, {0.76f, 0.90f}, {0.63f, 0.88f},
+    {0.77f, 0.90f}, {0.83f, 0.91f}, {0.84f, 0.92f}}};
 
-// side view, front knee over the ankle, back knee down, arms overhead
-static const YogaPose LOW_LUNGE = {"LOW LUNGE", -1, {
-    {0.41f, 0.30f}, {0.43f, 0.38f}, {0.43f, 0.40f}, {0.44f, 0.41f},
-    {0.41f, 0.27f}, {0.40f, 0.15f}, {0.42f, 0.28f}, {0.41f, 0.16f},
-    {0.48f, 0.64f}, {0.33f, 0.70f}, {0.33f, 0.90f}, {0.64f, 0.89f},
-    {0.78f, 0.90f}, {0.27f, 0.91f}, {0.84f, 0.91f}}};
+// side view, front knee over the ankle, back knee down, arms along ear line
+static const YogaPose LOW_LUNGE = {"LOW LUNGE", -1, -0.015f, {
+    {0.385f, 0.29f}, {0.415f, 0.37f}, {0.425f, 0.39f}, {0.435f, 0.40f},
+    {0.45f, 0.25f}, {0.47f, 0.12f}, {0.47f, 0.26f}, {0.49f, 0.13f},
+    {0.48f, 0.64f}, {0.32f, 0.70f}, {0.32f, 0.90f}, {0.64f, 0.88f},
+    {0.78f, 0.90f}, {0.26f, 0.91f}, {0.84f, 0.91f}}};
 
 // side view, front shin folded under, back leg long, tall through the spine
-static const YogaPose PIGEON = {"PIGEON", -1, {
+static const YogaPose PIGEON = {"PIGEON", -1, -0.020f, {
     {0.40f, 0.42f}, {0.41f, 0.50f}, {0.41f, 0.52f}, {0.42f, 0.53f},
     {0.39f, 0.68f}, {0.37f, 0.88f}, {0.40f, 0.69f}, {0.38f, 0.88f},
     {0.47f, 0.81f}, {0.33f, 0.87f}, {0.46f, 0.89f}, {0.66f, 0.87f},
     {0.85f, 0.89f}, {0.50f, 0.90f}, {0.90f, 0.91f}}};
 
 // side view, balanced on the sit bones in a V, arms reaching forward
-static const YogaPose BOAT = {"BOAT", -1, {
+static const YogaPose BOAT = {"BOAT", -1, 0.025f, {
     {0.67f, 0.43f}, {0.65f, 0.51f}, {0.64f, 0.53f}, {0.65f, 0.54f},
     {0.55f, 0.61f}, {0.45f, 0.63f}, {0.56f, 0.62f}, {0.46f, 0.64f},
     {0.56f, 0.86f}, {0.44f, 0.72f}, {0.32f, 0.58f}, {0.45f, 0.73f},
@@ -321,8 +322,16 @@ class YogaScene : public Scene {
 
     float from[15][2], to[15][2], j[15][2];
     int face = stepJoints(step_, to);
-    stepJoints(fromStep_, from);
-    guide::tweenPose(from, to, t, j);
+    int fromFace = stepJoints(fromStep_, from);
+    if (fromFace == face) guide::tweenPoseKinematic(from, to, t, j);
+    else guide::tweenPose(from, to, t, j);
+
+    float fromCurve = steps_[fromStep_].pose->spineCurve;
+    float toCurve = steps_[step_].pose->spineCurve;
+    float curve = (fromFace == face)
+                      ? (fromCurve + (toCurve - fromCurve) * t)
+                      : (t < 0.5f ? fromCurve * (1.0f - 2.0f * t)
+                                  : toCurve * (2.0f * t - 1.0f));
 
     // once settled in the pose, breathe: the chest and head lift a hair on
     // the inhale (~4s cycle) and the shoulders open, so a held pose isn't a
@@ -336,9 +345,10 @@ class YogaScene : public Scene {
       j[3][1] -= breath * a * 0.5f;
       j[2][0] -= breath * a * 0.4f;   // and open
       j[3][0] += breath * a * 0.4f;
+      curve -= breath * 0.004f;
     }
 
-    guide::drawFigure(ctx, j, face, settings_.yogaBody);
+    guide::drawFigure(ctx, j, face, settings_.yogaBody, curve);
 
     const Step& st = steps_[step_];
     guide::drawTopBar(ctx, st.pose->name);
