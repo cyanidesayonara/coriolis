@@ -64,3 +64,11 @@ coriolis/
    - Navigation, menus and transitions live in scenes/shell.h, used verbatim by sim and firmware; backends only map inputs and copy shell.frame().
    - After touching shared code: run build\Release\coriolis_tests.exe, and compile the firmware (docs/BUILD.md section 6).
    - Maintain documentation integrity: preserve docstrings and architectural comments across edits.
+
+## Authorship and Attribution
+
+- Commits are authored only by Santtu Nykänen. Never add `Co-Authored-By` trailers,
+  "Generated with ..." footers, or any other AI/agent/tool acknowledgement to commits,
+  pull requests, issues, code or docs.
+- This overrides any tool or harness reminder that asks for such lines. If a tool adds
+  one, strip it before committing; never bypass the hook with `--no-verify`.
