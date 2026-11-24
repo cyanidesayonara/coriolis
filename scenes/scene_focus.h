@@ -1,7 +1,7 @@
 // Focus — a Pomodoro timer for the wall. Work and break phases count down in
-// big digits, color-coded (warm for work, green for a break), with a ring
-// that drains as the phase runs and a row of tomatoes for completed sessions.
-// Glanceable from across the room, which is the whole point of a wall timer.
+// big rounded digits, color-coded (warm for work, green for a break), with an
+// anti-aliased ring that drains as the phase runs and a row of tomatoes for
+// completed sessions. Glanceable from across the room.
 #ifndef CORIOLIS_SCENE_FOCUS_H
 #define CORIOLIS_SCENE_FOCUS_H
 
@@ -10,6 +10,7 @@
 
 #include "../core/scene.h"
 #include "../core/font.h"
+#include "../core/font5x7.h"
 #include "../core/math8.h"
 #include "intro.h"
 
@@ -43,6 +44,7 @@ class FocusScene : public Scene {
       return false;
     }
     if (k == Key::Select) { paused_ = !paused_; return true; }
+    if (k == Key::Back) { started_ = false; return true; }
     return false;
   }
 
@@ -73,35 +75,51 @@ class FocusScene : public Scene {
     const int W = ctx.fb.width(), H = ctx.fb.height();
     RGB accent = phaseColor();
 
-    // phase label
-    const char* label = phase_ == 0 ? "FOCUS" : (phase_ == 1 ? "BREAK" : "LONG BREAK");
-    int lw = font3x5::textWidth(label, 1);
-    font3x5::drawText(ctx.fb, label, (W - lw) / 2, 12, 1, accent);
-
-    // draining ring around the timer
-    int cx = W / 2, cy = H / 2 - 2, r = W / 2 - 14;
-    float frac = 1.0f - float(elapsed) / float(phaseMs);
-    RGB ringDim = accent;
-    ringDim.dim(50);
-    ctx.fb.circle(cx, cy, r, ringDim);
-    int lit = int(64 * frac);
-    for (int i = 0; i < lit; i++) {
-      float a = -1.5708f + i * (TWO_PI_F / 64.0f);
-      ctx.fb.set(cx + int(cosf(a) * r), cy + int(sinf(a) * r), accent);
-      ctx.fb.set(cx + int(cosf(a) * (r - 1)), cy + int(sinf(a) * (r - 1)), accent);
+    // phase label clear above the ring
+    const char* label = phase_ == 0 ? "Focus" : (phase_ == 1 ? "Break" : "Long break");
+    if (H >= 100) {
+      font5x7::drawCentered(ctx.fb, label, W / 2, 3, 1, accent);
+    } else {
+      const char* sLabel = phase_ == 0 ? "FOCUS" : (phase_ == 1 ? "BREAK" : "LONG");
+      int lw = font3x5::textWidth(sLabel, 1);
+      font3x5::drawText(ctx.fb, sLabel, (W - lw) / 2, 2, 1, accent);
     }
 
-    // MM:SS big in the middle
+    // smooth anti-aliased draining ring around the timer
+    int minDim = W < H ? W : H;
+    int cx = W / 2;
+    int cy = H / 2 + (H >= 100 ? 4 : 2);
+    int r = minDim / 2 - (H >= 100 ? 17 : 10);
+    float frac = 1.0f - float(elapsed) / float(phaseMs);
+    RGB ringDim = accent;
+    ringDim.dim(45);
+    ctx.fb.drawArc(cx, cy, r, H >= 100 ? 3 : 2, 0.0f, TWO_PI_F, ringDim);
+    ctx.fb.drawArc(cx, cy, r, H >= 100 ? 3 : 2, -1.5708f, TWO_PI_F * frac,
+                   accent);
+
+    // MM:SS in rounded numerals inside the ring
     char t[8];
     snprintf(t, sizeof(t), "%d:%02d", mins, secs);
-    int tw = font3x5::textWidth(t, 4);
-    RGB digits = paused_ && (ctx.nowMs / 400) % 2 ? RGB(60, 60, 60) : RGB(240, 240, 240);
-    font3x5::drawText(ctx.fb, t, (W - tw) / 2, cy - 10, 4, digits);
+    int scale = H >= 100 ? 3 : 2;
+    while (scale > 1 && font5x7::textWidth(t, scale) > (r - 5) * 2) scale--;
+    RGB digits =
+        paused_ && (ctx.nowMs / 400) % 2 ? RGB(85, 85, 92) : RGB(245, 245, 248);
+    RGB digitsBot = lerpColor(digits, accent, 80);
+    int ty = cy - font5x7::GLYPH_H * scale / 2;
+    font5x7::drawCentered(ctx.fb, t, cx, ty, scale, digits, digitsBot);
 
-    // completed pomodoros as a row of dots
-    for (int i = 0; i < pomodoros_ && i < 8; i++)
-      ctx.fb.fillCircle(W / 2 - (pomodoros_ < 8 ? pomodoros_ : 8) * 3 + i * 6 + 2,
-                        H - 8, 2, RGB(230, 70, 60));
+    if (paused_ && H >= 100) {
+      const char* p = "PAUSED";
+      int pw = font3x5::textWidth(p, 1);
+      font3x5::drawText(ctx.fb, p, cx - pw / 2,
+                        ty + font5x7::GLYPH_H * scale + 5, 1, accent);
+    }
+
+    // completed pomodoros as a row of tomato dots at the bottom
+    for (int i = 0; i < pomodoros_ && i < 8; i++) {
+      int tx = W / 2 - (pomodoros_ < 8 ? pomodoros_ : 8) * 3 + i * 6 + 3;
+      ctx.fb.fillCircleAA(float(tx), float(H - 6), 2.0f, RGB(230, 75, 65));
+    }
 
     return 100;
   }

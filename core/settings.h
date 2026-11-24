@@ -94,6 +94,26 @@ struct Settings {
     }
     return brightness;
   }
+
+  bool operator==(const Settings& o) const {
+    return brightness == o.brightness && paletteIndex == o.paletteIndex &&
+           rotation == o.rotation && autoplay == o.autoplay &&
+           autoplaySeconds == o.autoplaySeconds &&
+           transitionMode == o.transitionMode && volume == o.volume &&
+           zoneHours == o.zoneHours && euDst == o.euDst &&
+           overlayType == o.overlayType && overlayPos == o.overlayPos &&
+           overlaySize == o.overlaySize && yogaBody == o.yogaBody &&
+           yogaProgram == o.yogaProgram && yogaHoldSec == o.yogaHoldSec &&
+           exerciseProgram == o.exerciseProgram &&
+           exerciseReps == o.exerciseReps && exerciseRepSec == o.exerciseRepSec &&
+           breatheStyle == o.breatheStyle && breatheSec == o.breatheSec &&
+           pongLevel == o.pongLevel && snakeSpeed == o.snakeSpeed &&
+           fireSparks == o.fireSparks && nightMode == o.nightMode &&
+           nightStartHour == o.nightStartHour && nightEndHour == o.nightEndHour &&
+           nightBrightness == o.nightBrightness && snakeHigh == o.snakeHigh &&
+           tetrisHigh == o.tetrisHigh;
+  }
+  bool operator!=(const Settings& o) const { return !(*this == o); }
 };
 
 class SettingsStore {

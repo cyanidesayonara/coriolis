@@ -1,14 +1,17 @@
-// Breathing guide — a circle to breathe with. Two styles, selectable in
-// settings: box breathing (equal in/hold/out/hold) and the 4-7-8 relaxing
-// breath (long hold, longer exhale, no bottom hold). Up/down adjusts the
+// Breathing guide — a luminous orb to breathe with. Two styles, selectable
+// in settings: box breathing (equal in/hold/out/hold) and the 4-7-8 relaxing
+// breath (long hold, longer exhale, brief bottom rest). Up/down adjusts the
 // in-breath length; everything else scales from it.
 #ifndef CORIOLIS_SCENE_BREATHE_H
 #define CORIOLIS_SCENE_BREATHE_H
 
 #include <stdio.h>
+#include <math.h>
 
 #include "../core/scene.h"
 #include "../core/font.h"
+#include "../core/font5x7.h"
+#include "../core/math8.h"
 #include "../core/settings.h"
 #include "guide_ui.h"
 #include "intro.h"
@@ -41,6 +44,7 @@ class BreatheScene : public Scene {
       }
       return false;
     }
+    if (k == Key::Back) { started_ = false; return true; }
     if (k == Key::Up || k == Key::Down) {  // in-breath length, 3-8s
       int s = settings_.breatheSec + ((k == Key::Up) ? 1 : -1);
       if (s < 3) s = 3;
@@ -63,6 +67,7 @@ class BreatheScene : public Scene {
     }
 
     ctx.fb.clear();
+    const int W = ctx.fb.width(), H = ctx.fb.height();
 
     // phase lengths in ms; 4-7-8 scales its classic ratios from the
     // in-breath so one knob controls the pace of both styles
@@ -88,8 +93,8 @@ class BreatheScene : public Scene {
       if (inCycle < acc + phaseLen[i]) { phase = i; break; }
       acc += phaseLen[i];
     }
-    float t = (inCycle - acc) / float(phaseLen[phase]);
-    t = t * t * (3.0f - 2.0f * t);  // ease the growth
+    float phaseProg = (inCycle - acc) / float(phaseLen[phase]);
+    float t = phaseProg * phaseProg * (3.0f - 2.0f * phaseProg);  // smoothstep
 
     // a soft cue as each phase begins
     if (phase != lastPhase_) {
@@ -99,10 +104,17 @@ class BreatheScene : public Scene {
       ctx.audio.play(cues[phase]);
     }
 
-    int size = ctx.fb.width() < ctx.fb.height() ? ctx.fb.width()
-                                                : ctx.fb.height();
-    int minR = size / 10;
-    int maxR = size / 2 - 14;
+    static const RGB phaseColors[4] = {
+        RGB(64, 215, 200),   // inhale: serene teal
+        RGB(185, 155, 255),  // hold: soft lavender
+        RGB(115, 130, 235),  // exhale: twilight indigo
+        RGB(95, 145, 155),   // rest: gentle slate-teal
+    };
+    RGB phaseCol = phaseColors[phase];
+
+    int size = W < H ? W : H;
+    int minR = size / 9;
+    int maxR = size / 2 - (H >= 100 ? 18 : 11);
 
     float f;                        // 0 = small, 1 = full
     switch (phase) {
@@ -111,32 +123,58 @@ class BreatheScene : public Scene {
       case 2: f = 1.0f - t; break;
       default: f = 0.0f; break;
     }
-    int r = minR + int((maxR - minR) * f);
+    float r = minR + (maxR - minR) * f;
 
-    int cx = ctx.fb.width() / 2;
-    int cy = ctx.fb.height() / 2 + 4;
+    int cx = W / 2;
+    int cy = H / 2 + (H >= 100 ? 1 : 2);
 
-    // soft lavender fill with a bright rim; a still center dot to focus on
-    RGB fill = guide::titleColor();
-    fill.dim(70);
-    ctx.fb.fillCircle(cx, cy, r, fill);
-    ctx.fb.circle(cx, cy, r, guide::titleColor());
-    ctx.fb.fillCircle(cx, cy, 2, guide::matColor());
+    // layered radial aura
+    RGB outer = phaseCol; outer.dim(26);
+    RGB mid = phaseCol;   mid.dim(55);
+    RGB inner = phaseCol; inner.dim(95);
+    RGB core = lerpColor(phaseCol, RGB(255, 255, 255), 85);
+    core.dim(125);
+
+    ctx.fb.fillCircleAA(float(cx), float(cy), r * 1.18f, outer);
+    ctx.fb.fillCircleAA(float(cx), float(cy), r * 1.02f, mid);
+    ctx.fb.fillCircleAA(float(cx), float(cy), r * 0.84f, inner);
+    ctx.fb.fillCircleAA(float(cx), float(cy), r * 0.45f, core);
+
+    // crisp outer rim on the breathing sphere and an outer phase-progress arc
+    ctx.fb.drawArc(cx, cy, int(r + 0.5f), 1, 0.0f, TWO_PI_F, phaseCol);
+
+    RGB track = phaseCol;
+    track.dim(35);
+    int arcR = maxR + (H >= 100 ? 4 : 2);
+    ctx.fb.drawArc(cx, cy, arcR, 2, 0.0f, TWO_PI_F, track);
+    ctx.fb.drawArc(cx, cy, arcR, 2, -1.5708f, TWO_PI_F * phaseProg, phaseCol);
+
+    // calm anchor dot in the middle
+    ctx.fb.fillCircleAA(float(cx), float(cy), 2.2f, RGB(230, 245, 245));
 
     guide::drawTopBar(ctx, settings_.breatheStyle == 0 ? "BREATHE" : "4-7-8");
 
-    static const char* phaseNames[4] = {"IN", "HOLD", "OUT", "HOLD"};
+    static const char* phaseNames[4] = {"Inhale", "Hold", "Exhale", "Rest"};
     const char* label = phaseNames[phase];
-    int w = font3x5::textWidth(label, 2);
-    font3x5::drawText(ctx.fb, label, (ctx.fb.width() - w) / 2,
-                      ctx.fb.height() - 14, 2, guide::mutedColor());
+    if (H >= 100) {
+      font5x7::drawCentered(ctx.fb, label, W / 2, H - 12, 1, phaseCol);
+    } else {
+      static const char* shortNames[4] = {"IN", "HOLD", "OUT", "REST"};
+      int w = font3x5::textWidth(shortNames[phase], 1);
+      font3x5::drawText(ctx.fb, shortNames[phase], (W - w) / 2, H - 7, 1,
+                        phaseCol);
+    }
 
-    // completed-cycle counter, bottom right
+    // phase seconds remaining bottom-left, completed-cycle count bottom-right
+    int secLeft = int((phaseLen[phase] - (inCycle - acc) + 999) / 1000);
+    char leftBuf[8];
+    snprintf(leftBuf, sizeof(leftBuf), "%ds", secLeft);
+    font3x5::drawText(ctx.fb, leftBuf, 3, H - 7, 1, guide::mutedColor());
+
     char count[8];
     snprintf(count, sizeof(count), "%d", cycles_);
     int cw = font3x5::textWidth(count, 1);
-    font3x5::drawText(ctx.fb, count, ctx.fb.width() - cw - 3,
-                      ctx.fb.height() - 8, 1, guide::mutedColor());
+    font3x5::drawText(ctx.fb, count, W - cw - 3, H - 7, 1, guide::mutedColor());
 
     return 33;
   }

@@ -23,6 +23,9 @@ class AuroraScene : public Scene {
     const int W = ctx.fb.width(), H = ctx.fb.height();
     const float t = phase_ * 0.018f;
 
+    const float upSpan = H * 0.22f, downSpan = H * 0.62f;
+    const float invUp = 1.0f / upSpan, invDown = 1.0f / downSpan;
+
     // two layered curtains — a bright foreground and a fainter, slower one
     for (int layer = 0; layer < 2; layer++) {
       float lt = t * (layer == 0 ? 1.0f : 0.6f) + layer * 2.1f;
@@ -41,9 +44,14 @@ class AuroraScene : public Scene {
         float ray = 0.65f + 0.35f * sinf(x * 0.5f + lt * 2.3f);
         float inten = col * ray * bright;
 
-        for (int y = 0; y < H; y++) {
-          float d = (y < ridge) ? (ridge - y) / (H * 0.22f)   // quick fade up
-                                : (y - ridge) / (H * 0.62f);  // curtains hang
+        int yStart = int(floorf(ridge - upSpan));
+        if (yStart < 0) yStart = 0;
+        int yEnd = int(ceilf(ridge + downSpan));
+        if (yEnd >= H) yEnd = H - 1;
+
+        for (int y = yStart; y <= yEnd; y++) {
+          float d = (y < ridge) ? (ridge - y) * invUp
+                                : (y - ridge) * invDown;
           float glow = 1.0f - d;
           if (glow <= 0.0f) continue;
           float b = glow * glow * inten;

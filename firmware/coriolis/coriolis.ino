@@ -36,6 +36,12 @@
 #define CORIOLIS_MAX_BRIGHTNESS 255
 #endif
 
+// dynamic current cap in milliamps (0 = disabled; 25000 keeps four 64x64
+// panels comfortably below a 40A PSU even on full-white flashes)
+#ifndef CORIOLIS_MAX_MILLIAMPS
+#define CORIOLIS_MAX_MILLIAMPS 25000
+#endif
+
 #define COLOR_DEPTH 24
 const uint16_t kMatrixWidth = 128;
 const uint16_t kMatrixHeight = 128;
@@ -729,7 +735,9 @@ void loop() {
   }
 
   if (shell.tick(ctx)) {
-    matrix.setBrightness(min(int(shell.brightness(ctx)), CORIOLIS_MAX_BRIGHTNESS));
+    uint8_t br = min(int(shell.brightness(ctx)), CORIOLIS_MAX_BRIGHTNESS);
+    br = powerLimitedBrightness(shell.frame(), br, CORIOLIS_MAX_MILLIAMPS);
+    matrix.setBrightness(br);
     blit(shell.frame());
   }
 }

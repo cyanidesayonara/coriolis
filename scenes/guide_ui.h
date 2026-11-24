@@ -102,18 +102,12 @@ inline void drawCountdown(Context& ctx, uint32_t elapsedMs, uint32_t totalMs,
   if (left < 1) left = 1;
   float sec = (elapsedMs % 1000) / 1000.0f;
 
-  int cx = W / 2, cy = H / 2 - 4;
-  int r = (W < H ? W : H) / 2 - 18;
+  int cx = W / 2, cy = H / 2 + (H >= 100 ? 2 : 0);
+  int r = (W < H ? W : H) / 2 - (H >= 100 ? 20 : 12);
   RGB ringDim = titleColor();
   ringDim.dim(45);
-  ctx.fb.circle(cx, cy, r, ringDim);
-  int lit = int(72 * (1.0f - sec));
-  for (int i = 0; i < lit; i++) {
-    float a = -1.5708f + i * (TWO_PI_F / 72.0f);
-    ctx.fb.set(cx + int(cosf(a) * r), cy + int(sinf(a) * r), titleColor());
-    ctx.fb.set(cx + int(cosf(a) * (r - 1)), cy + int(sinf(a) * (r - 1)),
-               titleColor());
-  }
+  ctx.fb.drawArc(cx, cy, r, 2, 0.0f, TWO_PI_F, ringDim);
+  ctx.fb.drawArc(cx, cy, r, 2, -1.5708f, TWO_PI_F * (1.0f - sec), titleColor());
 
   char n[3];
   snprintf(n, sizeof(n), "%d", left);
