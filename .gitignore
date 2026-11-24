@@ -1,5 +1,7 @@
 build/
 build-*/
+_site/
+web/build/
 coriolis_settings.txt
 firmware/arduino/
 audio_pack/
